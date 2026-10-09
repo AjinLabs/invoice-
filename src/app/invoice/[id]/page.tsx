@@ -85,12 +85,12 @@ function InvoiceContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#e9e4d8] py-6 px-3 sm:px-6">
+    <div className="min-h-screen bg-neutral-100 py-6 px-3 sm:px-6">
       <div className="max-w-3xl mx-auto space-y-5">
         {/* Top Action Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white/90 backdrop-blur-xs p-3.5 rounded-2xl border border-neutral-200 shadow-xs no-print">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-neutral-200 shadow-xs no-print">
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+            <span className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center font-bold text-xs">
               ✓
             </span>
             <div>
@@ -102,7 +102,7 @@ function InvoiceContent() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleDownloadPhoto}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#487ec3] hover:bg-[#3b6ea8] text-white rounded-lg text-xs font-bold transition-all shadow-xs"
+              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-900 hover:bg-black text-white rounded-lg text-xs font-bold transition-all shadow-xs"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download Bill Photo</span>
