@@ -52,9 +52,14 @@ export default function SettingsPage() {
     try {
       const res = await fetch('/api/auth/me');
       const authData = await res.json();
+      if (!authData.authenticated) {
+        window.location.href = '/login';
+        return;
+      }
+
       let branchToUse: BranchId = 'vnb';
 
-      if (authData.authenticated && authData.user) {
+      if (authData.user) {
         setCurrentUser(authData.user);
         if (authData.user.branch) {
           branchToUse = authData.user.branch;

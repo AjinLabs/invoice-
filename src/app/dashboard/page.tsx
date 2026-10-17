@@ -43,9 +43,14 @@ export default function DashboardPage() {
     try {
       const authRes = await fetch('/api/auth/me');
       const authData = await authRes.json();
+      if (!authData.authenticated) {
+        window.location.href = '/login';
+        return;
+      }
+
       let branchToUse = 'vnb';
 
-      if (authData.authenticated && authData.user) {
+      if (authData.user) {
         setCurrentUser(authData.user);
         if (authData.user.branch) {
           branchToUse = authData.user.branch;

@@ -18,10 +18,6 @@ export default function Navbar() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [branchInfo, setBranchInfo] = useState<any>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, [pathname]);
-
   const checkAuth = async () => {
     try {
       const res = await fetch('/api/auth/me');
@@ -36,6 +32,17 @@ export default function Navbar() {
       }
     } catch {}
   };
+
+  useEffect(() => {
+    if (pathname !== '/login') {
+      checkAuth();
+    }
+  }, [pathname]);
+
+  // Completely hide all navigation and bottom dock on the login page
+  if (pathname === '/login') {
+    return null;
+  }
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -198,43 +205,45 @@ export default function Navbar() {
 
       {/* ==============================================================
           2. BOTTOM APP NAVIGATION DOCK (Billing, Dashboard, Settings)
-             Replaces top website navbar as requested by user
+             Replaces top website navbar as requested by user - Only visible when logged in
          ============================================================== */}
-      <nav
-        aria-label="App Navigation"
-        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] no-print py-1.5 px-4"
-      >
-        <div className="max-w-md mx-auto flex items-center justify-around">
-          {bottomTabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = tab.isActive;
-            return (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                className={`flex flex-col items-center justify-center py-1 px-4 sm:px-6 rounded-xl transition-all ${
-                  isActive
-                    ? 'text-black font-extrabold'
-                    : 'text-neutral-500 hover:text-black font-medium'
-                }`}
-              >
-                <div
-                  className={`p-1.5 rounded-lg transition-all ${
+      {currentUser && (
+        <nav
+          aria-label="App Navigation"
+          className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] no-print py-1.5 px-4"
+        >
+          <div className="max-w-md mx-auto flex items-center justify-around">
+            {bottomTabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = tab.isActive;
+              return (
+                <Link
+                  key={tab.id}
+                  href={tab.href}
+                  className={`flex flex-col items-center justify-center py-1 px-4 sm:px-6 rounded-xl transition-all ${
                     isActive
-                      ? 'bg-black text-white shadow-xs'
-                      : 'bg-transparent text-neutral-600'
+                      ? 'text-black font-extrabold'
+                      : 'text-neutral-500 hover:text-black font-medium'
                   }`}
                 >
-                  <Icon className="w-5 h-5 sm:w-5 sm:h-5" />
-                </div>
-                <span className="text-[11px] sm:text-xs mt-0.5 tracking-tight">
-                  {tab.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+                  <div
+                    className={`p-1.5 rounded-lg transition-all ${
+                      isActive
+                        ? 'bg-black text-white shadow-xs'
+                        : 'bg-transparent text-neutral-600'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 sm:w-5 sm:h-5" />
+                  </div>
+                  <span className="text-[11px] sm:text-xs mt-0.5 tracking-tight">
+                    {tab.label}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </>
   );
 }
