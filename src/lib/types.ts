@@ -2,7 +2,20 @@ export type PaymentMethod = 'CASH' | 'UPI' | 'CARD' | 'OTHER';
 export type PurchaseStatus = 'COMPLETED' | 'CANCELLED';
 export type WhatsAppStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED';
 export type WhatsAppMode = 'DEMO' | 'PRODUCTION';
-export type UserRole = 'ADMIN' | 'STAFF';
+export type UserRole = 'ADMIN' | 'STAFF' | 'SUPER_ADMIN';
+export type BranchId = 'vnb' | 'pkdm';
+
+export interface BranchInfo {
+  id: BranchId;
+  name: string;
+  town: string;
+  code?: string;
+  malayalamName?: string;
+  address: string;
+  phone: string;
+  prefix: string;
+  rate_per_kg: number;
+}
 
 export interface User {
   id: string;
@@ -10,6 +23,7 @@ export interface User {
   password_hash: string;
   role: UserRole;
   name: string;
+  branch?: BranchId;
   created_at: string;
 }
 
@@ -18,6 +32,7 @@ export interface Customer {
   phone: string; // Unique normalized 10+ digit
   name: string;
   address?: string;
+  branch?: BranchId;
   total_purchases: number;
   total_weight_grams: number;
   total_amount_spent: number;
@@ -30,10 +45,13 @@ export interface Customer {
 
 export interface PurchaseItem {
   id: string;
-  purchase_id: string;
+  purchase_id?: string;
   description: string;
-  weight_grams: number;
-  rate_per_kg: number;
+  item_type?: 'KILO' | 'CUSTOM';
+  quantity?: number | string;
+  unit_price?: number;
+  weight_grams?: number;
+  rate_per_kg?: number;
   amount: number;
 }
 
@@ -42,6 +60,8 @@ export type RoundOffMode = 'NONE' | 'FLOOR_10' | 'MANUAL' | 'NEAREST_10' | 'NEAR
 export interface Purchase {
   id: string;
   invoice_number: string;
+  branch?: BranchId;
+  branch_name?: string;
   customer_id: string;
   customer_name: string;
   customer_phone: string;
@@ -95,6 +115,7 @@ export interface WhatsAppMessage {
 export interface ShopSettings {
   id: string;
   shop_name: string;
+  branch_id?: BranchId;
   logo_url?: string;
   address: string;
   phone: string;
@@ -117,6 +138,7 @@ export interface ShopSettings {
     reward_unlocked: string;
     reward_redeemed: string;
   };
+  branches?: Record<BranchId, BranchInfo>;
   updated_at: string;
 }
 

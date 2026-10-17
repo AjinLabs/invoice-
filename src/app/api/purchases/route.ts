@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR } from '@/lib/db';
+import { cookies } from 'next/headers';
+import { readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR, getBranchInfo } from '@/lib/db';
 import { calculateBilling } from '@/lib/billing';
 import { sendWhatsAppInvoice } from '@/lib/whatsapp';
-import { Customer, Purchase, LoyaltyTransaction, WhatsAppMessage, PaymentMethod, RoundOffMode } from '@/lib/types';
+import { Customer, Purchase, PurchaseItem, LoyaltyTransaction, WhatsAppMessage, PaymentMethod, RoundOffMode, BranchId } from '@/lib/types';
 
 function saveInvoiceImage(purchaseId: string, imageDataUrl: string) {
   try {
@@ -31,15 +32,35 @@ function saveInvoiceImage(purchaseId: string, imageDataUrl: string) {
   }
 }
 
+async function getSessionUser() {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('terry_session');
+    if (sessionCookie) {
+      return JSON.parse(sessionCookie.value);
+    }
+  } catch {}
+  return null;
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '50', 10);
     const status = searchParams.get('status');
     const search = searchParams.get('q')?.toLowerCase();
+    const branchParam = searchParams.get('branch');
+
+    const sessionUser = await getSessionUser();
+    const effectiveBranch = sessionUser?.branch || branchParam;
 
     const db = readDb();
     let purchases = [...db.purchases];
+
+    // Branch isolation: If logged in as branch admin or branch specified, only return that branch's invoices
+    if (effectiveBranch && effectiveBranch !== 'all') {
+      purchases = purchases.filter((p) => (p.branch || 'vnb') === effectiveBranch);
+    }
 
     if (status) {
       purchases = purchases.filter((p) => p.status === status);
@@ -61,6 +82,7 @@ export async function GET(request: Request) {
       success: true,
       purchases: purchases.slice(0, limit),
       total: purchases.length,
+      branch: effectiveBranch || 'all',
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
@@ -73,10 +95,16 @@ export async function POST(request: Request) {
     const rawPhone = body.phone?.trim();
     const customerName = body.name?.trim();
     const customerAddress = body.address?.trim() || '';
-    const weight = parseFloat(body.weight);
+    const rawWeight = parseFloat(body.weight);
+    const weight = isNaN(rawWeight) || rawWeight < 0 ? 0 : rawWeight;
     const unit = (body.unit === 'kg' ? 'kg' : 'g') as 'g' | 'kg';
     const paymentMethod = (body.payment_method || 'CASH') as PaymentMethod;
     const itemDesc = body.description?.trim() || 'Ladies Readymade Garment / Dress Material';
+    const customItemsInput = Array.isArray(body.custom_items) ? body.custom_items : [];
+
+    // Determine branch: from session cookie, request header, or body
+    const sessionUser = await getSessionUser();
+    const branch: BranchId = (sessionUser?.branch || body.branch || request.headers.get('x-branch') || 'vnb') as BranchId;
 
     // Validation
     if (!rawPhone || !customerName) {
@@ -94,9 +122,10 @@ export async function POST(request: Request) {
       );
     }
 
-    if (isNaN(weight) || weight <= 0) {
+    // Must have either weight > 0 or at least one custom item
+    if (weight <= 0 && customItemsInput.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Weight must be greater than 0' },
+        { success: false, error: 'Please enter clothing weight or add at least one item' },
         { status: 400 }
       );
     }
@@ -115,9 +144,10 @@ export async function POST(request: Request) {
     const customRoundOff = typeof body.custom_round_off === 'number' ? body.custom_round_off : undefined;
 
     // Atomic transaction execution
-    const { createdPurchase, updatedCustomer, shopSettingsSnapshot } = await withTransaction(async (db) => {
+    const { createdPurchase, updatedCustomer, branchInfoSnapshot } = await withTransaction(async (db) => {
       const now = new Date().toISOString();
       const currentYear = new Date().getFullYear();
+      const branchInfo = getBranchInfo(db, branch);
 
       // Find or create customer
       let customer = db.customers.find((c) => c.phone === phone);
@@ -127,6 +157,7 @@ export async function POST(request: Request) {
           phone,
           name: customerName,
           address: customerAddress,
+          branch,
           total_purchases: 0,
           total_weight_grams: 0,
           total_amount_spent: 0,
@@ -141,28 +172,67 @@ export async function POST(request: Request) {
         // Update name and address if provided
         customer.name = customerName;
         if (customerAddress) customer.address = customerAddress;
+        if (!customer.branch) customer.branch = branch;
       }
 
       // Calculate exact billing and loyalty status
       const calc = calculateBilling({
         weight,
         unit,
-        ratePerKg: db.shop_settings.rate_per_kg,
+        ratePerKg: branchInfo.rate_per_kg || db.shop_settings.rate_per_kg,
         customer,
         shopSettings: db.shop_settings,
         roundOffMode,
         manualAmount,
         customRoundOff,
+        customItems: customItemsInput,
       });
 
-      // Generate sequential invoice number: INV-YYYY-000001
+      // Generate sequential invoice number: INV-[PREFIX]-YYYY-000001
       const seq = db.meta.invoice_sequence++;
-      const invoiceNumber = `INV-${currentYear}-${String(seq).padStart(6, '0')}`;
+      const invoiceNumber = `INV-${branchInfo.prefix}-${currentYear}-${String(seq).padStart(6, '0')}`;
+
+      // Build purchase items list
+      const purchaseItems: PurchaseItem[] = [];
+      const purchaseId = generateId('pur');
+
+      // Kilo clothing item if weight > 0
+      if (calc.weightGrams > 0) {
+        const qtyLabel = calc.weightKg >= 1 ? `${calc.weightKg} KG` : `${calc.weightGrams}g`;
+        purchaseItems.push({
+          id: generateId('item'),
+          purchase_id: purchaseId,
+          description: itemDesc,
+          item_type: 'KILO',
+          weight_grams: calc.weightGrams,
+          rate_per_kg: calc.ratePerKg,
+          quantity: qtyLabel,
+          unit_price: calc.ratePerKg,
+          amount: calc.kiloSubtotal,
+        });
+      }
+
+      // Custom items (inners, garments, accessories, etc.)
+      if (calc.customItems && calc.customItems.length > 0) {
+        for (const ci of calc.customItems) {
+          purchaseItems.push({
+            id: generateId('item'),
+            purchase_id: purchaseId,
+            description: ci.name,
+            item_type: 'CUSTOM',
+            quantity: ci.quantity,
+            unit_price: ci.unitPrice,
+            amount: ci.amount || ci.quantity * ci.unitPrice,
+          });
+        }
+      }
 
       // Create Purchase Record
       const purchase: Purchase = {
-        id: generateId('pur'),
+        id: purchaseId,
         invoice_number: invoiceNumber,
+        branch,
+        branch_name: branchInfo.name,
         customer_id: customer.id,
         customer_name: customer.name,
         customer_phone: customer.phone,
@@ -182,18 +252,8 @@ export async function POST(request: Request) {
         loyalty_message: calc.loyaltyMessage,
         created_at: now,
         updated_at: now,
-        items: [
-          {
-            id: generateId('item'),
-            purchase_id: '',
-            description: itemDesc,
-            weight_grams: calc.weightGrams,
-            rate_per_kg: calc.ratePerKg,
-            amount: calc.subtotal,
-          },
-        ],
+        items: purchaseItems,
       };
-      purchase.items![0].purchase_id = purchase.id;
 
       const invoiceImage = body.invoice_image;
       if (invoiceImage) {
@@ -219,8 +279,8 @@ export async function POST(request: Request) {
         count_before: purchase.loyalty_progress_before,
         count_after: purchase.loyalty_progress_after,
         notes: calc.canApplyReward
-          ? `Redeemed 50% OFF on 1 KG (₹${calc.discountAmount}) reward on ${calc.weightGrams}g purchase`
-          : `Completed purchase ${customer.total_purchases}. Loyalty progress now ${calc.nextLoyaltyCount}/${db.shop_settings.required_visits}`,
+          ? `[${branchInfo.town}] Redeemed 50% OFF on 1 KG (₹${calc.discountAmount}) reward on ${calc.weightGrams}g purchase`
+          : `[${branchInfo.town}] Completed purchase ${customer.total_purchases}. Loyalty progress now ${calc.nextLoyaltyCount}/${db.shop_settings.required_visits}`,
         created_at: now,
       };
 
@@ -230,9 +290,17 @@ export async function POST(request: Request) {
       return {
         createdPurchase: purchase,
         updatedCustomer: { ...customer },
-        shopSettingsSnapshot: db.shop_settings,
+        branchInfoSnapshot: branchInfo,
       };
     });
+
+    // Create branch-specific settings snapshot for WhatsApp
+    const branchSettings = {
+      ...readDb().shop_settings,
+      shop_name: branchInfoSnapshot.name,
+      address: branchInfoSnapshot.address,
+      phone: branchInfoSnapshot.phone,
+    };
 
     // Determine public origin for absolute invoice photo link
     const host = request.headers.get('host') || 'terrybilling.netlify.app';
@@ -243,17 +311,17 @@ export async function POST(request: Request) {
     // Trigger WhatsApp Sending (Meta API or Demo simulation)
     const waResult = await sendWhatsAppInvoice(
       createdPurchase,
-      shopSettingsSnapshot,
+      branchSettings,
       fullImageUrl
     );
 
     // Save WhatsApp message record to database
     await withTransaction((db) => {
       const waMsg: WhatsAppMessage = {
-        id: generateId('wamsg'),
+        id: generateId('msg'),
         purchase_id: createdPurchase.id,
         customer_id: updatedCustomer.id,
-        phone: updatedCustomer.phone,
+        phone: createdPurchase.customer_phone,
         message_type: 'INVOICE',
         content: waResult.formattedText,
         status: waResult.status,
@@ -273,7 +341,6 @@ export async function POST(request: Request) {
       whatsapp: waResult,
     });
   } catch (err: any) {
-    console.error('Purchase creation error:', err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }
 }

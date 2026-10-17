@@ -1,11 +1,33 @@
 import { NextResponse } from 'next/server';
-import { readDb } from '@/lib/db';
+import { cookies } from 'next/headers';
+import { readDb, getBranchInfo } from '@/lib/db';
 import { DashboardStats, PaymentMethod } from '@/lib/types';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const branchParam = searchParams.get('branch');
+
+    let sessionBranch: string | undefined;
+    try {
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('terry_session');
+      if (sessionCookie) {
+        const session = JSON.parse(sessionCookie.value);
+        sessionBranch = session.branch;
+      }
+    } catch {}
+
+    const effectiveBranch = sessionBranch || branchParam;
+
     const db = readDb();
-    const purchases = db.purchases.filter((p) => p.status === 'COMPLETED');
+    let purchases = db.purchases.filter((p) => p.status === 'COMPLETED');
+
+    // Strict branch isolation
+    if (effectiveBranch && effectiveBranch !== 'all') {
+      purchases = purchases.filter((p) => (p.branch || 'vnb') === effectiveBranch);
+    }
+
     const todayStr = new Date().toISOString().split('T')[0];
 
     // Today's stats
@@ -15,9 +37,13 @@ export async function GET() {
     const todayDiscounts = Math.round(Math.max(0, todayGrossSales - todaySales) * 100) / 100;
     const todayOrders = todayPurchases.length;
 
-    // Totals
-    const totalCustomers = db.customers.length;
-    const totalWeightSoldGrams = purchases.reduce((sum, p) => sum + p.weight_grams, 0);
+    // Branch customers count
+    const branchCustomerIds = new Set(purchases.map((p) => p.customer_id));
+    const totalCustomers = effectiveBranch && effectiveBranch !== 'all'
+      ? branchCustomerIds.size
+      : db.customers.length;
+
+    const totalWeightSoldGrams = purchases.reduce((sum, p) => sum + (p.weight_grams || 0), 0);
     const totalGrossSales = Math.round(purchases.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
     const totalNetSales = Math.round(purchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
     const totalDiscounts = Math.round(Math.max(0, totalGrossSales - totalNetSales) * 100) / 100;
@@ -39,7 +65,7 @@ export async function GET() {
         item.gross_amount = Math.round((item.gross_amount + p.subtotal) * 100) / 100;
         item.discount_loss = Math.round((item.discount_loss + Math.max(0, p.subtotal - p.final_amount)) * 100) / 100;
         item.orders += 1;
-        item.weight_kg = Math.round((item.weight_kg + p.weight_kg) * 100) / 100;
+        item.weight_kg = Math.round((item.weight_kg + (p.weight_kg || 0)) * 100) / 100;
       }
     }
 
@@ -87,7 +113,45 @@ export async function GET() {
       salesByPayment,
     };
 
-    return NextResponse.json({ success: true, stats });
+    // If Main Admin (no sessionBranch lock), compute individual store stats for side-by-side comparison
+    let storesBreakdown: any = null;
+    if (!sessionBranch) {
+      const calcStoreStats = (bId: 'vnb' | 'pkdm') => {
+        const storePurchases = db.purchases.filter((p) => p.status === 'COMPLETED' && (p.branch || 'vnb') === bId);
+        const storeToday = storePurchases.filter((p) => p.created_at.startsWith(todayStr));
+        const sTodaySales = Math.round(storeToday.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
+        const sTodayGross = Math.round(storeToday.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+        const sTodayDiscounts = Math.round(Math.max(0, sTodayGross - sTodaySales) * 100) / 100;
+        const sTotalGross = Math.round(storePurchases.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+        const sTotalNet = Math.round(storePurchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
+        const sTotalDiscounts = Math.round(Math.max(0, sTotalGross - sTotalNet) * 100) / 100;
+        return {
+          todaySales: sTodaySales,
+          todayGross: sTodayGross,
+          todayDiscounts: sTodayDiscounts,
+          todayOrders: storeToday.length,
+          totalNetSales: sTotalNet,
+          totalGrossSales: sTotalGross,
+          totalDiscounts: sTotalDiscounts,
+          totalOrders: storePurchases.length,
+        };
+      };
+
+      storesBreakdown = {
+        vnb: calcStoreStats('vnb'),
+        pkdm: calcStoreStats('pkdm'),
+      };
+    }
+
+    const branchInfo = getBranchInfo(db, effectiveBranch);
+
+    return NextResponse.json({
+      success: true,
+      stats,
+      branch: effectiveBranch || 'all',
+      branchInfo,
+      storesBreakdown,
+    });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

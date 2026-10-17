@@ -5,45 +5,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ShoppingBag,
-  Users,
   LayoutDashboard,
-  Receipt,
-  MessageSquare,
-  FileSpreadsheet,
   Settings,
-  Sparkles,
-  ShieldCheck,
+  Store,
   LogIn,
   LogOut,
-  Menu,
-  X,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [whatsappMode, setWhatsappMode] = useState<'DEMO' | 'PRODUCTION'>('DEMO');
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [branchInfo, setBranchInfo] = useState<any>(null);
 
   useEffect(() => {
-    fetchSettings();
     checkAuth();
-  }, []);
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
   }, [pathname]);
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      if (data.success && data.settings) {
-        setWhatsappMode(data.settings.whatsapp_mode);
-      }
-    } catch {}
-  };
 
   const checkAuth = async () => {
     try {
@@ -51,21 +28,11 @@ export default function Navbar() {
       const data = await res.json();
       if (data.authenticated) {
         setCurrentUser(data.user);
-      }
-    } catch {}
-  };
-
-  const handleToggleMode = async () => {
-    const nextMode = whatsappMode === 'DEMO' ? 'PRODUCTION' : 'DEMO';
-    try {
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsapp_mode: nextMode }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setWhatsappMode(nextMode);
+        if (data.branchInfo) {
+          setBranchInfo(data.branchInfo);
+        }
+      } else {
+        setCurrentUser(null);
       }
     } catch {}
   };
@@ -73,194 +40,200 @@ export default function Navbar() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
-    window.location.reload();
+    window.location.href = '/login';
   };
 
-  const navItems = [
-    { label: 'POS Billing', href: '/', icon: ShoppingBag },
-    { label: 'Customers', href: '/customers', icon: Users },
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Invoices', href: '/invoices', icon: Receipt },
-    { label: 'WhatsApp', href: '/whatsapp', icon: MessageSquare },
-    { label: 'Reports', href: '/reports', icon: FileSpreadsheet },
-    { label: 'Settings', href: '/settings', icon: Settings },
-  ];
+  const isMainAdmin =
+    currentUser?.role === 'SUPER_ADMIN' || currentUser?.username === 'admin';
+
+  // Bottom dock items: Main Admin only gets Dashboard & Settings; Store Managers get Billing, Dashboard, Settings
+  const bottomTabs = isMainAdmin
+    ? [
+        {
+          id: 'dashboard',
+          label: 'Master Dashboard',
+          href: '/dashboard',
+          icon: LayoutDashboard,
+          isActive: pathname === '/dashboard' || pathname === '/',
+        },
+        {
+          id: 'settings',
+          label: 'Settings & Reports',
+          href: '/settings',
+          icon: Settings,
+          isActive:
+            pathname === '/settings' ||
+            pathname === '/invoices' ||
+            pathname === '/customers' ||
+            pathname === '/reports' ||
+            pathname === '/whatsapp',
+        },
+      ]
+    : [
+        {
+          id: 'billing',
+          label: 'Billing',
+          href: '/',
+          icon: ShoppingBag,
+          isActive: pathname === '/',
+        },
+        {
+          id: 'dashboard',
+          label: 'Dashboard',
+          href: '/dashboard',
+          icon: LayoutDashboard,
+          isActive: pathname === '/dashboard',
+        },
+        {
+          id: 'settings',
+          label: 'Settings',
+          href: '/settings',
+          icon: Settings,
+          isActive:
+            pathname === '/settings' ||
+            pathname === '/invoices' ||
+            pathname === '/customers' ||
+            pathname === '/reports' ||
+            pathname === '/whatsapp',
+        },
+      ];
+
+  // Resolve Branch Label in clean English
+  const getBranchBadge = () => {
+    if (isMainAdmin) {
+      return {
+        label: 'Main Admin (All Stores)',
+        bgColor: 'bg-neutral-800 text-neutral-200 border-neutral-700',
+        icon: ShieldCheck,
+      };
+    }
+    if (currentUser?.branch === 'pkdm') {
+      return {
+        label: 'Pookkottumpadam Store',
+        bgColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
+        icon: Store,
+      };
+    }
+    if (currentUser?.branch === 'vnb') {
+      return {
+        label: 'Vaniyambalam Store',
+        bgColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
+        icon: Store,
+      };
+    }
+    return {
+      label: 'Store POS',
+      bgColor: 'bg-neutral-800 text-neutral-300 border-neutral-700',
+      icon: Store,
+    };
+  };
+
+  const branchBadge = getBranchBadge();
+  const BranchIcon = branchBadge.icon;
 
   return (
     <>
-      {/* Top Header Bar */}
+      {/* ==============================================================
+          1. TOP APP HEADER (Minimal, Clean, Professional - No Website Links)
+         ============================================================== */}
       <header className="bg-black text-white border-b border-neutral-800 sticky top-0 z-40 no-print">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Left: Brand Logo & Name */}
+          <div className="flex items-center justify-between h-14 sm:h-16">
+            {/* Left: Brand Logo & Title */}
             <div className="flex items-center gap-3">
               <Link href="/" className="flex items-center gap-2.5 group">
                 <img
                   src="/logo.png"
                   alt="Terry Women"
-                  className="w-9 h-9 rounded-full object-contain border border-emerald-900/60 shadow-xs group-hover:scale-105 transition-transform"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain border border-emerald-900/60 shadow-xs group-hover:scale-105 transition-transform"
                 />
-                <span className="text-xl sm:text-2xl font-black tracking-widest text-white group-hover:text-neutral-300 transition-colors uppercase">
+                <span className="text-lg sm:text-xl font-black tracking-widest text-white group-hover:text-neutral-300 transition-colors uppercase">
                   TERRY
                 </span>
-                <span className="text-[10px] font-bold bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 tracking-wider uppercase">
+                <span className="text-[10px] font-bold bg-neutral-800 text-neutral-200 px-2 py-0.5 rounded border border-neutral-700 tracking-wider uppercase">
                   WOMEN
                 </span>
               </Link>
-            </div>
 
-            {/* Desktop Navigation Links (Visible on Tablet/Desktop) */}
-            <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-neutral-800 text-white shadow-inner font-semibold'
-                        : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* Right Controls: Mode Toggle, Auth, and Mobile Hamburger */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* WhatsApp Mode Toggle */}
-              <button
-                onClick={handleToggleMode}
-                title="Click to toggle between Demo & Production WhatsApp mode"
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all border ${
-                  whatsappMode === 'DEMO'
-                    ? 'bg-amber-950/70 text-amber-300 border-amber-700/60 hover:bg-amber-900'
-                    : 'bg-emerald-950/70 text-emerald-300 border-emerald-700/60 hover:bg-emerald-900'
-                }`}
-              >
-                <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                <span>WA: {whatsappMode}</span>
-              </button>
-
-              {/* Desktop Auth Status */}
-              <div className="hidden sm:flex items-center gap-2">
-                {currentUser ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-neutral-300">{currentUser.name}</span>
-                    <button
-                      onClick={handleLogout}
-                      title="Logout"
-                      className="p-1.5 text-neutral-400 hover:text-white rounded hover:bg-neutral-800"
-                    >
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded text-xs font-semibold transition-colors"
-                  >
-                    <LogIn className="w-3.5 h-3.5" />
-                    <span>Login</span>
-                  </Link>
-                )}
+              {/* Active Branch Badge */}
+              <div className="flex items-center ml-1 sm:ml-3">
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold border ${branchBadge.bgColor}`}
+                >
+                  <BranchIcon className="w-3.5 h-3.5" />
+                  <span>{branchBadge.label}</span>
+                </div>
               </div>
-
-              {/* Mobile Hamburger Menu Button (Visible only on Mobile) */}
-              <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors focus:outline-hidden"
-                aria-label="Toggle navigation menu"
-              >
-                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Dropdown Navigation Menu */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-neutral-800 bg-neutral-950 px-4 pt-3 pb-5 space-y-2 animate-in slide-in-from-top-2 duration-150">
-            <div className="space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-3.5 py-3 rounded-lg text-sm font-semibold transition-all ${
-                      isActive
-                        ? 'bg-neutral-800 text-white'
-                        : 'text-neutral-300 hover:bg-neutral-900 hover:text-white'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5 text-neutral-400" />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
             </div>
 
-            {/* Mobile Auth Button */}
-            <div className="pt-3 border-t border-neutral-800 mt-2">
+            {/* Right: User Information & Logout */}
+            <div className="flex items-center gap-2 sm:gap-3">
               {currentUser ? (
-                <div className="flex items-center justify-between px-3 py-2 bg-neutral-900 rounded-lg text-xs">
-                  <span className="text-neutral-300">Logged in: <strong>{currentUser.name}</strong></span>
+                <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg">
+                  <span className="text-xs text-neutral-300 font-semibold hidden sm:inline">
+                    {currentUser.name}
+                  </span>
                   <button
                     onClick={handleLogout}
-                    className="text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1"
+                    title="Sign Out"
+                    className="flex items-center gap-1 text-xs text-neutral-400 hover:text-rose-400 transition-colors p-1"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>Logout</span>
+                    <span className="hidden sm:inline">Logout</span>
                   </button>
                 </div>
               ) : (
                 <Link
                   href="/login"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 bg-neutral-800 text-white rounded-lg text-xs font-bold"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
                 >
-                  <LogIn className="w-4 h-4" />
-                  <span>Admin Login</span>
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Sign In</span>
                 </Link>
               )}
             </div>
           </div>
-        )}
+        </div>
       </header>
 
-      {/* Mobile Bottom Navigation Bar (Thumb Friendly POS Navigation) */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-md border-t border-neutral-800 text-white px-2 py-1.5 flex justify-around items-center no-print">
-        {[
-          { label: 'Billing', href: '/', icon: ShoppingBag },
-          { label: 'Customers', href: '/customers', icon: Users },
-          { label: 'Invoices', href: '/invoices', icon: Receipt },
-          { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-          { label: 'More', href: '/settings', icon: Settings },
-        ].map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg text-[10px] font-bold transition-all ${
-                isActive ? 'text-white bg-neutral-800/80' : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Icon className="w-5 h-5 mb-0.5" />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+      {/* ==============================================================
+          2. BOTTOM APP NAVIGATION DOCK (Billing, Dashboard, Settings)
+             Replaces top website navbar as requested by user
+         ============================================================== */}
+      <nav
+        aria-label="App Navigation"
+        className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] no-print py-1.5 px-4"
+      >
+        <div className="max-w-md mx-auto flex items-center justify-around">
+          {bottomTabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = tab.isActive;
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                className={`flex flex-col items-center justify-center py-1 px-4 sm:px-6 rounded-xl transition-all ${
+                  isActive
+                    ? 'text-black font-extrabold'
+                    : 'text-neutral-500 hover:text-black font-medium'
+                }`}
+              >
+                <div
+                  className={`p-1.5 rounded-lg transition-all ${
+                    isActive
+                      ? 'bg-black text-white shadow-xs'
+                      : 'bg-transparent text-neutral-600'
+                  }`}
+                >
+                  <Icon className="w-5 h-5 sm:w-5 sm:h-5" />
+                </div>
+                <span className="text-[11px] sm:text-xs mt-0.5 tracking-tight">
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
     </>
   );

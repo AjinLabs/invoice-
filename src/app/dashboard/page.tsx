@@ -14,23 +14,65 @@ import {
   ArrowUpRight,
   Receipt,
   FileSpreadsheet,
+  Download,
+  Store,
+  ShieldCheck,
+  CheckCircle,
 } from 'lucide-react';
 import { DashboardStats } from '@/lib/types';
 
 export default function DashboardPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [storesBreakdown, setStoresBreakdown] = useState<any>(null);
+  const [activeBranch, setActiveBranch] = useState<string>('vnb');
+  const [branchInfo, setBranchInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchStats();
+    checkAuthAndInit();
   }, []);
 
-  const fetchStats = async () => {
+  useEffect(() => {
+    if (currentUser) {
+      fetchStats();
+    }
+  }, [activeBranch]);
+
+  const checkAuthAndInit = async () => {
     try {
-      const res = await fetch('/api/dashboard/stats');
+      const authRes = await fetch('/api/auth/me');
+      const authData = await authRes.json();
+      let branchToUse = 'vnb';
+
+      if (authData.authenticated && authData.user) {
+        setCurrentUser(authData.user);
+        if (authData.user.branch) {
+          branchToUse = authData.user.branch;
+        } else if (authData.user.role === 'SUPER_ADMIN' || authData.user.username === 'admin') {
+          branchToUse = 'all'; // Default to all stores for Main Admin
+        }
+      }
+      setActiveBranch(branchToUse);
+      fetchStatsForBranch(branchToUse);
+    } catch {
+      fetchStatsForBranch('vnb');
+    }
+  };
+
+  const fetchStatsForBranch = async (branch: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/dashboard/stats?branch=${branch}`);
       const data = await res.json();
       if (data.success) {
         setStats(data.stats);
+        if (data.branchInfo) {
+          setBranchInfo(data.branchInfo);
+        }
+        if (data.storesBreakdown) {
+          setStoresBreakdown(data.storesBreakdown);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -38,6 +80,13 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   };
+
+  const fetchStats = () => {
+    fetchStatsForBranch(activeBranch);
+  };
+
+  const isMainAdmin =
+    currentUser?.role === 'SUPER_ADMIN' || currentUser?.username === 'admin';
 
   if (isLoading) {
     return (
@@ -52,35 +101,35 @@ export default function DashboardPage() {
       title: "Today's Net Sales",
       value: `₹${(stats?.todaySales || 0).toFixed(2)}`,
       icon: IndianRupee,
-      subtitle: `${stats?.todayOrders || 0} orders today (in cash/UPI)`,
+      subtitle: `${stats?.todayOrders || 0} orders realized today`,
       color: 'bg-black text-white',
     },
     {
       title: "Today's Exact Gross Value",
       value: `₹${(stats?.todayGrossSales || 0).toFixed(2)}`,
       icon: TrendingUp,
-      subtitle: 'Original dress value before discounts',
+      subtitle: 'Original item value before discounts',
       color: 'bg-white text-neutral-900 border border-neutral-200',
     },
     {
       title: "Today's Discount (Store Loss)",
       value: `₹${(stats?.todayDiscounts || 0).toFixed(2)}`,
       icon: TrendingUp,
-      subtitle: 'Store margin discount given today',
+      subtitle: 'Round off and loyalty concessions today',
       color: 'bg-rose-50 text-rose-950 border border-rose-200',
     },
     {
       title: 'Total Exact Gross Value',
       value: `₹${(stats?.totalGrossSales || 0).toFixed(2)}`,
       icon: Receipt,
-      subtitle: 'All-time total value of stock sold',
+      subtitle: 'All-time gross value of stock sold',
       color: 'bg-white text-neutral-900 border border-neutral-200',
     },
     {
       title: 'Total Discounts Given (Store Loss)',
       value: `₹${(stats?.totalDiscounts || 0).toFixed(2)}`,
       icon: TrendingUp,
-      subtitle: 'Customer savings / store margin loss',
+      subtitle: 'Customer savings / store margin concessions',
       color: 'bg-amber-50 text-amber-950 border border-amber-200',
     },
     {
@@ -91,21 +140,21 @@ export default function DashboardPage() {
       color: 'bg-emerald-950 text-emerald-100 border border-emerald-800',
     },
     {
-      title: 'Total Weight Sold',
+      title: 'Total Garments Sold (Weight)',
       value: `${((stats?.totalWeightSoldGrams || 0) / 1000).toFixed(2)} KG`,
       icon: Scale,
-      subtitle: `${stats?.totalWeightSoldGrams || 0} grams recorded`,
+      subtitle: `${stats?.totalWeightSoldGrams || 0} grams cloth sold`,
       color: 'bg-white text-neutral-900 border border-neutral-200',
     },
     {
-      title: 'Total Customers',
+      title: 'Registered Customers',
       value: stats?.totalCustomers || 0,
       icon: Users,
-      subtitle: 'Active database profiles',
+      subtitle: 'Unique phone numbers on record',
       color: 'bg-white text-neutral-900 border border-neutral-200',
     },
     {
-      title: 'Loyalty Rewards Redeemed',
+      title: 'Loyalty Rewards Claimed',
       value: stats?.rewardsRedeemedCount || 0,
       icon: Gift,
       subtitle: '50% OFF on 1 KG bonuses claimed',
@@ -113,36 +162,203 @@ export default function DashboardPage() {
     },
   ];
 
+  const getBranchTitle = () => {
+    if (activeBranch === 'all') return 'Master Dashboard (All Stores Combined)';
+    if (activeBranch === 'pkdm') return 'TERRY WOMEN - Pookkottumpadam Store';
+    return 'TERRY WOMEN - Vaniyambalam Store';
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+              Active Store View:
+            </span>
+            <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-neutral-900 text-white">
+              {activeBranch === 'all'
+                ? 'All Stores Combined'
+                : activeBranch === 'pkdm'
+                ? 'Pookkottumpadam (PKDM)'
+                : 'Vaniyambalam (VNB)'}
+            </span>
+          </div>
           <h1 className="text-2xl font-black tracking-tight text-neutral-900">
-            Store Performance & Analytics Dashboard
+            {getBranchTitle()}
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Real-time weight-based clothing sales, discount loss tracking, and loyalty program metrics.
+            Real-time branch sales revenue, weight metrics, discount concessions, and customer totals.
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Link
-            href="/reports"
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-neutral-300 rounded-lg text-xs font-bold text-neutral-700 hover:bg-neutral-50 shadow-xs"
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick Direct Download Buttons for Main Admin & Store Admin */}
+          <a
+            href={`/api/reports/export?type=purchases&branch=${activeBranch}`}
+            download
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-neutral-300 rounded-lg text-xs font-bold text-neutral-700 hover:bg-neutral-50 shadow-xs transition-colors"
           >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Export Reports</span>
-          </Link>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-black text-white rounded-lg text-xs font-bold hover:bg-neutral-800 shadow-xs"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Open POS Billing</span>
-          </Link>
+            <Download className="w-3.5 h-3.5" />
+            <span>Download Sales CSV</span>
+          </a>
+
+          {!isMainAdmin && (
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-black text-white rounded-lg text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Open POS Billing</span>
+            </Link>
+          )}
         </div>
       </div>
+
+      {/* ==============================================================
+          MAIN ADMIN EXCLUSIVE: SIDE-BY-SIDE STORE COMPARISON BREAKDOWN
+          User requested: "Main admin only needs to see dashboard sales details of VNB store and PKDM store"
+         ============================================================== */}
+      {isMainAdmin && storesBreakdown && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+              <Store className="w-5 h-5 text-neutral-800" />
+              <span>Store Branch Sales &amp; Concessions Breakdown</span>
+            </h2>
+            <span className="text-xs text-neutral-500 font-semibold">
+              Live Comparative Analytics
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Vaniyambalam Store Card */}
+            <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                    VNB
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-neutral-900">Vaniyambalam Store</h3>
+                    <p className="text-[11px] text-neutral-400">Railway Station Road</p>
+                  </div>
+                </div>
+                <a
+                  href="/api/reports/export?type=purchases&branch=vnb"
+                  download
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded text-xs font-bold transition-colors"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>Download VNB CSV</span>
+                </a>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-neutral-50 rounded-lg">
+                  <span className="text-neutral-500 text-[11px] block">Today&apos;s Net Sales</span>
+                  <span className="text-lg font-black font-mono text-black">
+                    ₹{(storesBreakdown.vnb?.todaySales || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 block mt-0.5">
+                    {storesBreakdown.vnb?.todayOrders || 0} orders today
+                  </span>
+                </div>
+                <div className="p-3 bg-rose-50/60 rounded-lg border border-rose-100">
+                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount (Loss)</span>
+                  <span className="text-lg font-black font-mono text-rose-700">
+                    -₹{(storesBreakdown.vnb?.todayDiscounts || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-rose-500 block mt-0.5">
+                    Concessions given
+                  </span>
+                </div>
+                <div className="p-3 bg-neutral-50 rounded-lg">
+                  <span className="text-neutral-500 text-[11px] block">All-Time Net Realized</span>
+                  <span className="text-base font-bold font-mono text-neutral-900">
+                    ₹{(storesBreakdown.vnb?.totalNetSales || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 block mt-0.5">
+                    {storesBreakdown.vnb?.totalOrders || 0} total invoices
+                  </span>
+                </div>
+                <div className="p-3 bg-neutral-50 rounded-lg">
+                  <span className="text-neutral-500 text-[11px] block">All-Time Total Discounts</span>
+                  <span className="text-base font-bold font-mono text-amber-700">
+                    ₹{(storesBreakdown.vnb?.totalDiscounts || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 block mt-0.5">
+                    Total customer savings
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Pookkottumpadam Store Card */}
+            <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
+                    PKDM
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-neutral-900">Pookkottumpadam Store</h3>
+                    <p className="text-[11px] text-neutral-400">Main Commercial Road</p>
+                  </div>
+                </div>
+                <a
+                  href="/api/reports/export?type=purchases&branch=pkdm"
+                  download
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded text-xs font-bold transition-colors"
+                >
+                  <Download className="w-3 h-3" />
+                  <span>Download PKDM CSV</span>
+                </a>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-neutral-50 rounded-lg">
+                  <span className="text-neutral-500 text-[11px] block">Today&apos;s Net Sales</span>
+                  <span className="text-lg font-black font-mono text-black">
+                    ₹{(storesBreakdown.pkdm?.todaySales || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 block mt-0.5">
+                    {storesBreakdown.pkdm?.todayOrders || 0} orders today
+                  </span>
+                </div>
+                <div className="p-3 bg-rose-50/60 rounded-lg border border-rose-100">
+                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount (Loss)</span>
+                  <span className="text-lg font-black font-mono text-rose-700">
+                    -₹{(storesBreakdown.pkdm?.todayDiscounts || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-rose-500 block mt-0.5">
+                    Concessions given
+                  </span>
+                </div>
+                <div className="p-3 bg-neutral-50 rounded-lg">
+                  <span className="text-neutral-500 text-[11px] block">All-Time Net Realized</span>
+                  <span className="text-base font-bold font-mono text-neutral-900">
+                    ₹{(storesBreakdown.pkdm?.totalNetSales || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 block mt-0.5">
+                    {storesBreakdown.pkdm?.totalOrders || 0} total invoices
+                  </span>
+                </div>
+                <div className="p-3 bg-neutral-50 rounded-lg">
+                  <span className="text-neutral-500 text-[11px] block">All-Time Total Discounts</span>
+                  <span className="text-base font-bold font-mono text-amber-700">
+                    ₹{(storesBreakdown.pkdm?.totalDiscounts || 0).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 block mt-0.5">
+                    Total customer savings
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Core Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -173,52 +389,61 @@ export default function DashboardPage() {
         <div className="lg:col-span-8 bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-neutral-900">7-Day Sales & Loss Breakdown</h3>
-              <p className="text-[11px] text-neutral-500">Gross exact value vs Discount concessions (Store Loss) vs Net realized revenue</p>
+              <h3 className="text-sm font-bold text-neutral-900">7-Day Sales &amp; Discount Breakdown</h3>
+              <p className="text-[11px] text-neutral-500">
+                Gross exact value vs Discount concessions vs Net realized revenue
+              </p>
             </div>
-            <Calendar className="w-4 h-4 text-neutral-400" />
+            <a
+              href={`/api/reports/export?type=purchases&branch=${activeBranch}`}
+              className="text-xs text-neutral-700 hover:text-black font-bold flex items-center gap-1"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export CSV</span>
+            </a>
           </div>
 
-          <div className="space-y-3 pt-2">
-            {stats?.salesByDay?.map((day) => {
-              const maxAmount = Math.max(...(stats.salesByDay.map((d) => d.gross_amount || d.amount) || [1]), 1000);
-              const percentage = Math.min(100, Math.max(8, ((day.amount || 0) / maxAmount) * 100));
-              const dateFormatted = new Date(day.date).toLocaleDateString('en-IN', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-              });
+          <div className="space-y-4 pt-2">
+            {stats?.salesByDay && stats.salesByDay.length > 0 ? (
+              stats.salesByDay.map((day) => {
+                const maxAmount = Math.max(...(stats.salesByDay || []).map((d) => d.gross_amount || 1), 1);
+                const grossPct = Math.min(100, Math.round(((day.gross_amount || 0) / maxAmount) * 100));
+                const netPct = Math.min(100, Math.round(((day.amount || 0) / maxAmount) * 100));
 
-              return (
-                <div key={day.date} className="p-2.5 rounded-lg border border-neutral-100 bg-neutral-50/50 space-y-1.5">
-                  <div className="flex flex-wrap items-center justify-between text-xs gap-1">
-                    <span className="font-bold text-neutral-800">{dateFormatted}</span>
-                    <span className="text-neutral-500 text-[11px]">
-                      {day.orders} orders ({day.weight_kg} KG)
-                    </span>
-                    <div className="flex items-center gap-3 font-mono text-[11px]">
-                      <span className="text-neutral-500">
-                        Gross: <strong className="text-neutral-900 font-bold">₹{(day.gross_amount || day.amount).toFixed(2)}</strong>
-                      </span>
-                      {day.discount_loss > 0 && (
-                        <span className="text-rose-600 font-bold">
-                          Loss: -₹{day.discount_loss.toFixed(2)}
+                return (
+                  <div key={day.date} className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-semibold text-neutral-700 font-mono">{day.date}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-neutral-400 text-[11px]">
+                          {day.orders} orders &bull; {day.weight_kg} KG
                         </span>
-                      )}
-                      <span className="bg-black text-white px-2 py-0.5 rounded font-bold">
-                        Net: ₹{day.amount.toFixed(2)}
-                      </span>
+                        {day.discount_loss > 0 && (
+                          <span className="text-rose-600 font-mono text-[11px] font-semibold">
+                            Discount: -₹{day.discount_loss.toFixed(0)}
+                          </span>
+                        )}
+                        <span className="font-bold text-black font-mono">
+                          ₹{day.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Visual Progress Bar */}
+                    <div className="w-full bg-neutral-100 h-2.5 rounded-full overflow-hidden flex">
+                      <div
+                        className="bg-black h-full rounded-full transition-all duration-300"
+                        style={{ width: `${netPct}%` }}
+                        title={`Net Realized: ₹${day.amount}`}
+                      />
                     </div>
                   </div>
-                  <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-black h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="py-8 text-center text-xs text-neutral-400">
+                No purchases recorded in the last 7 days.
+              </div>
+            )}
           </div>
         </div>
 
@@ -227,92 +452,135 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-neutral-900">Payment Breakdown</h3>
-              <p className="text-[11px] text-neutral-500">Distribution across payment modes</p>
+              <p className="text-[11px] text-neutral-500">Revenue split by payment type</p>
             </div>
             <CreditCard className="w-4 h-4 text-neutral-400" />
           </div>
 
           <div className="space-y-3 pt-2">
-            {stats?.salesByPayment?.map((pay) => (
-              <div
-                key={pay.method}
-                className="p-3 rounded-lg border border-neutral-100 bg-neutral-50/70 flex justify-between items-center text-xs"
-              >
-                <div>
-                  <span className="font-bold text-neutral-800 block">{pay.method}</span>
-                  <span className="text-[11px] text-neutral-500">{pay.count} transactions</span>
-                </div>
-                <div className="text-right">
-                  <span className="font-bold font-mono text-neutral-900">₹{pay.amount.toFixed(2)}</span>
-                </div>
+            {stats?.salesByPayment && stats.salesByPayment.length > 0 ? (
+              stats.salesByPayment.map((p) => {
+                const total = stats.totalNetSales || 1;
+                const pct = Math.round((p.amount / total) * 100) || 0;
+                return (
+                  <div key={p.method} className="space-y-1.5 p-3 rounded-lg bg-neutral-50 border border-neutral-100">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="font-bold text-neutral-900">{p.method}</span>
+                      <span className="font-mono font-bold text-black">
+                        ₹{p.amount.toFixed(2)} ({pct}%)
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-neutral-500">
+                      <span>{p.count} bills</span>
+                    </div>
+                    <div className="w-full bg-neutral-200 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="bg-neutral-900 h-full rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center text-xs text-neutral-400">
+                No payment data available.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
 
-      {/* Recent Purchases Audit List */}
+      {/* Recent Invoices Table */}
       <div className="bg-white rounded-xl border border-neutral-200 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-neutral-200 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-neutral-900">Recent Completed Purchases</h3>
-          <Link
-            href="/invoices"
-            className="text-xs font-bold text-neutral-600 hover:text-black flex items-center gap-1"
-          >
-            <span>View All Invoices</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </Link>
+        <div className="p-6 border-b border-neutral-100 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-neutral-900">Recent Completed Invoices</h3>
+            <p className="text-[11px] text-neutral-500">
+              Latest transactions for {getBranchTitle()}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={`/api/reports/export?type=purchases&branch=${activeBranch}`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-xs font-bold transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download CSV</span>
+            </a>
+            <Link
+              href="/invoices"
+              className="inline-flex items-center gap-1 text-xs font-bold text-neutral-700 hover:text-black"
+            >
+              <span>View All</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-50 border-b border-neutral-200 text-neutral-600 uppercase font-semibold">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-neutral-50 text-neutral-500 uppercase font-bold text-[10px] tracking-wider border-b border-neutral-200">
               <tr>
-                <th className="py-3 px-4">Invoice No</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Customer</th>
-                <th className="py-3 px-4">Weight</th>
-                <th className="py-3 px-4">Subtotal</th>
-                <th className="py-3 px-4">Discount</th>
-                <th className="py-3 px-4">Final Amount</th>
-                <th className="py-3 px-4">Payment</th>
-                <th className="py-3 px-4">Loyalty</th>
+                <th className="px-6 py-3">Invoice</th>
+                <th className="px-6 py-3">Branch</th>
+                <th className="px-6 py-3">Customer</th>
+                <th className="px-6 py-3">Weight</th>
+                <th className="px-6 py-3">Gross</th>
+                <th className="px-6 py-3">Discount</th>
+                <th className="px-6 py-3">Net Realized</th>
+                <th className="px-6 py-3">Payment</th>
+                <th className="px-6 py-3">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 font-medium">
-              {stats?.recentPurchases?.map((p) => (
-                <tr key={p.id} className="hover:bg-neutral-50 transition-colors">
-                  <td className="py-3 px-4 font-mono font-bold text-neutral-900">{p.invoice_number}</td>
-                  <td className="py-3 px-4 text-neutral-500">
-                    {new Date(p.created_at).toLocaleDateString('en-IN', {
-                      day: '2-digit',
-                      month: 'short',
-                    })}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="font-bold text-neutral-900 block">{p.customer_name}</span>
-                    <span className="text-[10px] text-neutral-400 font-mono">{p.customer_phone}</span>
-                  </td>
-                  <td className="py-3 px-4">{p.weight_grams}g ({p.weight_kg}kg)</td>
-                  <td className="py-3 px-4 font-mono">₹{p.subtotal.toFixed(2)}</td>
-                  <td className="py-3 px-4 text-emerald-600 font-bold font-mono">
-                    {p.discount_amount > 0 ? `-₹${p.discount_amount.toFixed(2)}` : '-'}
-                  </td>
-                  <td className="py-3 px-4 font-bold font-mono text-neutral-900">
-                    ₹{p.final_amount.toFixed(2)}
-                  </td>
-                  <td className="py-3 px-4 font-semibold text-neutral-700">{p.payment_method}</td>
-                  <td className="py-3 px-4">
-                    {p.loyalty_applied ? (
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">
-                        Redeemed
-                      </span>
-                    ) : (
-                      <span className="text-neutral-500 text-[11px]">{p.loyalty_progress_after}/5</span>
-                    )}
+              {stats?.recentPurchases && stats.recentPurchases.length > 0 ? (
+                stats.recentPurchases.slice(0, 10).map((p) => {
+                  const discount = Math.max(0, p.subtotal - p.final_amount);
+                  return (
+                    <tr key={p.id} className="hover:bg-neutral-50/80 transition-colors">
+                      <td className="px-6 py-3.5 font-bold font-mono text-black">
+                        {p.invoice_number}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-700">
+                          {p.branch === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <div className="font-bold text-neutral-900">{p.customer_name}</div>
+                        <div className="text-[11px] text-neutral-400 font-mono">{p.customer_phone}</div>
+                      </td>
+                      <td className="px-6 py-3.5 font-mono">
+                        {p.weight_kg ? `${p.weight_kg.toFixed(2)} KG` : `${p.weight_grams}g`}
+                      </td>
+                      <td className="px-6 py-3.5 font-mono text-neutral-600">
+                        ₹{p.subtotal.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-3.5 font-mono text-rose-600 font-semibold">
+                        {discount > 0 ? `-₹${discount.toFixed(2)}` : '₹0.00'}
+                      </td>
+                      <td className="px-6 py-3.5 font-mono font-black text-black">
+                        ₹{p.final_amount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-800">
+                          {p.payment_method}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3.5 text-neutral-400 text-[11px] whitespace-nowrap">
+                        {new Date(p.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={9} className="px-6 py-8 text-center text-neutral-400">
+                    No completed invoices recorded yet.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

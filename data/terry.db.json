@@ -4,9 +4,27 @@
       "id": "usr_admin",
       "username": "admin",
       "password_hash": "$2b$10$na.RAuke1Gypn8EuVGRfeuwDc2vk3fcjJCWPiAaGM2.PGRr3T2HXW",
-      "role": "ADMIN",
+      "role": "SUPER_ADMIN",
       "name": "Terry Store Manager",
       "created_at": "2026-10-08T04:25:34.390Z"
+    },
+    {
+      "id": "usr_vnb",
+      "username": "adminvnb",
+      "password_hash": "$2b$10$bLA8gEGxkkLFwAC9ALjJ3eiHyRbAkdo5r2EGy2qdKcupk7pRO.rae",
+      "role": "ADMIN",
+      "name": "Store Manager (Vaniyambalam)",
+      "branch": "vnb",
+      "created_at": "2026-10-17T06:46:35.656Z"
+    },
+    {
+      "id": "usr_pkdm",
+      "username": "adminpkdm",
+      "password_hash": "$2b$10$v1trLYTUZtVfocAENM.3Me8owUPiMs9VUIMqykjCKuAK/BGbwNbCq",
+      "role": "ADMIN",
+      "name": "Store Manager (Pookkottumpadam)",
+      "branch": "pkdm",
+      "created_at": "2026-10-17T06:46:35.792Z"
     }
   ],
   "customers": [
@@ -144,7 +162,8 @@
       "loyalty_progress_after": 0,
       "loyalty_message": "🎁 50% OFF on 1 KG Loyalty Reward applied (-₹449.50)! Thank you for shopping with us!",
       "created_at": "2026-10-07T04:25:34.391Z",
-      "updated_at": "2026-10-07T04:25:34.391Z"
+      "updated_at": "2026-10-07T04:25:34.391Z",
+      "branch": "vnb"
     },
     {
       "id": "pur_1002",
@@ -166,7 +185,8 @@
       "loyalty_progress_after": 5,
       "loyalty_message": "Minimum 1 KG purchase required to use your ₹299 reward. Your reward remains active for your next 1 KG+ purchase!",
       "created_at": "2026-10-08T00:25:34.391Z",
-      "updated_at": "2026-10-08T00:25:34.391Z"
+      "updated_at": "2026-10-08T00:25:34.391Z",
+      "branch": "vnb"
     },
     {
       "id": "pur_muz1j4yx_ool9cp",
@@ -198,7 +218,8 @@
           "rate_per_kg": 899,
           "amount": 1078.8
         }
-      ]
+      ],
+      "branch": "vnb"
     },
     {
       "id": "pur_muz1lhhr_2hoe1u",
@@ -230,7 +251,8 @@
           "rate_per_kg": 899,
           "amount": 899
         }
-      ]
+      ],
+      "branch": "vnb"
     },
     {
       "id": "pur_muz8e0x4_vdy9fg",
@@ -263,7 +285,8 @@
           "amount": 899
         }
       ],
-      "invoice_image_url": "/api/invoices/pur_muz8e0x4_vdy9fg/image"
+      "invoice_image_url": "/api/invoices/pur_muz8e0x4_vdy9fg/image",
+      "branch": "vnb"
     },
     {
       "id": "pur_muzitofp_kwrc42",
@@ -296,7 +319,8 @@
           "rate_per_kg": 899,
           "amount": 899
         }
-      ]
+      ],
+      "branch": "vnb"
     },
     {
       "id": "pur_muziwbun_luy6gh",
@@ -330,7 +354,8 @@
           "amount": 1078.8
         }
       ],
-      "invoice_image_url": "/api/invoices/pur_muziwbun_luy6gh/image"
+      "invoice_image_url": "/api/invoices/pur_muziwbun_luy6gh/image",
+      "branch": "vnb"
     },
     {
       "id": "pur_muzj6tuy_xl5msi",
@@ -364,7 +389,8 @@
           "amount": 1798
         }
       ],
-      "invoice_image_url": "/api/invoices/pur_muzj6tuy_xl5msi/image"
+      "invoice_image_url": "/api/invoices/pur_muzj6tuy_xl5msi/image",
+      "branch": "vnb"
     },
     {
       "id": "pur_muzjuztr_zljy5l",
@@ -397,7 +423,8 @@
           "rate_per_kg": 899,
           "amount": 1078.8
         }
-      ]
+      ],
+      "branch": "vnb"
     },
     {
       "id": "pur_muzjym1o_ro7ced",
@@ -430,7 +457,8 @@
           "rate_per_kg": 899,
           "amount": 1078.8
         }
-      ]
+      ],
+      "branch": "vnb"
     },
     {
       "id": "pur_muzjz6ga_o8axug",
@@ -463,7 +491,8 @@
           "rate_per_kg": 899,
           "amount": 1348.5
         }
-      ]
+      ],
+      "branch": "vnb"
     }
   ],
   "purchase_items": [],
@@ -724,7 +753,29 @@
       "reward_unlocked": "🎉 Congratulations {{customer_name}}!\nYour 50% OFF on 1 KG loyalty reward is now unlocked.\nUse it on your next purchase of 1 KG or more to get 1 KG dress at half price!\nThank you for being our loyal customer ❤️",
       "reward_redeemed": "🎁 Your 50% OFF on 1 KG loyalty reward (₹449.50 discount) has been successfully applied to this purchase.\nThank you for shopping with us!"
     },
-    "updated_at": "2026-10-08T12:44:50.082Z"
+    "updated_at": "2026-10-08T12:44:50.082Z",
+    "branches": {
+      "vnb": {
+        "id": "vnb",
+        "name": "TERRY WOMEN - Vaniyambalam",
+        "town": "Vaniyambalam",
+        "malayalamName": "വാണിയമ്പലം",
+        "address": "Near Town Hall & Railway Station, Vaniyambalam, Malappuram - 679339",
+        "phone": "+91 7736723917",
+        "prefix": "VNB",
+        "rate_per_kg": 899
+      },
+      "pkdm": {
+        "id": "pkdm",
+        "name": "TERRY WOMEN - Pookkottumpadam",
+        "town": "Pookkottumpadam",
+        "malayalamName": "പൂക്കോട്ടുംപാടം",
+        "address": "Main Commercial Road, Pookkottumpadam, Malappuram - 679332",
+        "phone": "+91 7736723917",
+        "prefix": "PKDM",
+        "rate_per_kg": 899
+      }
+    }
   },
   "meta": {
     "invoice_sequence": 112,

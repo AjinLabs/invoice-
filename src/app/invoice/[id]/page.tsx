@@ -144,6 +144,9 @@ function InvoiceContent() {
               year: 'numeric',
             })}
             settings={settings || undefined}
+            items={purchase.items}
+            branch={purchase.branch}
+            branchName={purchase.branch_name}
           />
         </div>
 

@@ -9,7 +9,38 @@ import {
   LoyaltyTransaction,
   WhatsAppMessage,
   ShopSettings,
+  BranchId,
+  BranchInfo,
 } from './types';
+
+export const DEFAULT_BRANCHES: Record<BranchId, BranchInfo> = {
+  vnb: {
+    id: 'vnb',
+    name: 'TERRY WOMEN - Vaniyambalam',
+    town: 'Vaniyambalam',
+    code: 'VNB',
+    address: 'Near Town Hall & Railway Station, Vaniyambalam, Malappuram - 679339',
+    phone: '+91 7736723917',
+    prefix: 'VNB',
+    rate_per_kg: 899,
+  },
+  pkdm: {
+    id: 'pkdm',
+    name: 'TERRY WOMEN - Pookkottumpadam',
+    town: 'Pookkottumpadam',
+    code: 'PKDM',
+    address: 'Main Commercial Road, Pookkottumpadam, Malappuram - 679332',
+    phone: '+91 7736723917',
+    prefix: 'PKDM',
+    rate_per_kg: 899,
+  },
+};
+
+export function getBranchInfo(db: DatabaseSchema, branchId?: BranchId | string | null): BranchInfo {
+  const branches = db.shop_settings?.branches || DEFAULT_BRANCHES;
+  if (branchId === 'pkdm') return branches.pkdm || DEFAULT_BRANCHES.pkdm;
+  return branches.vnb || DEFAULT_BRANCHES.vnb;
+}
 
 export interface DatabaseSchema {
   users: User[];
@@ -103,6 +134,8 @@ export function normalizePhone(raw: string): string {
 // Initial Seed Data as strictly mandated in prompt requirements 25 & 26
 function createInitialSeed(): DatabaseSchema {
   const adminPasswordHash = bcrypt.hashSync('admin123', 10);
+  const vnbPasswordHash = bcrypt.hashSync('vnb123', 10);
+  const pkdmPasswordHash = bcrypt.hashSync('pkdm123', 10);
   const now = new Date().toISOString();
 
   const users: User[] = [
@@ -110,17 +143,35 @@ function createInitialSeed(): DatabaseSchema {
       id: 'usr_admin',
       username: 'admin',
       password_hash: adminPasswordHash,
+      role: 'SUPER_ADMIN',
+      name: 'Terry General Manager',
+      created_at: now,
+    },
+    {
+      id: 'usr_vnb',
+      username: 'adminvnb',
+      password_hash: vnbPasswordHash,
       role: 'ADMIN',
-      name: 'Terry Store Manager',
+      name: 'Store Manager (Vaniyambalam)',
+      branch: 'vnb',
+      created_at: now,
+    },
+    {
+      id: 'usr_pkdm',
+      username: 'adminpkdm',
+      password_hash: pkdmPasswordHash,
+      role: 'ADMIN',
+      name: 'Store Manager (Pookkottumpadam)',
+      branch: 'pkdm',
       created_at: now,
     },
   ];
 
   const shop_settings: ShopSettings = {
     id: 'settings_default',
-    shop_name: 'TERRY',
+    shop_name: 'TERRY WOMEN',
     logo_url: '/logo.png',
-    address: 'Near Town Center, Main Commercial Road, Calicut - 673001',
+    address: 'Near Railway Station Road, Vaniyambalam, Malappuram - 679339',
     phone: '+91 7736723917',
     whatsapp_number: '+91 7736723917',
     gstin: '32AAAAA0000A1Z5',
@@ -132,6 +183,7 @@ function createInitialSeed(): DatabaseSchema {
     whatsapp_api_version: 'v20.0',
     whatsapp_verify_token: 'terry_verify_token_2026',
     round_off_mode: 'FLOOR_10',
+    branches: DEFAULT_BRANCHES,
     message_templates: {
       purchase_confirmation: 'Hi {{customer_name}} 👋\nThank you for shopping with us!\nYour purchase of {{weight}} has been recorded.\nInvoice Amount: ₹{{amount}}\nLoyalty progress: {{loyalty_count}}/5.\nThank you ❤️',
       loyalty_progress: 'Hi {{customer_name}} 👋\nYou have completed {{count}} purchases.\nOnly {{remaining}} more purchase(s) to unlock your 50% OFF on 1 KG loyalty reward 🎁\nKeep shopping with us!',
@@ -312,6 +364,75 @@ export function readDb(): DatabaseSchema {
   try {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     const parsed = JSON.parse(raw) as DatabaseSchema;
+
+    let modified = false;
+    if (!parsed.users) parsed.users = [];
+
+    // Ensure adminvnb exists
+    if (!parsed.users.some((u) => u.username.toLowerCase() === 'adminvnb')) {
+      parsed.users.push({
+        id: 'usr_vnb',
+        username: 'adminvnb',
+        password_hash: bcrypt.hashSync('vnb123', 10),
+        role: 'ADMIN',
+        name: 'Store Manager (Vaniyambalam)',
+        branch: 'vnb',
+        created_at: new Date().toISOString(),
+      });
+      modified = true;
+    }
+
+    // Ensure adminpkdm exists
+    if (!parsed.users.some((u) => u.username.toLowerCase() === 'adminpkdm')) {
+      parsed.users.push({
+        id: 'usr_pkdm',
+        username: 'adminpkdm',
+        password_hash: bcrypt.hashSync('pkdm123', 10),
+        role: 'ADMIN',
+        name: 'Store Manager (Pookkottumpadam)',
+        branch: 'pkdm',
+        created_at: new Date().toISOString(),
+      });
+      modified = true;
+    }
+
+    // Ensure super admin role is set
+    const mainAdmin = parsed.users.find((u) => u.username.toLowerCase() === 'admin');
+    if (mainAdmin && mainAdmin.role !== 'SUPER_ADMIN') {
+      mainAdmin.role = 'SUPER_ADMIN';
+      modified = true;
+    }
+
+    // Ensure branch settings
+    if (!parsed.shop_settings) {
+      parsed.shop_settings = createInitialSeed().shop_settings;
+      modified = true;
+    }
+    if (!parsed.shop_settings.branches) {
+      parsed.shop_settings.branches = DEFAULT_BRANCHES;
+      modified = true;
+    }
+
+    // Ensure all purchases have branch
+    if (parsed.purchases) {
+      for (const p of parsed.purchases) {
+        if (!p.branch) {
+          p.branch = 'vnb';
+          modified = true;
+        }
+      }
+    }
+
+    if (modified) {
+      try {
+        const tempFile = `${DB_FILE}.tmp`;
+        fs.writeFileSync(tempFile, JSON.stringify(parsed, null, 2), 'utf-8');
+        fs.renameSync(tempFile, DB_FILE);
+      } catch (writeErr) {
+        console.warn('Could not persist auto-migrated database to disk:', writeErr);
+      }
+    }
+
     (globalThis as any).__TERRY_DB_CACHE__ = parsed;
     return parsed;
   } catch (err) {

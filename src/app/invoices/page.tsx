@@ -322,6 +322,9 @@ export default function InvoicesPage() {
               paymentMethod={viewPurchase.payment_method}
               invoiceNumber={viewPurchase.invoice_number}
               settings={shopSettings || undefined}
+              items={viewPurchase.items}
+              branch={viewPurchase.branch}
+              branchName={viewPurchase.branch_name}
             />
           </div>
         </div>

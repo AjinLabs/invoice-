@@ -1,5 +1,13 @@
 import { Customer, ShopSettings, RoundOffMode } from './types';
 
+export interface CustomItemInput {
+  id?: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  amount?: number;
+}
+
 export interface BillingCalculationInput {
   weight: number;
   unit: 'g' | 'kg';
@@ -9,12 +17,15 @@ export interface BillingCalculationInput {
   roundOffMode?: RoundOffMode;
   manualAmount?: number | string;
   customRoundOff?: number;
+  customItems?: CustomItemInput[];
 }
 
 export interface BillingCalculationResult {
   weightGrams: number;
   weightKg: number;
   ratePerKg: number;
+  kiloSubtotal: number;
+  customItemsSubtotal: number;
   subtotal: number;
   isRewardUnlocked: boolean;
   canApplyReward: boolean;
@@ -28,6 +39,7 @@ export interface BillingCalculationResult {
   loyaltyMessage: string;
   nextLoyaltyCount: number;
   nextRewardUnlocked: boolean;
+  customItems?: CustomItemInput[];
 }
 
 /**
@@ -39,23 +51,39 @@ export function calculateBilling(input: BillingCalculationInput): BillingCalcula
   const requiredVisits = input.shopSettings?.required_visits ?? 5;
 
   // 50% discount on 1000g (1 KG)
-  // Regular 1000g price = 1.0 * ratePerKg
-  // Half price discount on 1000g = ratePerKg * 0.5
   const halfPrice1kgDiscount = Math.round((ratePerKg * 0.5) * 100) / 100;
   const rewardAmount = input.shopSettings?.loyalty_discount && input.shopSettings.loyalty_discount !== 299
     ? input.shopSettings.loyalty_discount
     : halfPrice1kgDiscount;
 
   // Normalize weight to grams and kilograms
+  const safeWeight = Math.max(0, Number(input.weight) || 0);
   const weightGrams = input.unit === 'kg' 
-    ? Math.round(input.weight * 1000) 
-    : Math.round(input.weight);
+    ? Math.round(safeWeight * 1000) 
+    : Math.round(safeWeight);
 
   const weightKg = Number((weightGrams / 1000).toFixed(3));
 
-  // Subtotal = grams * rate / 1000
-  const rawSubtotal = (weightGrams * ratePerKg) / 1000;
-  const subtotal = Math.round(rawSubtotal * 100) / 100;
+  // Kilo Subtotal = grams * rate / 1000
+  const rawKiloSubtotal = (weightGrams * ratePerKg) / 1000;
+  const kiloSubtotal = Math.round(rawKiloSubtotal * 100) / 100;
+
+  // Custom Items Subtotal
+  const customItems = (input.customItems || []).map((ci, idx) => {
+    const qty = Math.max(1, Number(ci.quantity) || 1);
+    const uPrice = Math.max(0, Number(ci.unitPrice) || 0);
+    const itemAmount = Math.round(qty * uPrice * 100) / 100;
+    return {
+      id: ci.id || `item_${idx}_${Date.now()}`,
+      name: ci.name.trim() || 'Custom Item',
+      quantity: qty,
+      unitPrice: uPrice,
+      amount: itemAmount,
+    };
+  });
+
+  const customItemsSubtotal = customItems.reduce((acc, ci) => acc + (ci.amount || 0), 0);
+  const subtotal = Math.round((kiloSubtotal + customItemsSubtotal) * 100) / 100;
 
   let isRewardUnlocked = false;
   let canApplyReward = false;
@@ -167,10 +195,14 @@ export function calculateBilling(input: BillingCalculationInput): BillingCalcula
     baseAmount,
     roundOffAmount,
     roundOffMode,
+    manualAmount: manualNumeric,
     finalAmount,
     loyaltyMessage,
     nextLoyaltyCount,
     nextRewardUnlocked,
+    kiloSubtotal,
+    customItemsSubtotal,
+    customItems,
   };
 }
 

@@ -1,8 +1,8 @@
 import jsPDF from 'jspdf';
-import { Purchase, ShopSettings } from './types';
+import { Purchase, ShopSettings, PurchaseItem } from './types';
 
 /**
- * Generate a clean, elegant PDF invoice matching the retail Cash Memo standard
+ * Generate a clean, elegant PDF invoice matching the reference invoice design
  */
 export function generateInvoicePdf(purchase: Purchase, settings: ShopSettings): jsPDF {
   const doc = new jsPDF({
@@ -12,212 +12,171 @@ export function generateInvoicePdf(purchase: Purchase, settings: ShopSettings): 
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
-  let y = 14;
+  let y = 16;
 
-  // Header Bar: GSTIN & Cash Memo
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`GSTIN: ${settings.gstin || '32AAAAA0000A1Z5'}`, 12, y);
+  const branchName = purchase.branch_name || settings.shop_name || 'TERRY WOMEN';
+  const branchAddress = settings.address;
+  const branchPhone = settings.phone || '+91 7736723917';
+
+  // 1. Top Section: Shop Name / Brand on Left, "INVOICE" on Right
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text('CASH MEMO / INVOICE', pageWidth / 2, y, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Tel: ${settings.phone}`, pageWidth - 12, y, { align: 'right' });
+  doc.text(branchName.toUpperCase(), 14, y);
+
+  doc.setFontSize(20);
+  doc.setFont('times', 'bold');
+  doc.text('INVOICE', pageWidth - 14, y, { align: 'right' });
 
   y += 5;
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.4);
-  doc.line(12, y, pageWidth - 12, y);
-
-  // Shop Name & Brand
-  y += 9;
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.text(settings.shop_name, pageWidth / 2, y, { align: 'center' });
-
-  y += 5;
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'normal');
-  doc.text('Exclusive Women\'s Wear, Boutique Collections & Readymade Garments', pageWidth / 2, y, { align: 'center' });
-
-  y += 4;
   doc.setFontSize(7.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text(settings.address, pageWidth / 2, y, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(90, 90, 90);
+  doc.text(branchAddress, 14, y);
+  doc.text(`Tel: ${branchPhone}`, 14, y + 3.5);
   doc.setTextColor(0, 0, 0);
 
-  // Deals in banner
-  y += 4;
-  doc.setFillColor(0, 0, 0);
-  doc.rect(12, y, pageWidth - 24, 5.5, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.text('DEALS IN: LADIES READYMADE GARMENTS, DRESS MATERIALS & WEIGHT-BASED TEXTILES', pageWidth / 2, y + 3.8, { align: 'center' });
-  doc.setTextColor(0, 0, 0);
-
-  // Customer & Invoice Details Table Box
   y += 8;
   doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.3);
-  doc.rect(12, y, pageWidth - 24, 22);
+  doc.setLineWidth(0.4);
+  doc.line(14, y, pageWidth - 14, y);
 
-  doc.setFontSize(8.5);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Invoice No:', 15, y + 5);
-  doc.setFont('helvetica', 'normal');
-  doc.text(purchase.invoice_number, 33, y + 5);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Date:', pageWidth - 55, y + 5);
-  doc.setFont('helvetica', 'normal');
-  const dateStr = new Date(purchase.created_at).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-  doc.text(dateStr, pageWidth - 45, y + 5);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Customer:', 15, y + 11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(purchase.customer_name, 33, y + 11);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Payment:', pageWidth - 55, y + 11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(purchase.payment_method, pageWidth - 40, y + 11);
-
-  doc.setFont('helvetica', 'bold');
-  doc.text('Phone No:', 15, y + 17);
-  doc.setFont('helvetica', 'normal');
-  doc.text(purchase.customer_phone, 33, y + 17);
-
-  if (purchase.customer_address) {
-    doc.setFont('helvetica', 'bold');
-    doc.text('City:', pageWidth - 55, y + 17);
-    doc.setFont('helvetica', 'normal');
-    doc.text(purchase.customer_address, pageWidth - 47, y + 17);
-  }
-
-  // Items Table
-  y += 25;
-  const colSr = 12;
-  const colDesc = 24;
-  const colRate = 80;
-  const colWeight = 100;
-  const colAmt = pageWidth - 12;
-
-  // Table Header
-  doc.setFillColor(245, 245, 245);
-  doc.rect(12, y, pageWidth - 24, 7, 'FD');
+  // 2. BILLED TO & Invoice Meta
+  y += 6;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('Sr.', colSr + 3, y + 4.8);
-  doc.text('Description of Goods', colDesc, y + 4.8);
-  doc.text('Rate / KG', colRate, y + 4.8);
-  doc.text('Weight (Qty)', colWeight, y + 4.8);
-  doc.text('Amount (Rs)', colAmt - 3, y + 4.8, { align: 'right' });
-
-  // Main Item Row
-  y += 7;
-  doc.rect(12, y, pageWidth - 24, 8);
-  doc.setFont('helvetica', 'normal');
-  doc.text('1', colSr + 3, y + 5.5);
-  doc.text('Ladies Dress Material / Garment', colDesc, y + 5.5);
-  doc.text(`₹${purchase.rate_per_kg}`, colRate, y + 5.5);
-  doc.text(`${purchase.weight_grams}g (${purchase.weight_kg.toFixed(2)} KG)`, colWeight, y + 5.5);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`₹${purchase.subtotal.toFixed(2)}`, colAmt - 3, y + 5.5, { align: 'right' });
-
-  // Discount Row if applied
-  if (purchase.discount_amount > 0) {
-    y += 8;
-    doc.rect(12, y, pageWidth - 24, 8);
-    doc.setFont('helvetica', 'normal');
-    doc.text('2', colSr + 3, y + 5.5);
-    doc.text('🎁 6th Visit Loyalty Reward (50% OFF on 1 KG)', colDesc, y + 5.5);
-    doc.text('-', colRate, y + 5.5);
-    doc.text('-', colWeight, y + 5.5);
-    doc.setTextColor(0, 120, 0);
-    doc.text(`-₹${purchase.discount_amount.toFixed(2)}`, colAmt - 3, y + 5.5, { align: 'right' });
-    doc.setTextColor(0, 0, 0);
-  }
-
-  // Summary Totals
-  y += 12;
-  const summaryX = pageWidth - 65;
+  doc.text('BILLED TO:', 14, y);
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('Subtotal:', summaryX, y);
-  doc.text(`₹${purchase.subtotal.toFixed(2)}`, colAmt - 3, y, { align: 'right' });
+  doc.text(`Invoice No. ${purchase.invoice_number}`, pageWidth - 14, y, { align: 'right' });
 
-  if (purchase.discount_amount > 0) {
-    y += 5;
-    doc.text('50% OFF 1KG Discount:', summaryX, y);
-    doc.setTextColor(0, 120, 0);
-    doc.text(`-₹${purchase.discount_amount.toFixed(2)}`, colAmt - 3, y, { align: 'right' });
-    doc.setTextColor(0, 0, 0);
+  y += 4.5;
+  doc.setFont('helvetica', 'bold');
+  doc.text(purchase.customer_name, 14, y);
+
+  const dateFormatted = new Date(purchase.created_at).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+  doc.setFont('helvetica', 'normal');
+  doc.text(dateFormatted, pageWidth - 14, y, { align: 'right' });
+
+  if (purchase.customer_phone) {
+    y += 4;
+    doc.text(`Phone: ${purchase.customer_phone}`, 14, y);
   }
-
-  if (typeof purchase.round_off === 'number' && purchase.round_off !== 0) {
-    y += 5;
-    doc.text('Round Off:', summaryX, y);
-    if (purchase.round_off < 0) doc.setTextColor(0, 120, 0);
-    doc.text(
-      `${purchase.round_off > 0 ? '+₹' : '-₹'}${Math.abs(purchase.round_off).toFixed(2)}`,
-      colAmt - 3,
-      y,
-      { align: 'right' }
-    );
-    doc.setTextColor(0, 0, 0);
+  if (purchase.customer_address) {
+    y += 4;
+    doc.text(purchase.customer_address, 14, y);
   }
 
   y += 6;
-  doc.setFillColor(0, 0, 0);
-  doc.rect(summaryX - 5, y - 4.5, 60, 8, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('NET PAYABLE:', summaryX - 2, y + 1);
-  doc.text(`₹${purchase.final_amount.toFixed(2)}`, colAmt - 3, y + 1, { align: 'right' });
-  doc.setTextColor(0, 0, 0);
+  doc.line(14, y, pageWidth - 14, y);
 
-  // Loyalty Program Status Box
-  y += 10;
-  doc.setFillColor(250, 250, 250);
-  doc.rect(12, y, summaryX - 20, 16, 'FD');
+  // 3. Table Header
+  y += 5;
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
-  doc.text('LOYALTY REWARD STATUS', 15, y + 4.5);
+  doc.text('Item', 16, y);
+  doc.text('Quantity', 80, y, { align: 'center' });
+  doc.text('Unit Price', 105, y, { align: 'center' });
+  doc.text('Total', pageWidth - 16, y, { align: 'right' });
+
+  y += 2.5;
+  doc.line(14, y, pageWidth - 14, y);
+
+  // 4. Table Items Rows
+  y += 5;
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+
+  const items: PurchaseItem[] = purchase.items && purchase.items.length > 0
+    ? purchase.items
+    : [
+        {
+          id: '1',
+          description: 'Ladies Readymade Garment / Dress Material',
+          quantity: purchase.weight_kg >= 1 ? `${purchase.weight_kg.toFixed(2)} KG` : `${purchase.weight_grams}g`,
+          unit_price: purchase.rate_per_kg,
+          weight_grams: purchase.weight_grams,
+          rate_per_kg: purchase.rate_per_kg,
+          amount: purchase.subtotal,
+        },
+      ];
+
+  for (const item of items) {
+    const desc = item.description || 'Garment Item';
+    const qty = typeof item.quantity === 'number'
+      ? String(item.quantity)
+      : item.quantity || (item.weight_grams ? `${(item.weight_grams / 1000).toFixed(2)} KG` : '1');
+    const uPrice = item.unit_price ?? item.rate_per_kg ?? 0;
+    const lineAmt = item.amount ?? (uPrice * Number(qty) || 0);
+
+    doc.text(desc.length > 35 ? desc.substring(0, 32) + '...' : desc, 16, y);
+    doc.text(String(qty), 80, y, { align: 'center' });
+    doc.text(`Rs. ${Number(uPrice).toFixed(2)}`, 105, y, { align: 'center' });
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Rs. ${Number(lineAmt).toFixed(2)}`, pageWidth - 16, y, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+
+    y += 5.5;
+  }
+
+  y += 1;
+  doc.line(14, y, pageWidth - 14, y);
+
+  // 5. Totals Section (Right-aligned)
+  y += 6;
+  const rightColX = pageWidth - 55;
+  doc.setFontSize(8.5);
+
+  doc.text('Subtotal', rightColX, y);
+  doc.text(`Rs. ${purchase.subtotal.toFixed(2)}`, pageWidth - 16, y, { align: 'right' });
+
+  if (purchase.discount_amount > 0) {
+    y += 4.5;
+    doc.text('Loyalty Discount (50% OFF 1 KG)', rightColX, y);
+    doc.text(`-Rs. ${purchase.discount_amount.toFixed(2)}`, pageWidth - 16, y, { align: 'right' });
+  }
+
+  if (typeof purchase.round_off === 'number' && purchase.round_off !== 0) {
+    y += 4.5;
+    doc.text('Round Off', rightColX, y);
+    doc.text(
+      `${purchase.round_off > 0 ? '+Rs. ' : '-Rs. '}${Math.abs(purchase.round_off).toFixed(2)}`,
+      pageWidth - 16,
+      y,
+      { align: 'right' }
+    );
+  }
+
+  y += 4.5;
+  doc.text('Tax (0%)', rightColX, y);
+  doc.text('Rs. 0.00', pageWidth - 16, y, { align: 'right' });
+
+  y += 3;
+  doc.setLineWidth(0.3);
+  doc.line(rightColX - 2, y, pageWidth - 14, y);
+
+  y += 5;
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total', rightColX, y);
+  doc.text(`Rs. ${purchase.final_amount.toFixed(2)}`, pageWidth - 16, y, { align: 'right' });
+
+  // 6. Centered "Thank you!"
+  y += 14;
+  doc.setFontSize(16);
+  doc.setFont('times', 'normal');
+  doc.text('Thank you!', pageWidth / 2, y, { align: 'center' });
+
+  y += 5;
   doc.setFontSize(7.5);
-  doc.text(`Current Loyalty Progress: ${purchase.loyalty_progress_after}/5 completed purchases`, 15, y + 9);
-  doc.setFontSize(7);
-  doc.setTextColor(70, 70, 70);
-  doc.text(purchase.loyalty_message, 15, y + 13);
-  doc.setTextColor(0, 0, 0);
-
-  // Terms and Signature
-  y += 22;
-  doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Terms & Conditions:', 12, y);
   doc.setFont('helvetica', 'normal');
-  doc.text('1. Goods once sold will NOT be exchanged or returned under any circumstances.', 12, y + 3.5);
-  doc.text('2. Loyalty Reward: Earn points every visit (50% OFF on 1 KG upon completing 5 visits).', 12, y + 6.5);
-
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.text('For TERRY', pageWidth - 16, y + 4, { align: 'right' });
-  doc.setFontSize(7);
-  doc.text('Auth. Signatory', pageWidth - 16, y + 10, { align: 'right' });
-
-  // Bottom Center Footer
-  y += 15;
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'italic');
-  doc.text('Thank you for shopping at Terry! Please visit again ❤️', pageWidth / 2, y, { align: 'center' });
+  doc.setTextColor(100, 100, 100);
+  doc.text(`${branchName} • ${branchAddress} • Tel: ${branchPhone}`, pageWidth / 2, y, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
 
   return doc;
 }

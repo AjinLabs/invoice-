@@ -20,10 +20,19 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Purchase not found' }, { status: 404 });
     }
 
+    const { getBranchInfo } = await import('@/lib/db');
+    const branchInfo = getBranchInfo(db, purchase.branch);
+
     return NextResponse.json({
       success: true,
       purchase,
-      settings: db.shop_settings,
+      settings: {
+        ...db.shop_settings,
+        shop_name: branchInfo.name,
+        address: branchInfo.address,
+        phone: branchInfo.phone,
+      },
+      branchInfo,
     });
   } catch (err: any) {
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });

@@ -210,12 +210,12 @@ export default function WhatsAppSuccessModal({
             </div>
           </div>
 
-          {/* HIGH-PRIORITY INSTRUCTION BANNER (Malayalam & English) */}
+          {/* HIGH-PRIORITY INSTRUCTION BANNER (English) */}
           <div className="bg-[#f0fdf4] border-2 border-emerald-400 rounded-2xl p-4 space-y-2.5 shadow-xs">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
               <h4 className="text-xs sm:text-sm font-black text-emerald-950 uppercase tracking-wide">
-                📸 വാട്സാപ്പിൽ ഫോട്ടോയും മെസ്സേജും അയക്കാൻ (Send Photo + Text)
+                📸 How to Send Bill Photo & Message to WhatsApp
               </h4>
             </div>
 
@@ -225,7 +225,7 @@ export default function WhatsAppSuccessModal({
                   1
                 </span>
                 <p>
-                  താഴെ <strong>&apos;Open WhatsApp Web&apos;</strong> ക്ലിക്ക് ചെയ്യുക. വാട്സാപ്പ് ചാറ്റിൽ ടെക്സ്റ്റ് മെസ്സേജ് ഓട്ടോമാറ്റിക് ആയി വരും.
+                  Click <strong>&apos;Open WhatsApp Web&apos;</strong> below. The customer chat will open with the pre-filled invoice message.
                 </p>
               </div>
 
@@ -234,11 +234,11 @@ export default function WhatsAppSuccessModal({
                   2
                 </span>
                 <p>
-                  <strong>ബിൽ ഫോട്ടോ അയക്കാൻ:</strong> വാട്സാപ്പ് ചാറ്റ് ബോക്സിൽ വെച്ച് കീബോർഡിലെ{' '}
+                  <strong>To Send Bill Photo:</strong> In the WhatsApp chat box, press{' '}
                   <span className="px-1.5 py-0.5 bg-black text-white rounded font-mono font-bold text-[11px]">
                     Ctrl + V
                   </span>{' '}
-                  (Paste) അമർത്തുക! ബില്ലിന്റെ ഫോട്ടോ നേരിട്ട് പോകും!
+                  (Paste). The invoice photo is already copied and will paste instantly!
                 </p>
               </div>
 
@@ -247,8 +247,7 @@ export default function WhatsAppSuccessModal({
                   3
                 </span>
                 <p className="text-neutral-600">
-                  അല്ലെങ്കിൽ കമ്പ്യൂട്ടറിലേക്ക് ഡൗൺലോഡ് ചെയ്ത ഫോട്ടോ നേരിട്ട് വാട്സാപ്പ് ചാറ്റിലേക്ക്{' '}
-                  <strong>Drag & Drop</strong> ചെയ്യുക.
+                  Alternatively, download the PNG image and drag &amp; drop it directly into the WhatsApp chat.
                 </p>
               </div>
             </div>
@@ -257,7 +256,7 @@ export default function WhatsAppSuccessModal({
             {copiedPhoto && (
               <div className="bg-emerald-600 text-white p-2.5 rounded-xl text-xs font-bold text-center animate-in fade-in flex items-center justify-center gap-2">
                 <Check className="w-4 h-4" />
-                <span>ഫോട്ടോ കോപ്പി ആയി! വാട്സാപ്പിൽ ചെന്ന് Ctrl + V അമർത്തി സെൻഡ് ചെയ്യുക!</span>
+                <span>Invoice photo copied to clipboard! Press Ctrl + V in WhatsApp to send.</span>
               </div>
             )}
           </div>

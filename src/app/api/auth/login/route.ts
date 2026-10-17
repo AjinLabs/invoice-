@@ -38,16 +38,35 @@ export async function POST(request: Request) {
         username: user.username,
         name: user.name,
         role: user.role,
+        branch: user.branch,
       },
     });
 
     // Set simple secure session cookie
-    response.cookies.set('terry_session', JSON.stringify({ id: user.id, role: user.role }), {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 86400 * 7, // 7 days
-    });
+    response.cookies.set(
+      'terry_session',
+      JSON.stringify({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        branch: user.branch,
+      }),
+      {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 86400 * 7, // 7 days
+      }
+    );
+
+    if (user.branch) {
+      response.cookies.set('terry_branch', user.branch, {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 86400 * 7,
+      });
+    }
 
     return response;
   } catch (err: any) {

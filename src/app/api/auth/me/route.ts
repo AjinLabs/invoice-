@@ -19,6 +19,9 @@ export async function GET() {
       return NextResponse.json({ authenticated: false, user: null });
     }
 
+    const { getBranchInfo } = await import('@/lib/db');
+    const branchInfo = getBranchInfo(db, user.branch);
+
     return NextResponse.json({
       authenticated: true,
       user: {
@@ -26,7 +29,9 @@ export async function GET() {
         username: user.username,
         name: user.name,
         role: user.role,
+        branch: user.branch,
       },
+      branchInfo,
     });
   } catch {
     return NextResponse.json({ authenticated: false, user: null });

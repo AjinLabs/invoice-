@@ -30,13 +30,22 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
 
   const photoLink = imageUrl || purchase.invoice_image_url;
 
+  let itemsSummary = '';
+  if (purchase.items && purchase.items.length > 0) {
+    itemsSummary = '*Items:*\n' + purchase.items.map((it, idx) => {
+      const q = it.quantity || (it.weight_grams ? `${(it.weight_grams / 1000).toFixed(2)} KG` : '1');
+      return `${idx + 1}. ${it.description} (${q}) - ₹${it.amount.toFixed(2)}`;
+    }).join('\n') + '\n\n';
+  } else if (purchase.weight_grams > 0) {
+    itemsSummary = `*Weight:* ${purchase.weight_kg.toFixed(2)} KG (${purchase.weight_grams}g)\n*Rate:* ₹${purchase.rate_per_kg}/KG\n\n`;
+  }
+
   return (
     `🧾 *PURCHASE INVOICE - ${settings.shop_name}*\n\n` +
     `*Customer:* ${purchase.customer_name}\n` +
     `*Invoice No:* ${purchase.invoice_number}\n` +
     `*Date:* ${dateFormatted}\n\n` +
-    `*Weight:* ${purchase.weight_kg.toFixed(2)} KG (${purchase.weight_grams}g)\n` +
-    `*Rate:* ₹${purchase.rate_per_kg}/KG\n` +
+    itemsSummary +
     `*Subtotal:* ₹${purchase.subtotal.toFixed(2)}\n` +
     `*Loyalty Discount:* ${purchase.discount_amount > 0 ? '₹' + purchase.discount_amount.toFixed(2) + ' (50% OFF on 1 KG)' : '₹0.00'}\n` +
     (typeof purchase.round_off === 'number' && purchase.round_off !== 0

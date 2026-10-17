@@ -2,14 +2,20 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, User, AlertCircle, ArrowRight, Store, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const [username, setUsername] = useState('adminvnb');
+  const [password, setPassword] = useState('vnb123');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const quickSelect = (u: string, p: string) => {
+    setUsername(u);
+    setPassword(p);
+    setError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +34,12 @@ export default function LoginPage() {
         throw new Error(data.error || 'Invalid credentials');
       }
 
-      router.push('/dashboard');
+      if (data.user?.role === 'SUPER_ADMIN' || data.user?.username === 'admin') {
+        router.push('/dashboard');
+      } else {
+        router.push('/');
+      }
+      router.refresh();
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
@@ -38,11 +49,64 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-neutral-100">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 max-w-sm w-full space-y-6">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 max-w-md w-full space-y-6">
         <div className="text-center">
-          <span className="text-3xl font-black tracking-widest uppercase block mb-1">TERRY</span>
-          <h2 className="text-sm font-bold text-neutral-800">Store Manager Authentication</h2>
-          <p className="text-xs text-neutral-400 mt-1">Sign in to manage store settings and analytics</p>
+          <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden flex items-center justify-center bg-black">
+            <img src="/logo.png" alt="Terry Women" className="w-full h-full object-contain" />
+          </div>
+          <span className="text-2xl font-black tracking-widest uppercase block mb-1">TERRY WOMEN</span>
+          <h2 className="text-sm font-bold text-neutral-800">Branch & Store Manager Login</h2>
+          <p className="text-xs text-neutral-500 mt-1">Select your shop location or enter credentials</p>
+        </div>
+
+        {/* Quick Branch Selectors */}
+        <div className="space-y-2">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+            Select Your Store Location:
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => quickSelect('adminvnb', 'vnb123')}
+              className={`p-3 rounded-xl border text-left transition-all ${
+                username === 'adminvnb'
+                  ? 'border-black bg-black text-white shadow-xs'
+                  : 'border-neutral-200 bg-neutral-50 text-neutral-800 hover:border-neutral-400'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
+                <Store className="w-3.5 h-3.5 shrink-0" />
+                <span>Vaniyambalam</span>
+              </div>
+              <p className={`text-[10px] leading-tight ${username === 'adminvnb' ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                Branch POS Login
+              </p>
+              <p className={`text-[9px] font-mono mt-1 ${username === 'adminvnb' ? 'text-neutral-400' : 'text-neutral-400'}`}>
+                adminvnb
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => quickSelect('adminpkdm', 'pkdm123')}
+              className={`p-3 rounded-xl border text-left transition-all ${
+                username === 'adminpkdm'
+                  ? 'border-black bg-black text-white shadow-xs'
+                  : 'border-neutral-200 bg-neutral-50 text-neutral-800 hover:border-neutral-400'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
+                <Store className="w-3.5 h-3.5 shrink-0" />
+                <span>Pookkottumpadam</span>
+              </div>
+              <p className={`text-[10px] leading-tight ${username === 'adminpkdm' ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                Branch POS Login
+              </p>
+              <p className={`text-[9px] font-mono mt-1 ${username === 'adminpkdm' ? 'text-neutral-400' : 'text-neutral-400'}`}>
+                adminpkdm
+              </p>
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -57,7 +121,8 @@ export default function LoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
+                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white"
+                placeholder="e.g. adminvnb or adminpkdm"
               />
             </div>
           </div>
@@ -73,7 +138,8 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm font-mono"
+                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm font-mono bg-white"
+                placeholder="Enter password"
               />
             </div>
           </div>
@@ -88,17 +154,24 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-xs"
           >
-            <span>{isLoading ? 'Verifying...' : 'Sign In'}</span>
+            <span>{isLoading ? 'Verifying...' : 'Sign In to Store'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
 
-        <div className="p-3 bg-neutral-50 rounded-lg border border-neutral-100 text-[11px] text-neutral-500 text-center">
-          Default Demo Credentials:<br />
-          <strong className="text-neutral-800">Username:</strong> admin &bull;{' '}
-          <strong className="text-neutral-800">Password:</strong> admin123
+        {/* Super admin shortcut */}
+        <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
+          <span>Super Admin access:</span>
+          <button
+            type="button"
+            onClick={() => quickSelect('admin', 'admin123')}
+            className="text-neutral-800 font-semibold hover:underline flex items-center gap-1"
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>admin / admin123</span>
+          </button>
         </div>
       </div>
     </div>
