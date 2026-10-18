@@ -36,7 +36,6 @@ export default function BillingPage() {
   const [address, setAddress] = useState('');
 
   // Kilo dress selection
-  const [includeKiloDress, setIncludeKiloDress] = useState(true);
   const [weight, setWeight] = useState<number | string>(1000);
   const [unit, setUnit] = useState<'g' | 'kg'>('g');
   const [itemDesc, setItemDesc] = useState('Ladies Readymade Garment / Dress Material');
@@ -169,11 +168,9 @@ export default function BillingPage() {
   };
 
   // Perform Real-Time Billing Calculation
-  const numericWeight = includeKiloDress
-    ? typeof weight === 'number'
-      ? weight
-      : parseFloat(weight) || 0
-    : 0;
+  const numericWeight = typeof weight === 'number'
+    ? weight
+    : parseFloat(weight) || 0;
 
   const billingCalc = useMemo(() => {
     return calculateBilling({
@@ -192,7 +189,6 @@ export default function BillingPage() {
   const handleQuickGrams = (grams: number) => {
     setUnit('g');
     setWeight(grams);
-    setIncludeKiloDress(true);
   };
 
   // Custom Item Handlers
@@ -351,7 +347,6 @@ export default function BillingPage() {
     setAddress('');
     setWeight(1000);
     setUnit('g');
-    setIncludeKiloDress(true);
     setCustomItems([]);
     setCustomer(null);
     setPaymentMethod('CASH');
@@ -531,24 +526,12 @@ export default function BillingPage() {
                   <Scale className="w-5 h-5 text-neutral-800" />
                   <h2 className="text-base font-bold text-neutral-900 tracking-tight">2. Kilo Clothing (Weight Billing)</h2>
                 </div>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-neutral-700">
-                    <input
-                      type="checkbox"
-                      checked={includeKiloDress}
-                      onChange={(e) => setIncludeKiloDress(e.target.checked)}
-                      className="rounded border-neutral-300 text-black focus:ring-black"
-                    />
-                    <span>Include Kilo Dress</span>
-                  </label>
-                  <span className="text-xs bg-neutral-950 text-white font-bold px-3 py-1 rounded-full shadow-2xs">
-                    Rate: ₹{branchInfo?.rate_per_kg || 899} / KG
-                  </span>
-                </div>
+                <span className="text-xs bg-neutral-950 text-white font-bold px-3 py-1 rounded-full shadow-2xs">
+                  Rate: ₹{branchInfo?.rate_per_kg || 899} / KG
+                </span>
               </div>
 
-              {includeKiloDress ? (
-                <div className="space-y-4">
+              <div className="space-y-4">
                   {/* Weight Input (Grams only) */}
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
@@ -625,11 +608,6 @@ export default function BillingPage() {
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-dashed border-neutral-300 text-center text-xs text-neutral-500">
-                  Kilo dress excluded for this bill. Add custom items below (inners, accessories, etc.).
-                </div>
-              )}
             </div>
 
             {/* ==============================================================
@@ -795,7 +773,7 @@ export default function BillingPage() {
               <div className="bg-gradient-to-br from-[#094327] to-[#06311d] text-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl space-y-2.5 shadow-md border border-emerald-800/40">
                 <div className="flex justify-between text-xs text-emerald-200">
                   <span>
-                    Items: {billingCalc.customItems?.length || 0} Custom {includeKiloDress && numericWeight > 0 ? `+ ${(numericWeight / 1000).toFixed(2)} KG` : ''}
+                    Items: {billingCalc.customItems?.length || 0} Custom {numericWeight > 0 ? `+ ${(numericWeight / 1000).toFixed(2)} KG` : ''}
                   </span>
                   <span className="font-mono text-emerald-100 font-bold">BRANCH: {activeBranch.toUpperCase()}</span>
                 </div>
@@ -951,7 +929,7 @@ export default function BillingPage() {
               invoiceNumber={completedPurchase ? completedPurchase.invoice_number : nextInvoiceNumber}
               settings={shopSettings || undefined}
               items={billingCalc.customItems && billingCalc.customItems.length > 0 ? [
-                ...(includeKiloDress && numericWeight > 0 ? [{
+                ...(numericWeight > 0 ? [{
                   id: 'kilo_line',
                   description: itemDesc,
                   quantity: numericWeight >= 1000 ? `${(numericWeight / 1000).toFixed(2)} KG` : `${numericWeight}g`,
