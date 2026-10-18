@@ -48,33 +48,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-neutral-100">
-      <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-200 max-w-md w-full space-y-6">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-neutral-100/70">
+      <div className="apple-surface bg-white p-8 sm:p-9 max-w-md w-full space-y-6 border border-black/5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] rounded-3xl">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-2 rounded-full overflow-hidden flex items-center justify-center bg-black">
-            <img src="/logo.png" alt="Terry Women" className="w-full h-full object-contain" />
+          <div className="w-16 h-16 mx-auto mb-3 rounded-2xl overflow-hidden flex items-center justify-center bg-black shadow-md apple-pressable">
+            <img src="/logo.png" alt="Terry Women" className="w-full h-full object-contain p-1" />
           </div>
-          <span className="text-2xl font-black tracking-widest uppercase block mb-1">TERRY WOMEN</span>
-          <h2 className="text-sm font-bold text-neutral-800">Branch & Store Manager Login</h2>
+          <span className="text-2xl font-black tracking-tight uppercase block mb-1 apple-display">TERRY WOMEN</span>
+          <h2 className="text-sm font-semibold text-neutral-800 tracking-tight">Branch & Store Manager Login</h2>
           <p className="text-xs text-neutral-500 mt-1">Select your shop location or enter credentials</p>
         </div>
 
         {/* Quick Branch Selectors */}
         <div className="space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
             Select Your Store Location:
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => quickSelect('adminvnb', 'vnb123')}
-              className={`p-3 rounded-xl border text-left transition-all ${
+              className={`p-3.5 rounded-2xl border text-left transition-all apple-pressable ${
                 username === 'adminvnb'
-                  ? 'border-black bg-black text-white shadow-xs'
-                  : 'border-neutral-200 bg-neutral-50 text-neutral-800 hover:border-neutral-400'
+                  ? 'border-neutral-950 bg-neutral-950 text-white shadow-sm'
+                  : 'border-neutral-200/80 bg-neutral-50/80 text-neutral-800 hover:border-neutral-300'
               }`}
             >
-              <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
+              <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5 tracking-tight">
                 <Store className="w-3.5 h-3.5 shrink-0" />
                 <span>Vaniyambalam</span>
               </div>
@@ -89,13 +89,13 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => quickSelect('adminpkdm', 'pkdm123')}
-              className={`p-3 rounded-xl border text-left transition-all ${
+              className={`p-3.5 rounded-2xl border text-left transition-all apple-pressable ${
                 username === 'adminpkdm'
-                  ? 'border-black bg-black text-white shadow-xs'
-                  : 'border-neutral-200 bg-neutral-50 text-neutral-800 hover:border-neutral-400'
+                  ? 'border-neutral-950 bg-neutral-950 text-white shadow-sm'
+                  : 'border-neutral-200/80 bg-neutral-50/80 text-neutral-800 hover:border-neutral-300'
               }`}
             >
-              <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5">
+              <div className="flex items-center gap-1.5 font-bold text-xs mb-0.5 tracking-tight">
                 <Store className="w-3.5 h-3.5 shrink-0" />
                 <span>Pookkottumpadam</span>
               </div>
@@ -111,9 +111,9 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Username</label>
+            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">Username</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
                 <User className="w-4 h-4" />
               </div>
               <input
@@ -121,16 +121,16 @@ export default function LoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm bg-white"
+                className="w-full pl-10 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm bg-neutral-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
                 placeholder="e.g. adminvnb or adminpkdm"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Password</label>
+            <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">Password</label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
                 <Lock className="w-4 h-4" />
               </div>
               <input
@@ -138,14 +138,14 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm font-mono bg-white"
+                className="w-full pl-10 pr-3.5 py-2.5 border border-neutral-200 rounded-xl text-sm font-mono bg-neutral-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-black transition-all"
                 placeholder="Enter password"
               />
             </div>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-2.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg">
+            <div className="flex items-center gap-2 p-3 bg-rose-50/80 border border-rose-200/80 text-rose-700 text-xs rounded-xl">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -154,7 +154,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-xs"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-neutral-950 hover:bg-neutral-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-sm apple-pressable"
           >
             <span>{isLoading ? 'Verifying...' : 'Sign In to Store'}</span>
             <ArrowRight className="w-4 h-4" />
@@ -162,12 +162,12 @@ export default function LoginPage() {
         </form>
 
         {/* Super admin shortcut */}
-        <div className="pt-2 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
+        <div className="pt-3 border-t border-neutral-100 flex items-center justify-between text-[11px] text-neutral-500">
           <span>Super Admin access:</span>
           <button
             type="button"
             onClick={() => quickSelect('admin', 'admin123')}
-            className="text-neutral-800 font-semibold hover:underline flex items-center gap-1"
+            className="text-neutral-900 font-semibold hover:underline flex items-center gap-1 apple-pressable"
           >
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>admin / admin123</span>

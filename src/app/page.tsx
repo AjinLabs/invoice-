@@ -397,26 +397,26 @@ export default function BillingPage() {
         {/* ==============================================================
             STORE LOCATION HEADER CARD: Shows current branch
            ============================================================== */}
-        <div className="bg-white rounded-xl shadow-xs border border-neutral-200 p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 no-print">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white ${
-              activeBranch === 'pkdm' ? 'bg-amber-600' : 'bg-black'
+        <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 no-print">
+          <div className="flex items-center gap-3.5">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xs apple-pressable ${
+              activeBranch === 'pkdm' ? 'bg-amber-600' : 'bg-neutral-950'
             }`}>
               <Store className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
                   Current Billing Branch:
                 </span>
-                <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-neutral-100 text-neutral-700 font-mono">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-neutral-100 text-neutral-700 font-mono border border-neutral-200/60">
                   {nextInvoiceNumber}
                 </span>
               </div>
-              <h1 className="text-lg sm:text-xl font-black text-neutral-900">
+              <h1 className="text-lg sm:text-xl font-black text-neutral-900 tracking-tight apple-headline">
                 {activeBranch === 'pkdm' ? 'Pookkottumpadam Store' : 'Vaniyambalam Store'}
               </h1>
-              <p className="text-xs text-neutral-500">
+              <p className="text-xs text-neutral-500 tracking-tight">
                 {branchInfo?.address || (activeBranch === 'pkdm' ? 'Nilambur - Ooty Road, Pookkottumpadam' : 'Railway Station Road, Vaniyambalam')} &bull; Rate: ₹{branchInfo?.rate_per_kg || 899}/KG
               </p>
             </div>
@@ -424,7 +424,7 @@ export default function BillingPage() {
 
           {/* Active Terminal Indicator Badge - No switch buttons */}
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-neutral-100 text-neutral-800 border border-neutral-200">
+            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100/90 text-neutral-800 border border-neutral-200/80 shadow-2xs">
               {activeBranch === 'pkdm' ? 'PKDM Store POS Terminal' : 'VNB Store POS Terminal'}
             </span>
           </div>
@@ -439,13 +439,13 @@ export default function BillingPage() {
              ============================================================== */}
           <div className="lg:col-span-7 space-y-5 no-print">
             {/* 1. Customer Details Card */}
-            <div className="bg-white rounded-xl shadow-xs border border-neutral-200 p-5 sm:p-6">
+            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-neutral-800" />
-                  <h2 className="text-base font-bold text-neutral-900">1. Customer Information</h2>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">1. Customer Information</h2>
                 </div>
-                <span className="text-xs bg-neutral-100 text-neutral-600 font-semibold px-2.5 py-0.5 rounded-full border border-neutral-200">
+                <span className="text-xs bg-neutral-100/90 text-neutral-600 font-semibold px-3 py-0.5 rounded-full border border-neutral-200/60">
                   Primary ID: Phone
                 </span>
               </div>
@@ -557,11 +557,11 @@ export default function BillingPage() {
             </div>
 
             {/* 2. Weight & Kilo Dresses Card */}
-            <div className="bg-white rounded-xl shadow-xs border border-neutral-200 p-5 sm:p-6">
+            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <Scale className="w-5 h-5 text-neutral-800" />
-                  <h2 className="text-base font-bold text-neutral-900">2. Kilo Clothing (Weight Billing)</h2>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">2. Kilo Clothing (Weight Billing)</h2>
                 </div>
                 <div className="flex items-center gap-2">
                   <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-neutral-700">
@@ -573,7 +573,7 @@ export default function BillingPage() {
                     />
                     <span>Include Kilo Dress</span>
                   </label>
-                  <span className="text-xs bg-black text-white font-bold px-2.5 py-1 rounded">
+                  <span className="text-xs bg-neutral-950 text-white font-bold px-3 py-1 rounded-full shadow-2xs">
                     Rate: ₹{branchInfo?.rate_per_kg || 899} / KG
                   </span>
                 </div>
@@ -584,16 +584,16 @@ export default function BillingPage() {
                   {/* Unit Toggle and Input */}
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
+                      <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
                         Enter Dress Weight
                       </label>
-                      <div className="inline-flex rounded-md shadow-xs bg-neutral-100 p-0.5 border border-neutral-300">
+                      <div className="apple-segmented-container bg-neutral-100 p-0.5 rounded-full border border-neutral-200/80">
                         <button
                           type="button"
                           onClick={() => setUnit('g')}
-                          className={`px-3 py-1 text-xs font-bold rounded transition-all ${
+                          className={`apple-pressable px-3.5 py-1 text-xs font-semibold rounded-full transition-all ${
                             unit === 'g'
-                              ? 'bg-black text-white shadow-xs'
+                              ? 'bg-neutral-950 text-white shadow-xs'
                               : 'text-neutral-600 hover:text-black'
                           }`}
                         >
@@ -602,9 +602,9 @@ export default function BillingPage() {
                         <button
                           type="button"
                           onClick={() => setUnit('kg')}
-                          className={`px-3 py-1 text-xs font-bold rounded transition-all ${
+                          className={`apple-pressable px-3.5 py-1 text-xs font-semibold rounded-full transition-all ${
                             unit === 'kg'
-                              ? 'bg-black text-white shadow-xs'
+                              ? 'bg-neutral-950 text-white shadow-xs'
                               : 'text-neutral-600 hover:text-black'
                           }`}
                         >
@@ -621,9 +621,9 @@ export default function BillingPage() {
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
                         placeholder={unit === 'kg' ? 'e.g. 0.7 or 1.2' : 'e.g. 500, 700, 1000'}
-                        className="w-full px-4 py-3.5 text-2xl font-black rounded-lg border-2 border-black focus:ring-2 focus:ring-black outline-hidden bg-neutral-50/30"
+                        className="w-full px-4 py-3.5 text-2xl font-black rounded-2xl border-2 border-neutral-950 focus:ring-2 focus:ring-neutral-950/20 outline-hidden bg-neutral-50/30 tracking-tight"
                       />
-                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-sm font-bold text-neutral-500 uppercase">
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-sm font-bold text-neutral-400 uppercase tracking-wider">
                         {unit === 'kg' ? 'KG' : 'Grams'}
                       </div>
                     </div>
@@ -631,7 +631,7 @@ export default function BillingPage() {
 
                   {/* Quick Grams Chips */}
                   <div>
-                    <span className="block text-[11px] font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
+                    <span className="block text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">
                       Quick Select Weight:
                     </span>
                     <div className="flex flex-wrap gap-2">
@@ -640,10 +640,10 @@ export default function BillingPage() {
                           key={g}
                           type="button"
                           onClick={() => handleQuickGrams(g)}
-                          className={`px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
+                          className={`apple-pressable px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                             billingCalc.weightGrams === g && unit === 'g'
-                              ? 'bg-black text-white border-black'
-                              : 'bg-neutral-50 text-neutral-800 border-neutral-300 hover:bg-neutral-200'
+                              ? 'bg-neutral-950 text-white border-neutral-950 shadow-2xs'
+                              : 'bg-neutral-50/80 text-neutral-800 border-neutral-200/90 hover:bg-neutral-100'
                           }`}
                         >
                           {g}g {g >= 1000 ? `(${(g / 1000).toFixed(1)}kg)` : ''}
@@ -655,10 +655,10 @@ export default function BillingPage() {
                   {/* Loyalty Reward Status Feedback */}
                   {billingCalc.isRewardUnlocked && (
                     <div
-                      className={`p-3 rounded-lg border text-xs flex items-start gap-2.5 ${
+                      className={`p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 ${
                         billingCalc.canApplyReward
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-medium'
-                          : 'bg-amber-50 border-amber-300 text-amber-950'
+                          ? 'bg-emerald-50/80 border-emerald-300/80 text-emerald-950 font-medium'
+                          : 'bg-amber-50/80 border-amber-300/80 text-amber-950'
                       }`}
                     >
                       <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -679,7 +679,7 @@ export default function BillingPage() {
                   )}
                 </div>
               ) : (
-                <div className="p-3 bg-neutral-50 rounded-lg border border-dashed border-neutral-300 text-center text-xs text-neutral-500">
+                <div className="p-3 bg-neutral-50 rounded-2xl border border-dashed border-neutral-300 text-center text-xs text-neutral-500">
                   Kilo dress excluded for this bill. Add custom items below (inners, accessories, etc.).
                 </div>
               )}
@@ -688,12 +688,12 @@ export default function BillingPage() {
             {/* ==============================================================
                 3. CUSTOM / FIXED-PRICE ITEMS SECTION (Optional)
                ============================================================== */}
-            <div className="bg-white rounded-xl shadow-xs border border-neutral-200 p-5 sm:p-6">
+            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <Tag className="w-5 h-5 text-neutral-800" />
                   <div>
-                    <h2 className="text-base font-bold text-neutral-900">
+                    <h2 className="text-base font-bold text-neutral-900 tracking-tight">
                       3. Custom Items (Optional)
                     </h2>
                     <p className="text-[11px] text-neutral-500">
@@ -705,7 +705,7 @@ export default function BillingPage() {
                 <button
                   type="button"
                   onClick={() => handleAddCustomItem('', 0)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  className="apple-pressable inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-neutral-950 hover:bg-neutral-800 text-white rounded-full text-xs font-bold transition-all shadow-2xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>+ Add Custom Item</span>
@@ -797,13 +797,13 @@ export default function BillingPage() {
             </div>
 
             {/* 4. Total Calculation & Payment Method Card */}
-            <div className="bg-white rounded-xl shadow-xs border border-neutral-200 p-5 sm:p-6 space-y-5">
+            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6 space-y-5">
               {/* Round Off Options */}
               <div>
-                <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                   Round Off / Concession Options
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
                     { id: 'FLOOR_10', label: 'Round Down 10s', desc: 'e.g. ₹899 → ₹890' },
                     { id: 'NONE', label: 'Exact (No Rounding)', desc: 'Exact Paisa' },
@@ -813,13 +813,13 @@ export default function BillingPage() {
                       key={m.id}
                       type="button"
                       onClick={() => setRoundOffMode(m.id as RoundOffMode)}
-                      className={`p-2.5 rounded-lg border text-left transition-all ${
+                      className={`apple-pressable p-3 rounded-2xl border text-left transition-all ${
                         roundOffMode === m.id
-                          ? 'border-black bg-black text-white shadow-xs'
-                          : 'border-neutral-200 bg-neutral-50 text-neutral-800 hover:border-neutral-300'
+                          ? 'border-neutral-950 bg-neutral-950 text-white shadow-xs'
+                          : 'border-neutral-200/80 bg-neutral-50/80 text-neutral-800 hover:border-neutral-300'
                       }`}
                     >
-                      <p className="text-xs font-bold leading-tight">{m.label}</p>
+                      <p className="text-xs font-bold leading-tight tracking-tight">{m.label}</p>
                       <p className={`text-[10px] mt-0.5 ${roundOffMode === m.id ? 'text-neutral-300' : 'text-neutral-500'}`}>
                         {m.desc}
                       </p>
@@ -828,8 +828,8 @@ export default function BillingPage() {
                 </div>
 
                 {roundOffMode === 'MANUAL' && (
-                  <div className="mt-3 p-3 bg-neutral-50 rounded-lg border border-neutral-200 space-y-2">
-                    <label className="block text-xs font-bold text-neutral-700 uppercase">
+                  <div className="mt-3 p-3.5 bg-neutral-50/80 rounded-2xl border border-neutral-200 space-y-2">
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
                       Enter Final Agreed Customer Amount (₹):
                     </label>
                     <input
@@ -838,37 +838,37 @@ export default function BillingPage() {
                       value={manualAmount}
                       onChange={(e) => setManualAmount(e.target.value)}
                       placeholder={`Agreed price (Base: ₹${billingCalc.baseAmount.toFixed(2)})`}
-                      className="w-full px-3 py-2 text-base font-black rounded border border-neutral-300 focus:border-black outline-hidden bg-white font-mono"
+                      className="w-full px-3.5 py-2.5 text-base font-black rounded-xl border border-neutral-300 focus:border-black outline-hidden bg-white font-mono"
                     />
                   </div>
                 )}
               </div>
 
               {/* Live Amount Display Card */}
-              <div className="bg-black text-white p-5 rounded-xl space-y-2 shadow-sm">
+              <div className="bg-neutral-950 text-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl space-y-2.5 shadow-md border border-white/10">
                 <div className="flex justify-between text-xs text-neutral-400">
                   <span>
                     Items: {billingCalc.customItems?.length || 0} Custom {includeKiloDress && numericWeight > 0 ? `+ ${(numericWeight / 1000).toFixed(2)} KG` : ''}
                   </span>
-                  <span>Branch: {activeBranch.toUpperCase()}</span>
+                  <span className="font-mono text-neutral-300">BRANCH: {activeBranch.toUpperCase()}</span>
                 </div>
 
-                <div className="flex justify-between text-sm text-neutral-300 border-b border-neutral-800 pb-2">
+                <div className="flex justify-between text-sm text-neutral-300 border-b border-white/10 pb-2">
                   <span>Gross Subtotal:</span>
                   <span className="font-semibold font-mono">₹{billingCalc.subtotal.toFixed(2)}</span>
                 </div>
 
                 {billingCalc.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-400 border-b border-neutral-800 pb-2">
-                    <span className="flex items-center gap-1">
-                      <Gift className="w-3.5 h-3.5" /> Loyalty Reward (50% OFF 1 KG):
+                  <div className="flex justify-between text-sm text-emerald-400 border-b border-white/10 pb-2">
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Gift className="w-4 h-4" /> Loyalty Reward (50% OFF 1 KG):
                     </span>
                     <span className="font-bold font-mono">-₹{billingCalc.discountAmount.toFixed(2)}</span>
                   </div>
                 )}
 
                 {billingCalc.roundOffAmount !== 0 && (
-                  <div className="flex justify-between text-sm text-neutral-300 border-b border-neutral-800 pb-2">
+                  <div className="flex justify-between text-sm text-neutral-300 border-b border-white/10 pb-2">
                     <span>
                       {roundOffMode === 'MANUAL' ? 'Manual Price Adjustment:' : 'Round Down Discount:'}
                     </span>
@@ -882,16 +882,16 @@ export default function BillingPage() {
 
                 <div className="flex justify-between items-baseline pt-1">
                   <div>
-                    <span className="text-sm font-bold uppercase tracking-wider text-neutral-200 block">
+                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-neutral-300 block">
                       Net Amount Payable:
                     </span>
                     {billingCalc.subtotal - billingCalc.finalAmount > 0 && (
-                      <span className="text-[11px] text-emerald-400 font-semibold">
+                      <span className="text-[11px] text-emerald-400 font-semibold tracking-tight">
                         Total Savings: ₹{(billingCalc.subtotal - billingCalc.finalAmount).toFixed(2)}
                       </span>
                     )}
                   </div>
-                  <span className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white">
+                  <span className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white apple-display">
                     ₹{billingCalc.finalAmount.toFixed(2)}
                   </span>
                 </div>
@@ -899,10 +899,10 @@ export default function BillingPage() {
 
               {/* Payment Method Selector */}
               <div>
-                <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                   4. Select Payment Method
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {[
                     { id: 'CASH', label: 'Cash', icon: Banknote },
                     { id: 'UPI', label: 'UPI / GPay', icon: Smartphone },
@@ -916,10 +916,10 @@ export default function BillingPage() {
                         key={p.id}
                         type="button"
                         onClick={() => setPaymentMethod(p.id as PaymentMethod)}
-                        className={`flex items-center justify-center gap-2 p-3 rounded-lg border text-xs font-bold transition-all ${
+                        className={`apple-pressable flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
                           isSelected
-                            ? 'bg-black text-white border-black shadow-xs'
-                            : 'bg-white text-neutral-700 border-neutral-300 hover:bg-neutral-50'
+                            ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs'
+                            : 'bg-white text-neutral-700 border-neutral-200/90 hover:bg-neutral-50'
                         }`}
                       >
                         <Icon className="w-4 h-4" />
@@ -932,7 +932,7 @@ export default function BillingPage() {
 
               {/* Error banner */}
               {errorMessage && (
-                <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-300 text-rose-700 text-xs rounded-lg font-medium">
+                <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-300 text-rose-700 text-xs rounded-2xl font-medium">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{errorMessage}</span>
                 </div>
@@ -944,7 +944,7 @@ export default function BillingPage() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => handleCompletePurchase(true)}
-                  className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-black hover:bg-neutral-800 text-white rounded-lg text-sm font-extrabold uppercase tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer"
+                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-neutral-950 hover:bg-neutral-800 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer"
                 >
                   <Printer className="w-4 h-4" />
                   <span>{isSubmitting ? 'Processing...' : 'Complete & Print Bill'}</span>
@@ -954,7 +954,7 @@ export default function BillingPage() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => handleCompletePurchase(false)}
-                  className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg text-sm font-extrabold uppercase tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer"
+                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-emerald-800 hover:bg-emerald-900 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   <span>{isSubmitting ? 'Processing...' : 'Complete & WhatsApp'}</span>
@@ -965,7 +965,7 @@ export default function BillingPage() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-black font-semibold"
+                  className="apple-pressable inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-black font-semibold py-1 px-3 rounded-full hover:bg-neutral-100"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset Form</span>

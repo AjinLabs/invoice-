@@ -160,29 +160,29 @@ export default function WhatsAppSuccessModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print">
-      <div className="bg-white rounded-3xl shadow-2xl border border-neutral-200 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-6">
-        {/* Modal Header */}
-        <div className="bg-[#1f2937] text-white p-4 sm:p-5 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 bg-neutral-950/60 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto no-print transition-all">
+      <div className="apple-surface bg-white rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.25)] border border-neutral-200/80 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150 my-6">
+        {/* Modal Header (Apple Glass Dark) */}
+        <div className="apple-glass-dark bg-neutral-900/95 text-white p-4 sm:p-5 flex items-center justify-between border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
               <CheckCircle2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-base sm:text-lg font-bold flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 apple-headline tracking-tight">
                 <span>Bill Generated & Ready!</span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-mono">
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full font-mono border border-emerald-500/30">
                   {purchase.invoice_number}
                 </span>
               </h3>
-              <p className="text-xs text-neutral-400">
-                Customer: <strong>{purchase.customer_name}</strong> ({purchase.customer_phone})
+              <p className="text-xs text-neutral-400 tracking-tight">
+                Customer: <strong className="text-white">{purchase.customer_name}</strong> ({purchase.customer_phone})
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-neutral-400 hover:text-white p-1 rounded-md transition-colors"
+            className="text-neutral-400 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors apple-pressable"
           >
             <X className="w-5 h-5" />
           </button>

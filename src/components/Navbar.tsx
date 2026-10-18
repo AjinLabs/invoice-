@@ -141,23 +141,23 @@ export default function Navbar() {
   return (
     <>
       {/* ==============================================================
-          1. TOP APP HEADER (Minimal, Clean, Professional - No Website Links)
+          1. TOP APP HEADER (Apple Dark Glass Chrome - design.md §12)
          ============================================================== */}
-      <header className="bg-black text-white border-b border-neutral-800 sticky top-0 z-40 no-print">
+      <header className="sticky top-0 z-40 no-print bg-neutral-950/85 backdrop-blur-2xl border-b border-white/10 saturate-180 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Left: Brand Logo & Title */}
             <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-2.5 group">
+              <Link href="/" className="flex items-center gap-2.5 group apple-pressable">
                 <img
                   src="/logo.png"
                   alt="Terry Women"
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain border border-emerald-900/60 shadow-xs group-hover:scale-105 transition-transform"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain border border-emerald-500/30 shadow-xs group-hover:scale-105 transition-transform"
                 />
-                <span className="text-lg sm:text-xl font-black tracking-widest text-white group-hover:text-neutral-300 transition-colors uppercase">
+                <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-neutral-200 transition-colors uppercase">
                   TERRY
                 </span>
-                <span className="text-[10px] font-bold bg-neutral-800 text-neutral-200 px-2 py-0.5 rounded border border-neutral-700 tracking-wider uppercase">
+                <span className="text-[10px] font-bold bg-white/10 text-neutral-200 px-2 py-0.5 rounded-full border border-white/15 tracking-widest uppercase">
                   WOMEN
                 </span>
               </Link>
@@ -165,10 +165,10 @@ export default function Navbar() {
               {/* Active Branch Badge */}
               <div className="flex items-center ml-1 sm:ml-3">
                 <div
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold border ${branchBadge.bgColor}`}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold border ${branchBadge.bgColor} shadow-2xs`}
                 >
                   <BranchIcon className="w-3.5 h-3.5" />
-                  <span>{branchBadge.label}</span>
+                  <span className="tracking-tight">{branchBadge.label}</span>
                 </div>
               </div>
             </div>
@@ -176,14 +176,14 @@ export default function Navbar() {
             {/* Right: User Information & Logout */}
             <div className="flex items-center gap-2 sm:gap-3">
               {currentUser ? (
-                <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg">
-                  <span className="text-xs text-neutral-300 font-semibold hidden sm:inline">
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
+                  <span className="text-xs text-neutral-200 font-medium hidden sm:inline tracking-tight">
                     {currentUser.name}
                   </span>
                   <button
                     onClick={handleLogout}
                     title="Sign Out"
-                    className="flex items-center gap-1 text-xs text-neutral-400 hover:text-rose-400 transition-colors p-1"
+                    className="flex items-center gap-1 text-xs text-neutral-400 hover:text-rose-400 transition-colors p-1 rounded-md"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Logout</span>
@@ -192,7 +192,7 @@ export default function Navbar() {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white text-black hover:bg-neutral-100 rounded-full text-xs font-semibold shadow-xs transition-all apple-pressable"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Sign In</span>
@@ -204,15 +204,15 @@ export default function Navbar() {
       </header>
 
       {/* ==============================================================
-          2. BOTTOM APP NAVIGATION DOCK (Billing, Dashboard, Settings)
-             Replaces top website navbar as requested by user - Only visible when logged in
+          2. BOTTOM APP NAVIGATION DOCK (Apple Floating Glass Dock - design.md §1, §12)
+             Translucent floating pill dock with instant press feedback
          ============================================================== */}
       {currentUser && (
-        <nav
-          aria-label="App Navigation"
-          className="fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-neutral-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] no-print py-1.5 px-4"
-        >
-          <div className="max-w-md mx-auto flex items-center justify-around">
+        <aside aria-label="Quick Navigation" className="fixed bottom-4 inset-x-0 z-40 pointer-events-none flex justify-center px-4 no-print">
+          <nav
+            aria-label="App Navigation"
+            className="pointer-events-auto bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl saturate-180 border border-black/5 dark:border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.12)] rounded-full py-1.5 px-3 flex items-center gap-1 sm:gap-2"
+          >
             {bottomTabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = tab.isActive;
@@ -220,29 +220,29 @@ export default function Navbar() {
                 <Link
                   key={tab.id}
                   href={tab.href}
-                  className={`flex flex-col items-center justify-center py-1 px-4 sm:px-6 rounded-xl transition-all ${
+                  className={`flex flex-col items-center justify-center py-1 px-4 sm:px-5 rounded-full transition-all apple-pressable ${
                     isActive
-                      ? 'text-black font-extrabold'
-                      : 'text-neutral-500 hover:text-black font-medium'
+                      ? 'text-neutral-950 dark:text-white font-bold'
+                      : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 font-medium'
                   }`}
                 >
                   <div
-                    className={`p-1.5 rounded-lg transition-all ${
+                    className={`p-1.5 rounded-full transition-all duration-150 ${
                       isActive
-                        ? 'bg-black text-white shadow-xs'
-                        : 'bg-transparent text-neutral-600'
+                        ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs scale-105'
+                        : 'bg-transparent text-neutral-500'
                     }`}
                   >
-                    <Icon className="w-5 h-5 sm:w-5 sm:h-5" />
+                    <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   </div>
-                  <span className="text-[11px] sm:text-xs mt-0.5 tracking-tight">
+                  <span className="text-[10px] sm:text-[11px] mt-0.5 tracking-tight">
                     {tab.label}
                   </span>
                 </Link>
               );
             })}
-          </div>
-        </nav>
+          </nav>
+        </aside>
       )}
     </>
   );

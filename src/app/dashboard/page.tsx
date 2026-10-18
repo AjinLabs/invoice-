@@ -179,10 +179,10 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
               Active Store View:
             </span>
-            <span className="px-2.5 py-0.5 rounded text-xs font-bold bg-neutral-900 text-white">
+            <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-neutral-950 text-white shadow-2xs">
               {activeBranch === 'all'
                 ? 'All Stores Combined'
                 : activeBranch === 'pkdm'
@@ -190,10 +190,10 @@ export default function DashboardPage() {
                 : 'Vaniyambalam (VNB)'}
             </span>
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-neutral-900">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 apple-display">
             {getBranchTitle()}
           </h1>
-          <p className="text-xs text-neutral-500 mt-1">
+          <p className="text-xs text-neutral-500 mt-1 tracking-tight">
             Real-time branch sales revenue, weight metrics, discount concessions, and customer totals.
           </p>
         </div>
@@ -203,7 +203,7 @@ export default function DashboardPage() {
           <a
             href={`/api/reports/export?type=purchases&branch=${activeBranch}`}
             download
-            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-neutral-300 rounded-lg text-xs font-bold text-neutral-700 hover:bg-neutral-50 shadow-xs transition-colors"
+            className="apple-pressable inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-neutral-200/90 rounded-full text-xs font-semibold text-neutral-700 hover:bg-neutral-50 shadow-2xs transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Download Sales CSV</span>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
           {!isMainAdmin && (
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-black text-white rounded-lg text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors"
+              className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-950 text-white rounded-full text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Open POS Billing</span>
@@ -228,7 +228,7 @@ export default function DashboardPage() {
       {isMainAdmin && storesBreakdown && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2">
+            <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2 apple-headline tracking-tight">
               <Store className="w-5 h-5 text-neutral-800" />
               <span>Store Branch Sales &amp; Concessions Breakdown</span>
             </h2>
@@ -239,21 +239,21 @@ export default function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Vaniyambalam Store Card */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
+            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 p-5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] space-y-4">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
                     VNB
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-neutral-900">Vaniyambalam Store</h3>
+                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight">Vaniyambalam Store</h3>
                     <p className="text-[11px] text-neutral-400">Railway Station Road</p>
                   </div>
                 </div>
                 <a
                   href="/api/reports/export?type=purchases&branch=vnb"
                   download
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded text-xs font-bold transition-colors"
+                  className="apple-pressable inline-flex items-center gap-1 px-3 py-1 bg-neutral-100/90 hover:bg-neutral-200 text-neutral-800 rounded-full text-xs font-bold transition-colors"
                 >
                   <Download className="w-3 h-3" />
                   <span>Download VNB CSV</span>
@@ -301,21 +301,21 @@ export default function DashboardPage() {
             </div>
 
             {/* Pookkottumpadam Store Card */}
-            <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4">
+            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 p-5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] space-y-4">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
+                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
                     PKDM
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-neutral-900">Pookkottumpadam Store</h3>
+                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight">Pookkottumpadam Store</h3>
                     <p className="text-[11px] text-neutral-400">Main Commercial Road</p>
                   </div>
                 </div>
                 <a
                   href="/api/reports/export?type=purchases&branch=pkdm"
                   download
-                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded text-xs font-bold transition-colors"
+                  className="apple-pressable inline-flex items-center gap-1 px-3 py-1 bg-neutral-100/90 hover:bg-neutral-200 text-neutral-800 rounded-full text-xs font-bold transition-colors"
                 >
                   <Download className="w-3 h-3" />
                   <span>Download PKDM CSV</span>
@@ -323,7 +323,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-neutral-50 rounded-lg">
+                <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
                   <span className="text-neutral-500 text-[11px] block">Today&apos;s Net Sales</span>
                   <span className="text-lg font-black font-mono text-black">
                     ₹{(storesBreakdown.pkdm?.todaySales || 0).toFixed(2)}
@@ -332,7 +332,7 @@ export default function DashboardPage() {
                     {storesBreakdown.pkdm?.todayOrders || 0} orders today
                   </span>
                 </div>
-                <div className="p-3 bg-rose-50/60 rounded-lg border border-rose-100">
+                <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100/80">
                   <span className="text-rose-900 text-[11px] block">Today&apos;s Discount (Loss)</span>
                   <span className="text-lg font-black font-mono text-rose-700">
                     -₹{(storesBreakdown.pkdm?.todayDiscounts || 0).toFixed(2)}
@@ -341,7 +341,7 @@ export default function DashboardPage() {
                     Concessions given
                   </span>
                 </div>
-                <div className="p-3 bg-neutral-50 rounded-lg">
+                <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
                   <span className="text-neutral-500 text-[11px] block">All-Time Net Realized</span>
                   <span className="text-base font-bold font-mono text-neutral-900">
                     ₹{(storesBreakdown.pkdm?.totalNetSales || 0).toFixed(2)}
@@ -350,7 +350,7 @@ export default function DashboardPage() {
                     {storesBreakdown.pkdm?.totalOrders || 0} total invoices
                   </span>
                 </div>
-                <div className="p-3 bg-neutral-50 rounded-lg">
+                <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
                   <span className="text-neutral-500 text-[11px] block">All-Time Total Discounts</span>
                   <span className="text-base font-bold font-mono text-amber-700">
                     ₹{(storesBreakdown.pkdm?.totalDiscounts || 0).toFixed(2)}
@@ -370,18 +370,18 @@ export default function DashboardPage() {
         {cards.map((card, i) => {
           const Icon = card.icon;
           return (
-            <div key={i} className={`p-5 rounded-xl shadow-xs ${card.color} transition-all`}>
+            <div key={i} className={`p-5 sm:p-6 rounded-2xl sm:rounded-3xl shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)] border border-black/5 ${card.color} transition-all apple-pressable`}>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider opacity-80">
+                <span className="text-xs font-semibold uppercase tracking-wider opacity-80">
                   {card.title}
                 </span>
                 <Icon className="w-5 h-5 opacity-80" />
               </div>
               <div className="mt-3">
-                <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight">
+                <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight apple-display">
                   {card.value}
                 </span>
-                <p className="text-[11px] opacity-75 mt-1 font-medium">{card.subtitle}</p>
+                <p className="text-[11px] opacity-75 mt-1 font-medium tracking-tight">{card.subtitle}</p>
               </div>
             </div>
           );
@@ -391,7 +391,7 @@ export default function DashboardPage() {
       {/* Analytics Charts & Breakdowns */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Daily Sales Chart (7 Days) - 8 cols */}
-        <div className="lg:col-span-8 bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
+        <div className="lg:col-span-8 apple-surface bg-white p-6 rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
             <div>
               <h3 className="text-sm font-bold text-neutral-900">7-Day Sales &amp; Discount Breakdown</h3>
