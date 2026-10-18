@@ -16,7 +16,7 @@ import {
 export const DEFAULT_BRANCHES: Record<BranchId, BranchInfo> = {
   vnb: {
     id: 'vnb',
-    name: 'TERRY WOMEN - Vaniyambalam',
+    name: 'TE7RY WOMEN - Vaniyambalam',
     town: 'Vaniyambalam',
     code: 'VNB',
     address: 'Near Town Hall & Railway Station, Vaniyambalam, Malappuram - 679339',
@@ -26,7 +26,7 @@ export const DEFAULT_BRANCHES: Record<BranchId, BranchInfo> = {
   },
   pkdm: {
     id: 'pkdm',
-    name: 'TERRY WOMEN - Pookkottumpadam',
+    name: 'TE7RY WOMEN - Pookkottumpadam',
     town: 'Pookkottumpadam',
     code: 'PKDM',
     address: 'Main Commercial Road, Pookkottumpadam, Malappuram - 679332',
@@ -144,7 +144,7 @@ function createInitialSeed(): DatabaseSchema {
       username: 'admin',
       password_hash: adminPasswordHash,
       role: 'SUPER_ADMIN',
-      name: 'Terry General Manager',
+      name: 'TE7RY General Manager',
       created_at: now,
     },
     {
@@ -169,11 +169,11 @@ function createInitialSeed(): DatabaseSchema {
 
   const shop_settings: ShopSettings = {
     id: 'settings_default',
-    shop_name: 'TERRY WOMEN',
+    shop_name: 'TE7RY WOMEN',
     logo_url: '/logo.png',
     address: 'Near Railway Station Road, Vaniyambalam, Malappuram - 679339',
-    phone: '+91 7736723917',
-    whatsapp_number: '+91 7736723917',
+    phone: '+91 8330889632',
+    whatsapp_number: '+91 8330889632',
     gstin: '32AAAAA0000A1Z5',
     rate_per_kg: 899,
     loyalty_discount: 449.50,
@@ -309,7 +309,7 @@ function createInitialSeed(): DatabaseSchema {
       customer_id: 'cust_C',
       phone: '9847033333',
       message_type: 'INVOICE',
-      content: '🧾 PURCHASE INVOICE - TERRY GARMENTS\nCustomer: Customer C (Chitra)\nInvoice No: INV-2026-000101\nWeight: 1.00 KG\nFinal Amount: ₹449.50\n🎁 Loyalty Status: 50% OFF on 1 KG Reward Applied (-₹449.50)!',
+      content: '🧾 CASH MEMO - TE7RY WOMEN\nCustomer: Customer C (Chitra)\nInvoice No: INV-2026-000101\nWeight: 1.00 KG\nFinal Amount: ₹449.50\n🎁 Loyalty Status: 50% OFF on 1 KG Reward Applied (-₹449.50)!',
       status: 'DELIVERED',
       is_demo: true,
       created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
@@ -321,7 +321,7 @@ function createInitialSeed(): DatabaseSchema {
       customer_id: 'cust_D',
       phone: '9847044444',
       message_type: 'INVOICE',
-      content: '🧾 PURCHASE INVOICE - TERRY GARMENTS\nCustomer: Customer D (Deepa)\nInvoice No: INV-2026-000102\nWeight: 0.70 KG\nFinal Amount: ₹629.30\n🎁 Loyalty Status: 50% OFF on 1 KG Reward Unlocked (Applicable on 1 KG+)',
+      content: '🧾 CASH MEMO - TE7RY WOMEN\nCustomer: Customer D (Deepa)\nInvoice No: INV-2026-000102\nWeight: 0.70 KG\nFinal Amount: ₹629.30\n🎁 Loyalty Status: 50% OFF on 1 KG Reward Unlocked (Applicable on 1 KG+)',
       status: 'SENT',
       is_demo: true,
       created_at: new Date(Date.now() - 4 * 3600000).toISOString(),

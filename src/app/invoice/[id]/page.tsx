@@ -153,11 +153,11 @@ function InvoiceContent() {
         {/* Store Support Card */}
         <div className="bg-white p-4 rounded-2xl border border-neutral-200 text-center space-y-1 text-xs text-neutral-600 no-print">
           <p className="font-bold text-neutral-800">
-            {settings?.shop_name || 'TERRY WOMEN'} &bull; Exclusive Women&apos;s Wear
+            {settings?.shop_name || 'TE7RY WOMEN'} &bull; Exclusive Women&apos;s Wear
           </p>
-          <p>{settings?.address || 'Calicut, Kerala'}</p>
+          <p>{settings?.address || 'Kerala, India'}</p>
           <p className="font-mono text-neutral-700">
-            Tel / WhatsApp: {settings?.phone || '+91 7736723917'} | UPI: 7736723917@okaxis
+            Tel / WhatsApp: {settings?.phone || '+91 8330889632'} | Email: {settings?.email || 'terry7women@gmail.com'}
           </p>
           <p className="text-[11px] text-neutral-400 pt-1">
             Goods once sold will not be exchanged or returned.

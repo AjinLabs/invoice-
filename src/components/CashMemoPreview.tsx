@@ -135,7 +135,7 @@ export default function CashMemoPreview({
           {/* Circular logo enlarged and prominent */}
           <img
             src="/logo.png"
-            alt="Terry 7 Women"
+            alt="TE7RY WOMEN"
             className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-full shadow-md hover:scale-102 transition-transform"
           />
           {/* Small INVOICE text below logo */}

@@ -28,7 +28,7 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Shop Info
-  const [shopName, setShopName] = useState('TERRY WOMEN - Vaniyambalam');
+  const [shopName, setShopName] = useState('TE7RY WOMEN - Vaniyambalam');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -83,8 +83,8 @@ export default function SettingsPage() {
         setShopName(
           s.shop_name ||
             (branch === 'pkdm'
-              ? 'TERRY WOMEN - Pookkottumpadam'
-              : 'TERRY WOMEN - Vaniyambalam')
+              ? 'TE7RY WOMEN - Pookkottumpadam'
+              : 'TE7RY WOMEN - Vaniyambalam')
         );
         setAddress(s.address || '');
         setPhone(s.phone || '+91 8330889632');

@@ -148,14 +148,14 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Left: Brand Logo & Title */}
             <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-2.5 group apple-pressable">
+              <Link href="/" className="flex items-center gap-2 group apple-pressable">
                 <img
                   src="/logo.png"
-                  alt="Terry Women"
+                  alt="TE7RY WOMEN"
                   className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-contain border-2 border-[#094327] shadow-xs group-hover:scale-105 transition-transform"
                 />
-                <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-neutral-200 transition-colors uppercase">
-                  TERRY
+                <span className="text-lg sm:text-xl font-black tracking-wider text-white group-hover:text-neutral-200 transition-colors uppercase">
+                  TE<span className="text-[#e11d48]">7</span>RY
                 </span>
                 <span className="text-[10px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full border border-emerald-500/40 tracking-widest uppercase">
                   WOMEN

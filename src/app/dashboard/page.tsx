@@ -126,9 +126,9 @@ export default function DashboardPage() {
   ];
 
   const getBranchTitle = () => {
-    if (activeBranch === 'all') return 'Master Dashboard (All Stores Combined)';
-    if (activeBranch === 'pkdm') return 'TERRY WOMEN - Pookkottumpadam Store';
-    return 'TERRY WOMEN - Vaniyambalam Store';
+    if (activeBranch === 'all') return 'Master Dashboard (TE7RY WOMEN - All Stores)';
+    if (activeBranch === 'pkdm') return 'TE7RY WOMEN - Pookkottumpadam Store';
+    return 'TE7RY WOMEN - Vaniyambalam Store';
   };
 
   const maskPhoneNumber = (phone?: string) => {

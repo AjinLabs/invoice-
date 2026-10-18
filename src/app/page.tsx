@@ -414,7 +414,7 @@ export default function BillingPage() {
                 </span>
               </div>
               <h1 className="text-lg sm:text-xl font-black text-neutral-900 tracking-tight apple-headline">
-                {activeBranch === 'pkdm' ? 'Pookkottumpadam Store' : 'Vaniyambalam Store'}
+                {activeBranch === 'pkdm' ? 'TE7RY WOMEN - Pookkottumpadam' : 'TE7RY WOMEN - Vaniyambalam'}
               </h1>
               <p className="text-xs text-neutral-500 tracking-tight">
                 {branchInfo?.address || (activeBranch === 'pkdm' ? 'Nilambur - Ooty Road, Pookkottumpadam' : 'Railway Station Road, Vaniyambalam')} &bull; Rate: ₹{branchInfo?.rate_per_kg || 899}/KG

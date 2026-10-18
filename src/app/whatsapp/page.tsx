@@ -358,7 +358,7 @@ export default function WhatsAppCenterPage() {
                   T
                 </div>
                 <div>
-                  <span className="text-xs font-bold block leading-tight">TERRY GARMENTS</span>
+                  <span className="text-xs font-bold block leading-tight">TE7RY WOMEN</span>
                   <span className="text-[10px] text-emerald-200">Official Business Account</span>
                 </div>
               </div>
@@ -366,7 +366,7 @@ export default function WhatsAppCenterPage() {
               {/* Chat Bubble Body */}
               <div className="bg-[#efeae2] p-4 min-h-[300px] flex flex-col justify-end">
                 <div className="bg-white rounded-lg p-3 text-xs text-neutral-900 shadow-xs max-w-[95%] space-y-1.5 leading-relaxed whitespace-pre-line border border-neutral-200">
-                  <p className="font-bold">🧾 *PURCHASE INVOICE - TERRY*</p>
+                  <p className="font-bold">🧾 *CASH MEMO - TE7RY WOMEN*</p>
                   <p>*Customer:* Ananya</p>
                   <p>*Invoice No:* INV-2026-000105</p>
                   <p>*Weight:* 1.00 KG (1000g)</p>
@@ -381,7 +381,7 @@ export default function WhatsAppCenterPage() {
                     📸 *Bill Photo:* /api/invoices/INV-2026-000105/image
                   </p>
                   <p className="text-[10px] text-neutral-500 pt-1">
-                    Terry Garments &bull; Tel/WhatsApp: +91 7736723917
+                    TE7RY WOMEN &bull; Tel/WhatsApp: +91 8330889632
                   </p>
                 </div>
               </div>

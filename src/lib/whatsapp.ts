@@ -44,7 +44,7 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
   }
 
   return (
-    `🧾 *CASH MEMO - ${settings.shop_name || 'TERRY 7 WOMEN'}*\n\n` +
+    `🧾 *CASH MEMO - ${settings.shop_name || 'TE7RY WOMEN'}*\n\n` +
     `*Customer:* ${purchase.customer_name}\n` +
     `*Date:* ${dateFormatted}\n\n` +
     itemsSummary +

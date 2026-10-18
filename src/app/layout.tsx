@@ -15,8 +15,8 @@ const oswald = Oswald({
 });
 
 export const metadata: Metadata = {
-  title: 'Terry Garments - Weight-Based POS Billing System',
-  description: 'Modern weight-based clothing billing, customer management, loyalty rewards, and automatic WhatsApp invoices.',
+  title: 'TE7RY WOMEN - Weight-Based POS Billing System',
+  description: 'Official weight-based clothing billing, customer loyalty tracker, and WhatsApp cash memo for TE7RY WOMEN.',
 };
 
 export default function RootLayout({
