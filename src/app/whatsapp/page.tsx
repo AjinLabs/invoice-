@@ -354,11 +354,14 @@ export default function WhatsAppCenterPage() {
             <div className="border border-neutral-300 rounded-xl overflow-hidden shadow-xs">
               {/* WhatsApp Mock Chat Header */}
               <div className="bg-[#075e54] text-white p-3 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center font-bold text-xs">
-                  T
+                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border border-white/20 bg-white">
+                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold block leading-tight">TE7RY WOMEN</span>
+                  <span className="text-xs font-bold leading-tight flex items-center gap-1">
+                    <span className="text-white">TERRY<span className="text-[#f87171]">7</span></span>
+                    <span className="text-[9px] bg-white text-[#075e54] px-1.5 py-0.5 rounded-full font-bold">WOMEN</span>
+                  </span>
                   <span className="text-[10px] text-emerald-200">Official Business Account</span>
                 </div>
               </div>
@@ -366,7 +369,7 @@ export default function WhatsAppCenterPage() {
               {/* Chat Bubble Body */}
               <div className="bg-[#efeae2] p-4 min-h-[300px] flex flex-col justify-end">
                 <div className="bg-white rounded-lg p-3 text-xs text-neutral-900 shadow-xs max-w-[95%] space-y-1.5 leading-relaxed whitespace-pre-line border border-neutral-200">
-                  <p className="font-bold">🧾 *CASH MEMO - TE7RY WOMEN*</p>
+                  <p className="font-bold">🧾 *CASH MEMO - TERRY7 WOMEN*</p>
                   <p>*Customer:* Ananya</p>
                   <p>*Invoice No:* INV-2026-000105</p>
                   <p>*Weight:* 1.00 KG (1000g)</p>
@@ -381,7 +384,7 @@ export default function WhatsAppCenterPage() {
                     📸 *Bill Photo:* /api/invoices/INV-2026-000105/image
                   </p>
                   <p className="text-[10px] text-neutral-500 pt-1">
-                    TE7RY WOMEN &bull; Tel/WhatsApp: +91 8330889632
+                    TERRY7 WOMEN &bull; Tel/WhatsApp: +91 8330889632
                   </p>
                 </div>
               </div>

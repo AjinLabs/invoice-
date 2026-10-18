@@ -148,16 +148,20 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-14 sm:h-16">
             {/* Left: Brand Logo & Title */}
             <div className="flex items-center gap-3">
-              <Link href="/" className="flex items-center gap-2 group apple-pressable">
+              <Link
+                href="/"
+                className="flex items-center gap-2 group apple-pressable bg-white hover:bg-neutral-50 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-xs border border-white/20 transition-all"
+              >
                 <img
                   src="/logo.png"
-                  alt="TE7RY WOMEN"
-                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-contain border-2 border-[#094327] shadow-xs group-hover:scale-105 transition-transform"
+                  alt="TERRY7 WOMEN"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-contain group-hover:scale-105 transition-transform"
                 />
-                <span className="text-lg sm:text-xl font-black tracking-wider text-white group-hover:text-neutral-200 transition-colors uppercase">
-                  TE<span className="text-[#e11d48]">7</span>RY
+                <span className="text-sm sm:text-base font-black tracking-wider uppercase flex items-center">
+                  <span className="text-[#094327]">TERRY</span>
+                  <span className="text-[#e11d48]">7</span>
                 </span>
-                <span className="text-[10px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full border border-emerald-500/40 tracking-widest uppercase">
+                <span className="text-[9px] sm:text-[10px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full tracking-widest uppercase">
                   WOMEN
                 </span>
               </Link>

@@ -126,7 +126,7 @@ export default function WhatsAppSuccessModal({
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `Invoice ${purchase.invoice_number} - TE7RY WOMEN`,
+          title: `Invoice ${purchase.invoice_number} - TERRY7 WOMEN`,
           text: messageText,
         });
         return;
@@ -335,7 +335,7 @@ export default function WhatsAppSuccessModal({
                 <div className="p-3 bg-[#e5e0d3] max-h-80 overflow-y-auto flex justify-center">
                   <img
                     src={billImageDataUrl}
-                    alt="TE7RY WOMEN Cash Memo"
+                    alt="TERRY7 WOMEN Cash Memo"
                     className="max-w-full rounded-2xl shadow-lg border border-neutral-300"
                   />
                 </div>

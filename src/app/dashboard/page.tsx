@@ -126,9 +126,9 @@ export default function DashboardPage() {
   ];
 
   const getBranchTitle = () => {
-    if (activeBranch === 'all') return 'Master Dashboard (TE7RY WOMEN - All Stores)';
-    if (activeBranch === 'pkdm') return 'TE7RY WOMEN - Pookkottumpadam Store';
-    return 'TE7RY WOMEN - Vaniyambalam Store';
+    if (activeBranch === 'all') return 'Master Dashboard (TERRY7 WOMEN - All Stores)';
+    if (activeBranch === 'pkdm') return 'TERRY7 WOMEN - Pookkottumpadam Store';
+    return 'TERRY7 WOMEN - Vaniyambalam Store';
   };
 
   const maskPhoneNumber = (phone?: string) => {
@@ -155,8 +155,17 @@ export default function DashboardPage() {
                 : 'Vaniyambalam (VNB)'}
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 apple-display">
-            {getBranchTitle()}
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 apple-display flex items-center gap-2 flex-wrap">
+            <span className="flex items-center">
+              <span className="text-[#094327]">TERRY</span>
+              <span className="text-[#e11d48]">7</span>
+            </span>
+            <span className="text-xs font-bold bg-[#094327] text-white px-2.5 py-0.5 rounded-full tracking-widest uppercase">
+              WOMEN
+            </span>
+            <span className="text-neutral-900 font-bold ml-1 text-xl sm:text-2xl">
+              &bull; {activeBranch === 'all' ? 'All Stores Master Analytics' : activeBranch === 'pkdm' ? 'Pookkottumpadam Store' : 'Vaniyambalam Store'}
+            </span>
           </h1>
           <p className="text-xs text-neutral-500 mt-1 tracking-tight">
             Daily net sales, discount concessions, and monthly branch overview.
@@ -211,7 +220,10 @@ export default function DashboardPage() {
                     VNB
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight">Vaniyambalam Store</h3>
+                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight flex items-center gap-1">
+                      <span><span className="text-[#094327]">TERRY</span><span className="text-[#e11d48]">7</span></span>
+                      <span>Vaniyambalam Store</span>
+                    </h3>
                     <p className="text-[11px] text-neutral-400">Railway Station Road</p>
                   </div>
                 </div>
@@ -265,7 +277,10 @@ export default function DashboardPage() {
                     PKDM
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight">Pookkottumpadam Store</h3>
+                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight flex items-center gap-1">
+                      <span><span className="text-[#094327]">TERRY</span><span className="text-[#e11d48]">7</span></span>
+                      <span>Pookkottumpadam Store</span>
+                    </h3>
                     <p className="text-[11px] text-neutral-400">Main Commercial Road</p>
                   </div>
                 </div>
@@ -356,61 +371,46 @@ export default function DashboardPage() {
           const payments = stats?.salesByPayment || [];
           const cash = payments.find((p) => p.method.toUpperCase().includes('CASH')) || { method: 'CASH', amount: 0, count: 0 };
           const upi = payments.find((p) => p.method.toUpperCase().includes('UPI') || p.method.toUpperCase().includes('GPAY')) || { method: 'UPI / GPAY', amount: 0, count: 0 };
-          const totalPaid = (cash.amount || 0) + (upi.amount || 0) || 1;
-          const cashPct = Math.round(((cash.amount || 0) / totalPaid) * 100);
-          const upiPct = Math.round(((upi.amount || 0) / totalPaid) * 100);
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
               {/* Cash Collection Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50/80 border border-neutral-200/80 space-y-3">
+              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-neutral-50/90 border border-neutral-200/90 hover:border-[#094327]/40 transition-all space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
                     💵 Cash In Hand
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#094327] text-white">
-                    {cashPct}%
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#094327]/10 text-[#094327] border border-[#094327]/25">
+                    {cash.count} {cash.count === 1 ? 'Customer' : 'Customers'}
                   </span>
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl font-black font-mono text-neutral-950">
+                  <div className="text-3xl sm:text-4xl font-black font-mono text-neutral-950 tracking-tight">
                     ₹{cash.amount.toFixed(2)}
                   </div>
-                  <div className="text-xs text-neutral-500 mt-0.5">
-                    {cash.count} cash customer invoices
+                  <div className="text-xs font-medium text-neutral-500 mt-1">
+                    Total cash customer collections
                   </div>
-                </div>
-                <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-[#094327] h-full rounded-full transition-all duration-300"
-                    style={{ width: `${cashPct}%` }}
-                  />
                 </div>
               </div>
 
               {/* UPI / GPay Collection Card */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-neutral-50/80 border border-neutral-200/80 space-y-3">
+              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-neutral-50/90 border border-neutral-200/90 hover:border-neutral-400 transition-all space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
                     📱 UPI / GPay Digital
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-neutral-950 text-white">
-                    {upiPct}%
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-neutral-200/80 text-neutral-800 border border-neutral-300">
+                    {upi.count} {upi.count === 1 ? 'Customer' : 'Customers'}
                   </span>
                 </div>
                 <div>
-                  <div className="text-2xl sm:text-3xl font-black font-mono text-neutral-950">
+                  <div className="text-3xl sm:text-4xl font-black font-mono text-neutral-950 tracking-tight">
                     ₹{upi.amount.toFixed(2)}
                   </div>
-                  <div className="text-xs text-neutral-500 mt-0.5">
-                    {upi.count} UPI / GPay customer invoices
+                  <div className="text-xs font-medium text-neutral-500 mt-1">
+                    Total UPI &amp; online collections
                   </div>
-                </div>
-                <div className="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-neutral-900 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${upiPct}%` }}
-                  />
                 </div>
               </div>
             </div>

@@ -51,12 +51,18 @@ export default function LoginPage() {
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-neutral-100/70">
       <div className="apple-surface bg-white p-8 sm:p-9 max-w-md w-full space-y-6 border border-black/5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] rounded-3xl">
         <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden flex items-center justify-center shadow-md">
-            <img src="/logo.png" alt="TE7RY WOMEN" className="w-full h-full object-contain" />
+          <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden flex items-center justify-center shadow-md border-2 border-[#094327]">
+            <img src="/logo.png" alt="TERRY7 WOMEN" className="w-full h-full object-contain" />
           </div>
-          <span className="text-2xl font-black tracking-wider uppercase block mb-1 apple-display text-neutral-900">
-            TE<span className="text-[#e11d48]">7</span>RY <span className="text-base text-neutral-600 font-bold">WOMEN</span>
-          </span>
+          <div className="flex items-center justify-center gap-1.5 mb-1">
+            <span className="text-2xl sm:text-3xl font-black tracking-wider uppercase apple-display flex items-center">
+              <span className="text-[#094327]">TERRY</span>
+              <span className="text-[#e11d48]">7</span>
+            </span>
+            <span className="text-[11px] font-bold bg-[#094327] text-white px-2.5 py-0.5 rounded-full tracking-widest uppercase">
+              WOMEN
+            </span>
+          </div>
           <h2 className="text-sm font-semibold text-neutral-800 tracking-tight">Branch & Store Manager Login</h2>
           <p className="text-xs text-neutral-500 mt-1">Select your shop location or enter credentials</p>
         </div>

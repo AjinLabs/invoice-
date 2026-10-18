@@ -14,7 +14,7 @@ export function generateInvoicePdf(purchase: Purchase, settings: ShopSettings): 
   const pageWidth = doc.internal.pageSize.getWidth();
   let y = 14;
 
-  const branchName = purchase.branch_name || settings.shop_name || 'TE7RY WOMEN';
+  const branchName = purchase.branch_name || settings.shop_name || 'TERRY7 WOMEN';
   const branchAddress = settings.address;
   const branchPhone = settings.phone || '+91 8330889632';
 
@@ -203,7 +203,7 @@ export function generateMonthlyReportPdf(
   // Header
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text('TE7RY WOMEN', 14, y);
+  doc.text('TERRY7 WOMEN', 14, y);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
@@ -385,7 +385,7 @@ export function generateMonthlyReportPdf(
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(120, 120, 120);
-  doc.text('Automated monthly sales summary report for TE7RY WOMEN management.', pageWidth / 2, y, { align: 'center' });
+  doc.text('Automated monthly sales summary report for TERRY7 WOMEN management.', pageWidth / 2, y, { align: 'center' });
   doc.text(`Confidential • Sent to terry7women@gmail.com • Store Contact: ${settings.phone || '+91 8330889632'}`, pageWidth / 2, y + 4, { align: 'center' });
 
   return doc;

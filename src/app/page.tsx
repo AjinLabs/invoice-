@@ -413,8 +413,17 @@ export default function BillingPage() {
                   {nextInvoiceNumber}
                 </span>
               </div>
-              <h1 className="text-lg sm:text-xl font-black text-neutral-900 tracking-tight apple-headline">
-                {activeBranch === 'pkdm' ? 'TE7RY WOMEN - Pookkottumpadam' : 'TE7RY WOMEN - Vaniyambalam'}
+              <h1 className="text-lg sm:text-xl font-black tracking-tight apple-headline flex items-center gap-1.5 flex-wrap">
+                <span className="flex items-center">
+                  <span className="text-[#094327]">TERRY</span>
+                  <span className="text-[#e11d48]">7</span>
+                </span>
+                <span className="text-[10px] sm:text-[11px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full tracking-widest uppercase">
+                  WOMEN
+                </span>
+                <span className="text-neutral-900 font-bold ml-1 text-sm sm:text-base">
+                  &bull; {activeBranch === 'pkdm' ? 'Pookkottumpadam Store' : 'Vaniyambalam Store'}
+                </span>
               </h1>
               <p className="text-xs text-neutral-500 tracking-tight">
                 {branchInfo?.address || (activeBranch === 'pkdm' ? 'Nilambur - Ooty Road, Pookkottumpadam' : 'Railway Station Road, Vaniyambalam')} &bull; Rate: ₹{branchInfo?.rate_per_kg || 899}/KG

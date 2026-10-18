@@ -152,8 +152,15 @@ function InvoiceContent() {
 
         {/* Store Support Card */}
         <div className="bg-white p-4 rounded-2xl border border-neutral-200 text-center space-y-1 text-xs text-neutral-600 no-print">
-          <p className="font-bold text-neutral-800">
-            {settings?.shop_name || 'TE7RY WOMEN'} &bull; Exclusive Women&apos;s Wear
+          <p className="font-bold text-neutral-800 flex items-center justify-center gap-1.5 flex-wrap">
+            <span className="flex items-center">
+              <span className="text-[#094327]">TERRY</span>
+              <span className="text-[#e11d48]">7</span>
+            </span>
+            <span className="text-[10px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full tracking-widest uppercase">
+              WOMEN
+            </span>
+            <span>&bull; Exclusive Women&apos;s Wear</span>
           </p>
           <p>{settings?.address || 'Kerala, India'}</p>
           <p className="font-mono text-neutral-700">

@@ -129,17 +129,27 @@ export default function CashMemoPreview({
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#094327]" />
 
         {/* ==============================================================
-            1. TOP HEADER: [Circular TE7RY Logo] Centered with small INVOICE below
+            1. TOP HEADER: [Circular TERRY7 Logo] Centered with small INVOICE below
            ============================================================== */}
         <div className="flex flex-col items-center justify-center text-center pb-2 pt-1">
           {/* Circular logo enlarged and prominent */}
           <img
             src="/logo.png"
-            alt="TE7RY WOMEN"
+            alt="TERRY7 WOMEN"
             className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-full shadow-md hover:scale-102 transition-transform"
           />
+          {/* Brand Name: TERRY in Terry Green, 7 in Red, with WOMEN capsule */}
+          <div className="flex items-center justify-center gap-1.5 mt-2.5">
+            <span className="text-lg sm:text-xl font-black tracking-wider uppercase flex items-center">
+              <span className="text-[#094327]">TERRY</span>
+              <span className="text-[#e11d48]">7</span>
+            </span>
+            <span className="text-[10px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full tracking-widest uppercase">
+              WOMEN
+            </span>
+          </div>
           {/* Small INVOICE text below logo */}
-          <span className="text-[12px] font-bold tracking-[0.35em] text-[#094327] uppercase mt-2.5">
+          <span className="text-[11px] font-bold tracking-[0.35em] text-[#094327] uppercase mt-1">
             INVOICE
           </span>
         </div>

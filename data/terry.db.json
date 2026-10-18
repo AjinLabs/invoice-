@@ -5,7 +5,7 @@
       "username": "admin",
       "password_hash": "$2b$10$na.RAuke1Gypn8EuVGRfeuwDc2vk3fcjJCWPiAaGM2.PGRr3T2HXW",
       "role": "SUPER_ADMIN",
-      "name": "TE7RY Store Manager",
+      "name": "TERRY7 Store Manager",
       "created_at": "2026-10-08T04:25:34.390Z"
     },
     {
@@ -733,7 +733,7 @@
   ],
   "shop_settings": {
     "id": "settings_default",
-    "shop_name": "TE7RY WOMEN",
+    "shop_name": "TERRY7 WOMEN",
     "logo_url": "/logo.png",
     "address": "Near Town Center, Main Commercial Road, Calicut - 673001",
     "phone": "+91 8330889632",
@@ -759,7 +759,7 @@
     "branches": {
       "vnb": {
         "id": "vnb",
-        "name": "TE7RY WOMEN - Vaniyambalam",
+        "name": "TERRY7 WOMEN - Vaniyambalam",
         "town": "Vaniyambalam",
         "malayalamName": "വാണിയമ്പലം",
         "address": "Near Town Hall & Railway Station, Vaniyambalam, Malappuram - 679339",
@@ -769,7 +769,7 @@
       },
       "pkdm": {
         "id": "pkdm",
-        "name": "TE7RY WOMEN - Pookkottumpadam",
+        "name": "TERRY7 WOMEN - Pookkottumpadam",
         "town": "Pookkottumpadam",
         "malayalamName": "പൂക്കോട്ടുംപാടം",
         "address": "Main Commercial Road, Pookkottumpadam, Malappuram - 679332",
