@@ -549,50 +549,29 @@ export default function BillingPage() {
 
               {includeKiloDress ? (
                 <div className="space-y-4">
-                  {/* Unit Toggle and Input */}
+                  {/* Weight Input (Grams only) */}
                   <div>
                     <div className="flex justify-between items-center mb-1.5">
                       <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
-                        Enter Dress Weight
+                        Enter Dress Weight (Grams)
                       </label>
-                      <div className="apple-segmented-container bg-neutral-100 p-0.5 rounded-full border border-neutral-200/80">
-                        <button
-                          type="button"
-                          onClick={() => setUnit('g')}
-                          className={`apple-pressable px-3.5 py-1 text-xs font-semibold rounded-full transition-all ${
-                            unit === 'g'
-                              ? 'bg-neutral-950 text-white shadow-xs'
-                              : 'text-neutral-600 hover:text-black'
-                          }`}
-                        >
-                          Grams (g)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setUnit('kg')}
-                          className={`apple-pressable px-3.5 py-1 text-xs font-semibold rounded-full transition-all ${
-                            unit === 'kg'
-                              ? 'bg-neutral-950 text-white shadow-xs'
-                              : 'text-neutral-600 hover:text-black'
-                          }`}
-                        >
-                          Kilograms (KG)
-                        </button>
-                      </div>
+                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200">
+                        Grams (g)
+                      </span>
                     </div>
 
                     <div className="relative">
                       <input
                         type="number"
                         min="0"
-                        step={unit === 'kg' ? '0.01' : '1'}
+                        step="1"
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
-                        placeholder={unit === 'kg' ? 'e.g. 0.7 or 1.2' : 'e.g. 500, 700, 1000'}
+                        placeholder="e.g. 500, 700, 1000"
                         className="w-full px-4 py-3.5 text-2xl font-black rounded-2xl border-2 border-neutral-950 focus:ring-2 focus:ring-neutral-950/20 outline-hidden bg-neutral-50/30 tracking-tight"
                       />
                       <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-sm font-bold text-neutral-400 uppercase tracking-wider">
-                        {unit === 'kg' ? 'KG' : 'Grams'}
+                        Grams
                       </div>
                     </div>
                   </div>
@@ -608,13 +587,13 @@ export default function BillingPage() {
                           key={g}
                           type="button"
                           onClick={() => handleQuickGrams(g)}
-                          className={`apple-pressable px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                            billingCalc.weightGrams === g && unit === 'g'
+                          className={`apple-pressable px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
+                            billingCalc.weightGrams === g
                               ? 'bg-neutral-950 text-white border-neutral-950 shadow-2xs'
                               : 'bg-neutral-50/80 text-neutral-800 border-neutral-200/90 hover:bg-neutral-100'
                           }`}
                         >
-                          {g}g {g >= 1000 ? `(${(g / 1000).toFixed(1)}kg)` : ''}
+                          {g}g
                         </button>
                       ))}
                     </div>
