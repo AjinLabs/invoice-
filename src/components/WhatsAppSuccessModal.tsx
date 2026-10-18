@@ -62,7 +62,7 @@ export default function WhatsAppSuccessModal({
 
   if (!isOpen || !purchase) return null;
 
-  const shopPhone = settings?.whatsapp_number || settings?.phone || '+91 7736723917';
+  const shopPhone = settings?.whatsapp_number || settings?.phone || '+91 8330889632';
   const cleanCustomerPhone = purchase.customer_phone.replace(/\D/g, '');
   const destinationPhone = cleanCustomerPhone.length === 10 ? `91${cleanCustomerPhone}` : cleanCustomerPhone;
   const messageText = whatsappResult?.formattedText || '';
@@ -126,15 +126,19 @@ export default function WhatsAppSuccessModal({
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `Invoice ${purchase.invoice_number} - TERRY7 WOMEN`,
+          title: `TERRY7 WOMEN - ${purchase.invoice_number}`,
           text: messageText,
         });
         return;
       }
-    } catch (err) {
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        // User closed or dismissed the share sheet, do not trigger fallback
+        return;
+      }
       console.warn('Native share cancelled or failed:', err);
     }
-    // Fallback to copy & open
+    // Fallback to copy & open for devices without Web Share API
     handleOpenWhatsApp();
   };
 
@@ -210,44 +214,40 @@ export default function WhatsAppSuccessModal({
             </div>
           </div>
 
-          {/* HIGH-PRIORITY INSTRUCTION BANNER (English) */}
+          {/* HIGH-PRIORITY INSTRUCTION BANNER */}
           <div className="bg-[#f0fdf4] border-2 border-emerald-400 rounded-2xl p-4 space-y-2.5 shadow-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
-              <h4 className="text-xs sm:text-sm font-black text-emerald-950 uppercase tracking-wide">
-                📸 How to Send Bill Photo & Message to WhatsApp
-              </h4>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <h4 className="text-xs sm:text-sm font-black text-emerald-950 uppercase tracking-wide">
+                  📸 WhatsApp Sharing Instructions
+                </h4>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                Tablet & PC
+              </span>
             </div>
 
-            <div className="bg-white/80 p-3 rounded-xl border border-emerald-200 space-y-2 text-xs text-neutral-800 leading-relaxed">
+            <div className="bg-white/90 p-3 rounded-xl border border-emerald-200 space-y-2 text-xs text-neutral-800 leading-relaxed">
               <div className="flex items-start gap-2">
-                <span className="font-bold text-emerald-800 bg-emerald-100 rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-[11px]">
-                  1
+                <span className="font-bold text-white bg-emerald-700 rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-[10px]">
+                  📱
                 </span>
                 <p>
-                  Click <strong>&apos;Open WhatsApp Web&apos;</strong> below. The customer chat will open with the pre-filled invoice message.
+                  <strong>Tablet / Mobile:</strong> Tap the green button <strong>&apos;Send Bill Photo + Message to WhatsApp&apos;</strong>. Select WhatsApp — the bill photo and text message will be shared together in 1 tap!
                 </p>
               </div>
 
               <div className="flex items-start gap-2">
-                <span className="font-bold text-emerald-800 bg-emerald-100 rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-[11px]">
-                  2
+                <span className="font-bold text-white bg-neutral-800 rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-[10px]">
+                  💻
                 </span>
                 <p>
-                  <strong>To Send Bill Photo:</strong> In the WhatsApp chat box, press{' '}
-                  <span className="px-1.5 py-0.5 bg-black text-white rounded font-mono font-bold text-[11px]">
+                  <strong>PC / Desktop:</strong> Click <strong>&apos;WhatsApp Web (PC)&apos;</strong>. The customer chat opens with the text message. Press{' '}
+                  <span className="px-1.5 py-0.5 bg-neutral-900 text-white rounded font-mono font-bold text-[10px]">
                     Ctrl + V
                   </span>{' '}
-                  (Paste). The invoice photo is already copied and will paste instantly!
-                </p>
-              </div>
-
-              <div className="flex items-start gap-2">
-                <span className="font-bold text-emerald-800 bg-emerald-100 rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-[11px]">
-                  3
-                </span>
-                <p className="text-neutral-600">
-                  Alternatively, download the PNG image and drag &amp; drop it directly into the WhatsApp chat.
+                  in the chat box to paste the bill photo.
                 </p>
               </div>
             </div>
@@ -261,55 +261,65 @@ export default function WhatsAppSuccessModal({
             )}
           </div>
 
-          {/* PRIMARY ACTIONS: WhatsApp Web & 1-Click Share */}
+          {/* PRIMARY ACTIONS: 1-Tap Share for Tablet & Desktop WhatsApp Web */}
           <div className="space-y-2 pt-1">
             <button
               type="button"
-              onClick={handleOpenWhatsApp}
-              className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md hover:shadow-lg"
+              onClick={handleNativeShare}
+              className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md hover:shadow-lg active:scale-[0.99] cursor-pointer"
             >
-              <MessageSquare className="w-5 h-5" />
-              <span>Open WhatsApp Web & Copy Photo (Ctrl + V)</span>
-              <ExternalLink className="w-4 h-4 opacity-75" />
+              <Share2 className="w-5 h-5" />
+              <span>📲 Send Bill Photo + Message to WhatsApp</span>
             </button>
 
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={handleNativeShare}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-xs"
+                onClick={handleOpenMobileWhatsApp}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                title="Direct WhatsApp chat link"
               >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>📤 1-Click Share (Photo + Text)</span>
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                <span>💬 Direct WhatsApp Chat</span>
               </button>
 
               <button
                 type="button"
-                onClick={handleDownloadPhoto}
-                className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-white hover:bg-neutral-100 text-neutral-900 border border-neutral-300 rounded-xl text-xs font-bold transition-all shadow-xs"
+                onClick={handleOpenWhatsApp}
+                className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border border-neutral-300 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+                title="Open WhatsApp Web on Desktop"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>⬇️ Download Bill Photo</span>
+                <ExternalLink className="w-3.5 h-3.5 text-neutral-600" />
+                <span>💻 WhatsApp Web (PC)</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={copyPhotoToClipboard}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-xs font-semibold border border-neutral-200"
+                className="flex items-center justify-center gap-1.5 py-2 px-2 bg-neutral-50 hover:bg-neutral-100 text-neutral-800 rounded-lg text-xs font-semibold border border-neutral-200 cursor-pointer"
               >
                 <Copy className="w-3.5 h-3.5" />
-                <span>{copiedPhoto ? 'Copied Photo! ✓' : 'Copy Photo Only'}</span>
+                <span>{copiedPhoto ? 'Copied! ✓' : 'Copy Photo'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={copyTextToClipboard}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg text-xs font-semibold border border-neutral-200"
+                className="flex items-center justify-center gap-1.5 py-2 px-2 bg-neutral-50 hover:bg-neutral-100 text-neutral-800 rounded-lg text-xs font-semibold border border-neutral-200 cursor-pointer"
               >
                 <Copy className="w-3.5 h-3.5" />
-                <span>{copiedText ? 'Copied Text! ✓' : 'Copy Message Text'}</span>
+                <span>{copiedText ? 'Copied! ✓' : 'Copy Text'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadPhoto}
+                className="flex items-center justify-center gap-1.5 py-2 px-2 bg-neutral-50 hover:bg-neutral-100 text-neutral-800 rounded-lg text-xs font-semibold border border-neutral-200 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Save Photo</span>
               </button>
             </div>
           </div>

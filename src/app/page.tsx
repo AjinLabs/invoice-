@@ -292,24 +292,12 @@ export default function BillingPage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image: capturedDataUrl }),
           }).catch((imgPostErr) => console.warn('Could not post invoice image:', imgPostErr));
-
-          // Auto-download bill photo file directly to computer
-          try {
-            const dl = document.createElement('a');
-            dl.href = capturedDataUrl;
-            dl.download = `${data.purchase.invoice_number}.png`;
-            document.body.appendChild(dl);
-            dl.click();
-            document.body.removeChild(dl);
-          } catch (dlErr) {
-            console.warn('Auto-download warning:', dlErr);
-          }
         } catch (imgErr) {
           console.warn('Could not generate bill image snapshot:', imgErr);
         }
       }
 
-      // Step 3: Copy image to clipboard so Ctrl+V in WhatsApp Web pastes photo directly!
+      // Step 3: Copy image to clipboard so Ctrl+V in WhatsApp Web pastes photo directly on desktop
       if (capturedBlob && navigator.clipboard && (window as any).ClipboardItem) {
         try {
           await navigator.clipboard.write([
@@ -320,22 +308,7 @@ export default function BillingPage() {
         }
       }
 
-      // Step 4: Open WhatsApp Web / Mobile wa.me with destination and text
-      if (!shouldPrintDirectly) {
-        const cleanDigits = phone.replace(/\D/g, '');
-        const destination = cleanDigits.length === 10 ? `91${cleanDigits}` : cleanDigits;
-        const encodedText = encodeURIComponent(data.whatsapp?.formattedText || '');
-        const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const waUrl = isMobile
-          ? `https://wa.me/${destination}?text=${encodedText}`
-          : `https://web.whatsapp.com/send?phone=${destination}&text=${encodedText}`;
-        try {
-          window.open(waUrl, '_blank');
-        } catch (openErr) {
-          console.warn('Could not open WhatsApp window:', openErr);
-        }
-      }
-
+      // Open WhatsApp Success Modal directly (without auto-downloading or premature text-only window popups)
       setShowSuccessModal(true);
 
       if (shouldPrintDirectly) {
@@ -473,7 +446,7 @@ export default function BillingPage() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="e.g. 7736723917 (10 digits)"
+                      placeholder="Enter customer mobile number (10 digits)"
                       maxLength={15}
                       className="w-full pl-10 pr-4 py-3 rounded-lg border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-base font-medium outline-hidden transition-all bg-neutral-50/50 focus:bg-white"
                     />

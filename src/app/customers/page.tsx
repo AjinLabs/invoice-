@@ -350,7 +350,7 @@ export default function CustomersPage() {
                 <input
                   type="tel"
                   required
-                  placeholder="e.g. 7736723917"
+                  placeholder="Enter 10-digit mobile number"
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg text-sm"
