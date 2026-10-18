@@ -368,24 +368,35 @@ export default function WhatsAppCenterPage() {
 
               {/* Chat Bubble Body */}
               <div className="bg-[#efeae2] p-4 min-h-[300px] flex flex-col justify-end">
-                <div className="bg-white rounded-lg p-3 text-xs text-neutral-900 shadow-xs max-w-[95%] space-y-1.5 leading-relaxed whitespace-pre-line border border-neutral-200">
-                  <p className="font-bold">🧾 *CASH MEMO - TERRY7 WOMEN*</p>
-                  <p>*Customer:* Ananya</p>
-                  <p>*Invoice No:* INV-2026-000105</p>
-                  <p>*Weight:* 1.00 KG (1000g)</p>
-                  <p>*Rate:* ₹899/KG</p>
-                  <p>*Subtotal:* ₹899.00</p>
-                  <p className="text-emerald-700 font-bold">*Loyalty Discount:* ₹449.50 (50% OFF on 1 KG)</p>
-                  <p className="font-bold text-sm">*Final Amount:* ₹449.50</p>
-                  <p className="text-[11px] text-amber-800 pt-1">
-                    🎁 *Loyalty Status:* 50% OFF on 1 KG Reward Applied! Thank you for shopping with us ❤️
-                  </p>
-                  <p className="text-[11px] text-blue-700 underline font-mono">
-                    📸 *Bill Photo:* /api/invoices/INV-2026-000105/image
-                  </p>
-                  <p className="text-[10px] text-neutral-500 pt-1">
-                    TERRY7 WOMEN &bull; Tel/WhatsApp: +91 8330889632
-                  </p>
+                <div className="bg-white rounded-lg p-3 text-xs text-neutral-900 shadow-xs max-w-[95%] space-y-1 leading-relaxed whitespace-pre-line border border-neutral-200 font-sans">
+                  <p className="font-bold text-emerald-950">👗 *TERRY WOMEN – VANIYAMBALAM* 👗</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p className="font-bold">🧾 *CASH MEMO*</p>
+                  <p>👤 Customer: ARJUN</p>
+                  <p>📅 Date: 18 Oct 2026, 11:21 AM</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p className="font-bold">🛍️ *ITEM DETAILS*</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p>1. Ladies Readymade Garment / Dress Material (1.20 KG) — ₹1,078.80</p>
+                  <p>2. Belt (1) — ₹100.00</p>
+                  <p>3. Watch (1) — ₹190.00</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p className="font-bold">💰 *BILL SUMMARY*</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p>Subtotal: ₹1,368.80</p>
+                  <p>Discount: ₹0.00</p>
+                  <p className="font-bold text-sm text-neutral-950 pt-1">💵 *TOTAL PAID: ₹1,368.80*</p>
+                  <p>💳 Payment: CASH</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p className="font-bold">🎁 *LOYALTY REWARDS*</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p>⚖️ Total Weight: 2.10 KG / 5 KG</p>
+                  <p>🎯 Remaining: 2.90 KG to unlock your reward!</p>
+                  <p className="text-emerald-800 font-medium">🎉 Complete 5 KG of eligible purchases to unlock *50% OFF on 1 KG*.</p>
+                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
+                  <p>❤️ Thank you for shopping with *TERRY WOMEN!*</p>
+                  <p>📍 Vaniyambalam</p>
+                  <p className="font-mono">📞 +91 8330889632</p>
                 </div>
               </div>
             </div>

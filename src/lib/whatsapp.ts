@@ -13,53 +13,133 @@ export interface SendWhatsAppResult {
  * Format official WhatsApp invoice text as specified in Section 7
  */
 export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSettings, imageUrl?: string): string {
-  const dateFormatted = new Date(purchase.created_at).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const dateObj = new Date(purchase.created_at);
+  const dateFormatted =
+    dateObj.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    }) +
+    ', ' +
+    dateObj.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
 
-  let loyaltyStatusText = '';
-  const currentWeightGrams = purchase.loyalty_weight_after_grams ?? 0;
-  if (purchase.loyalty_applied) {
-    loyaltyStatusText = '🎁 Reward Redeemed! 50% OFF on 1 KG (Discount: ₹' + purchase.discount_amount.toFixed(2) + ' Applied)';
-  } else if (purchase.loyalty_reward_unlocked_after || currentWeightGrams >= 5000) {
-    loyaltyStatusText = '🔥 50% OFF on 1 KG Reward UNLOCKED! (5 KG Milestone Reached - Claim on next purchase)';
+  const branchKey = (purchase.branch || 'vnb').toLowerCase();
+  const branchTown = branchKey === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam';
+  const branchTitle =
+    branchKey === 'pkdm'
+      ? 'TERRY WOMEN – POOKKOTTUMPADAM'
+      : 'TERRY WOMEN – VANIYAMBALAM';
+
+  // Format Items
+  let itemsBlock = '';
+  if (purchase.items && purchase.items.length > 0) {
+    itemsBlock = purchase.items
+      .map((it, idx) => {
+        const q =
+          it.quantity ||
+          (it.weight_grams
+            ? `${(it.weight_grams / 1000).toFixed(it.weight_grams % 1000 === 0 ? 0 : 2)} KG`
+            : '1');
+        const formattedAmt = it.amount.toLocaleString('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        return `${idx + 1}. ${it.description} (${q}) — ₹${formattedAmt}`;
+      })
+      .join('\n');
+  } else if (purchase.weight_grams > 0) {
+    const wtKg = (purchase.weight_grams / 1000).toFixed(
+      purchase.weight_grams % 1000 === 0 ? 0 : 2
+    );
+    const formattedAmt = purchase.subtotal.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    const desc = purchase.notes || 'Ladies Readymade Garment / Dress Material';
+    itemsBlock = `1. ${desc} (${wtKg} KG) — ₹${formattedAmt}`;
   } else {
-    loyaltyStatusText = `Accumulated Weight: ${currentWeightGrams}g / 5000g (${(currentWeightGrams / 1000).toFixed(2)} KG of 5 KG)`;
+    const formattedAmt = purchase.final_amount.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    itemsBlock = `1. Readymade Garment (1) — ₹${formattedAmt}`;
   }
 
+  // Format Loyalty Rewards
+  const currentWeightGrams = purchase.loyalty_weight_after_grams ?? 0;
+  const currentWeightKg = (currentWeightGrams / 1000).toFixed(2);
+  const remainingGrams = Math.max(0, 5000 - currentWeightGrams);
+  const remainingKg = (remainingGrams / 1000).toFixed(2);
+
+  let loyaltySection = '';
+  if (purchase.loyalty_applied) {
+    loyaltySection =
+      `🎁 *Reward Redeemed! 50% OFF on 1 KG Applied*\n` +
+      `Discount: ₹${purchase.discount_amount.toFixed(2)}\n\n` +
+      `⚖️ Total Weight: ${currentWeightKg} KG / 5 KG\n` +
+      `🎉 Thank you for being our loyal customer! ❤️`;
+  } else if (purchase.loyalty_reward_unlocked_after || currentWeightGrams >= 5000) {
+    loyaltySection =
+      `⚖️ Total Weight: ${currentWeightKg} KG / 5 KG\n` +
+      `🎉 *50% OFF on 1 KG Reward UNLOCKED!* (Milestone Reached)\n\n` +
+      `✨ Claim your *50% OFF on 1 KG* on your next purchase!`;
+  } else {
+    loyaltySection =
+      `⚖️ Total Weight: ${currentWeightKg} KG / 5 KG\n` +
+      `🎯 Remaining: ${remainingKg} KG to unlock your reward!\n\n` +
+      `🎉 Complete 5 KG of eligible purchases to unlock *50% OFF on 1 KG*.`;
+  }
+
+  const subtotalFormatted = purchase.subtotal.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const discountFormatted = purchase.discount_amount.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const finalFormatted = purchase.final_amount.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const phone = settings.phone || settings.whatsapp_number || '+91 8330889632';
   const photoLink = imageUrl || purchase.invoice_image_url;
 
-  let itemsSummary = '';
-  if (purchase.items && purchase.items.length > 0) {
-    itemsSummary = '*Items:*\n' + purchase.items.map((it, idx) => {
-      const q = it.quantity || (it.weight_grams ? `${(it.weight_grams / 1000).toFixed(2)} KG` : '1');
-      return `${idx + 1}. ${it.description} (${q}) - ₹${it.amount.toFixed(2)}`;
-    }).join('\n') + '\n\n';
-  } else if (purchase.weight_grams > 0) {
-    itemsSummary = `*Weight:* ${purchase.weight_kg.toFixed(2)} KG (${purchase.weight_grams}g)\n*Rate:* ₹${purchase.rate_per_kg}/KG\n\n`;
-  }
-
   return (
-    `🧾 *CASH MEMO - ${settings.shop_name || 'TERRY7 WOMEN'}*\n\n` +
-    `*Customer:* ${purchase.customer_name}\n` +
-    `*Date:* ${dateFormatted}\n\n` +
-    itemsSummary +
-    `*Subtotal:* ₹${purchase.subtotal.toFixed(2)}\n` +
-    `*Loyalty Discount:* ${purchase.discount_amount > 0 ? '₹' + purchase.discount_amount.toFixed(2) + ' (50% OFF on 1 KG)' : '₹0.00'}\n` +
+    `👗 *${branchTitle}* 👗\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `🧾 *CASH MEMO*\n\n` +
+    `👤 Customer: ${purchase.customer_name}\n` +
+    `📅 Date: ${dateFormatted}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `🛍️ *ITEM DETAILS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    itemsBlock +
+    `\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `💰 *BILL SUMMARY*\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `Subtotal: ₹${subtotalFormatted}\n` +
+    `Discount: ₹${discountFormatted}\n` +
     (typeof purchase.round_off === 'number' && purchase.round_off !== 0
-      ? `*Round Off:* ${purchase.round_off > 0 ? '+' : ''}₹${purchase.round_off.toFixed(2)}\n`
+      ? `Round Off: ${purchase.round_off > 0 ? '+' : ''}₹${purchase.round_off.toFixed(2)}\n`
       : '') +
-    `*Final Amount:* ₹${purchase.final_amount.toFixed(2)}\n` +
-    `*Payment Method:* ${purchase.payment_method}\n\n` +
-    `🎁 *Loyalty Progress:* ${loyaltyStatusText}\n\n` +
-    `*Message:* ${purchase.loyalty_message}\n\n` +
-    (photoLink ? `📸 *Bill Photo:* ${photoLink}\n\n` : '') +
-    `Thank you for shopping with us ❤️\n` +
-    `${settings.address} | Tel: ${settings.phone || '+91 8330889632'} | WhatsApp: ${settings.whatsapp_number || '+91 8330889632'}`
+    `\n💵 *TOTAL PAID: ₹${finalFormatted}*\n` +
+    `💳 Payment: ${purchase.payment_method}\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n` +
+    `🎁 *LOYALTY REWARDS*\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    loyaltySection +
+    `\n\n` +
+    `━━━━━━━━━━━━━━━━━━━━\n\n` +
+    `❤️ Thank you for shopping with *TERRY WOMEN!*\n\n` +
+    `📍 ${branchTown}\n` +
+    `📞 ${phone}` +
+    (photoLink ? `\n\n📸 *Bill Photo:* ${photoLink}` : '')
   );
 }
 
