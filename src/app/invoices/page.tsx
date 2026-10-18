@@ -203,7 +203,9 @@ export default function InvoicesPage() {
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-bold text-neutral-900 block">{p.customer_name}</span>
-                        <span className="text-[10px] text-neutral-400 font-mono">{p.customer_phone}</span>
+                        <span className="text-[10px] text-neutral-500 font-mono tracking-wider">
+                          {p.customer_phone ? (p.customer_phone.length > 4 ? `••••••${p.customer_phone.slice(-4)}` : p.customer_phone) : ''}
+                        </span>
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-bold">{p.weight_grams}g</span>

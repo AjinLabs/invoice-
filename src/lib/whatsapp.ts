@@ -21,11 +21,14 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
     minute: '2-digit',
   });
 
-  let loyaltyStatusText = 'Progress: ' + purchase.loyalty_progress_after + '/' + settings.required_visits;
+  let loyaltyStatusText = '';
+  const currentWeightGrams = purchase.loyalty_weight_after_grams ?? 0;
   if (purchase.loyalty_applied) {
-    loyaltyStatusText = '🎁 Reward Used (50% OFF on 1 KG: ₹' + purchase.discount_amount.toFixed(2) + ' Discount Applied!)';
-  } else if (purchase.loyalty_progress_after >= settings.required_visits) {
-    loyaltyStatusText = '🔥 50% OFF on 1 KG Reward UNLOCKED! (Applicable on next 1 KG+ purchase)';
+    loyaltyStatusText = '🎁 Reward Redeemed! 50% OFF on 1 KG (Discount: ₹' + purchase.discount_amount.toFixed(2) + ' Applied)';
+  } else if (purchase.loyalty_reward_unlocked_after || currentWeightGrams >= 5000) {
+    loyaltyStatusText = '🔥 50% OFF on 1 KG Reward UNLOCKED! (5 KG Milestone Reached - Claim on next purchase)';
+  } else {
+    loyaltyStatusText = `Accumulated Weight: ${currentWeightGrams}g / 5000g (${(currentWeightGrams / 1000).toFixed(2)} KG of 5 KG)`;
   }
 
   const photoLink = imageUrl || purchase.invoice_image_url;
@@ -41,9 +44,8 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
   }
 
   return (
-    `🧾 *PURCHASE INVOICE - ${settings.shop_name}*\n\n` +
+    `🧾 *CASH MEMO - ${settings.shop_name || 'TERRY 7 WOMEN'}*\n\n` +
     `*Customer:* ${purchase.customer_name}\n` +
-    `*Invoice No:* ${purchase.invoice_number}\n` +
     `*Date:* ${dateFormatted}\n\n` +
     itemsSummary +
     `*Subtotal:* ₹${purchase.subtotal.toFixed(2)}\n` +
@@ -53,11 +55,11 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
       : '') +
     `*Final Amount:* ₹${purchase.final_amount.toFixed(2)}\n` +
     `*Payment Method:* ${purchase.payment_method}\n\n` +
-    `🎁 *Loyalty Status:* ${loyaltyStatusText}\n\n` +
+    `🎁 *Loyalty Progress:* ${loyaltyStatusText}\n\n` +
     `*Message:* ${purchase.loyalty_message}\n\n` +
     (photoLink ? `📸 *Bill Photo:* ${photoLink}\n\n` : '') +
     `Thank you for shopping with us ❤️\n` +
-    `${settings.address} | Tel: ${settings.phone || '+91 7736723917'} | WhatsApp: ${settings.whatsapp_number || '+91 7736723917'}`
+    `${settings.address} | Tel: ${settings.phone || '+91 8330889632'} | WhatsApp: ${settings.whatsapp_number || '+91 8330889632'}`
   );
 }
 

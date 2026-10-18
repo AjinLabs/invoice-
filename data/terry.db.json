@@ -736,24 +736,26 @@
     "shop_name": "TERRY",
     "logo_url": "/logo.png",
     "address": "Near Town Center, Main Commercial Road, Calicut - 673001",
-    "phone": "+91 7736723917",
-    "whatsapp_number": "+91 7736723917",
+    "phone": "+91 8330889632",
+    "whatsapp_number": "+91 8330889632",
+    "email": "terry7women@gmail.com",
     "gstin": "32AAAAA0000A1Z5",
     "rate_per_kg": 899,
     "loyalty_discount": 449.5,
     "min_weight_grams": 1000,
+    "target_loyalty_grams": 5000,
     "required_visits": 5,
     "whatsapp_mode": "DEMO",
     "whatsapp_api_version": "v20.0",
     "whatsapp_verify_token": "terry_verify_token_2026",
     "round_off_mode": "FLOOR_10",
     "message_templates": {
-      "purchase_confirmation": "Hi {{customer_name}} 👋\nThank you for shopping with us!\nYour purchase of {{weight}} has been recorded.\nInvoice Amount: ₹{{amount}}\nLoyalty progress: {{loyalty_count}}/5.\nThank you ❤️",
-      "loyalty_progress": "Hi {{customer_name}} 👋\nYou have completed {{count}} purchases.\nOnly {{remaining}} more purchase(s) to unlock your 50% OFF on 1 KG loyalty reward 🎁\nKeep shopping with us!",
-      "reward_unlocked": "🎉 Congratulations {{customer_name}}!\nYour 50% OFF on 1 KG loyalty reward is now unlocked.\nUse it on your next purchase of 1 KG or more to get 1 KG dress at half price!\nThank you for being our loyal customer ❤️",
+      "purchase_confirmation": "Hi {{customer_name}} 👋\nThank you for shopping with us!\nYour purchase of {{weight}} has been recorded.\nInvoice Amount: ₹{{amount}}\nLoyalty weight: {{loyalty_weight}}g / 5,000g.\nThank you ❤️",
+      "loyalty_progress": "Hi {{customer_name}} 👋\nYour total loyalty clothing is {{weight}}g / 5,000g.\nOnly {{remaining}}g more to unlock your 50% OFF on 1 KG loyalty reward 🎁\nKeep shopping with us!",
+      "reward_unlocked": "🎉 Congratulations {{customer_name}}!\nYour 50% OFF on 1 KG loyalty reward is now unlocked!\nUse it on your next purchase of 1 KG or more to get 1 KG dress at half price!\nThank you for being our loyal customer ❤️",
       "reward_redeemed": "🎁 Your 50% OFF on 1 KG loyalty reward (₹449.50 discount) has been successfully applied to this purchase.\nThank you for shopping with us!"
     },
-    "updated_at": "2026-10-08T12:44:50.082Z",
+    "updated_at": "2026-10-18T15:25:00.000Z",
     "branches": {
       "vnb": {
         "id": "vnb",
@@ -761,7 +763,7 @@
         "town": "Vaniyambalam",
         "malayalamName": "വാണിയമ്പലം",
         "address": "Near Town Hall & Railway Station, Vaniyambalam, Malappuram - 679339",
-        "phone": "+91 7736723917",
+        "phone": "+91 8330889632",
         "prefix": "VNB",
         "rate_per_kg": 899
       },
@@ -771,7 +773,7 @@
         "town": "Pookkottumpadam",
         "malayalamName": "പൂക്കോട്ടുംപാടം",
         "address": "Main Commercial Road, Pookkottumpadam, Malappuram - 679332",
-        "phone": "+91 7736723917",
+        "phone": "+91 8330889632",
         "prefix": "PKDM",
         "rate_per_kg": 899
       }

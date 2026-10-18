@@ -35,7 +35,13 @@ export async function GET(request: Request) {
     const todaySales = Math.round(todayPurchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
     const todayGrossSales = Math.round(todayPurchases.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
     const todayDiscounts = Math.round(Math.max(0, todayGrossSales - todaySales) * 100) / 100;
+    const todayWeightSoldGrams = todayPurchases.reduce((sum, p) => sum + (p.weight_grams || 0), 0);
     const todayOrders = todayPurchases.length;
+
+    // Current Month stats
+    const currentMonthStr = todayStr.substring(0, 7);
+    const monthPurchases = purchases.filter((p) => p.created_at.startsWith(currentMonthStr));
+    const monthSales = Math.round(monthPurchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
 
     // Branch customers count
     const branchCustomerIds = new Set(purchases.map((p) => p.customer_id));
@@ -95,20 +101,33 @@ export async function GET(request: Request) {
       ...data,
     }));
 
+    // Mask customer phone numbers in recent purchases: show only last 4 digits
+    const maskedRecentPurchases = purchases
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 10)
+      .map((p) => {
+        const ph = p.customer_phone || '';
+        const maskedPhone = ph.length > 4 ? `${'•'.repeat(Math.max(0, ph.length - 4))}${ph.slice(-4)}` : ph;
+        return {
+          ...p,
+          customer_phone: maskedPhone,
+        };
+      });
+
     const stats: DashboardStats = {
       todaySales,
       todayGrossSales,
       todayDiscounts,
       todayOrders,
+      todayWeightSoldGrams,
+      monthSales,
       totalCustomers,
       totalWeightSoldGrams,
       totalGrossSales,
       totalDiscounts,
       totalNetSales,
       rewardsRedeemedCount,
-      recentPurchases: purchases
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 10),
+      recentPurchases: maskedRecentPurchases,
       salesByDay,
       salesByPayment,
     };

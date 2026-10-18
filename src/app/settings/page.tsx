@@ -87,8 +87,8 @@ export default function SettingsPage() {
               : 'TERRY WOMEN - Vaniyambalam')
         );
         setAddress(s.address || '');
-        setPhone(s.phone || '+91 7736723917');
-        setWhatsappNumber(s.whatsapp_number || '+91 7736723917');
+        setPhone(s.phone || '+91 8330889632');
+        setWhatsappNumber(s.whatsapp_number || '+91 8330889632');
         setGstin(s.gstin || '32AAAAA0000A1Z5');
 
         setRatePerKg(s.rate_per_kg?.toString() || '899');

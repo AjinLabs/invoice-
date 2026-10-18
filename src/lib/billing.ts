@@ -38,6 +38,9 @@ export interface BillingCalculationResult {
   finalAmount: number;
   loyaltyMessage: string;
   nextLoyaltyCount: number;
+  nextLoyaltyWeightGrams: number;
+  targetLoyaltyGrams: number;
+  currentLoyaltyWeightGrams: number;
   nextRewardUnlocked: boolean;
   customItems?: CustomItemInput[];
 }
@@ -48,7 +51,7 @@ export interface BillingCalculationResult {
 export function calculateBilling(input: BillingCalculationInput): BillingCalculationResult {
   const ratePerKg = input.ratePerKg ?? input.shopSettings?.rate_per_kg ?? 899;
   const minGrams = input.shopSettings?.min_weight_grams ?? 1000;
-  const requiredVisits = input.shopSettings?.required_visits ?? 5;
+  const targetLoyaltyGrams = input.shopSettings?.target_loyalty_grams ?? 5000;
 
   // 50% discount on 1000g (1 KG)
   const halfPrice1kgDiscount = Math.round((ratePerKg * 0.5) * 100) / 100;
@@ -94,21 +97,35 @@ export function calculateBilling(input: BillingCalculationInput): BillingCalcula
   let loyaltyMessage = '';
 
   const customer = input.customer;
+  const currentLoyaltyWeightGrams = customer
+    ? (customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % targetLoyaltyGrams))
+    : 0;
+  let nextLoyaltyWeightGrams = 0;
 
   if (!customer) {
     // New customer first purchase
+    if (weightGrams >= targetLoyaltyGrams) {
+      nextRewardUnlocked = true;
+      nextLoyaltyWeightGrams = targetLoyaltyGrams;
+      loyaltyMessage = `🔥 Congratulations! You have reached 5 KG (5,000g) clothing! Your 50% OFF on 1 KG Loyalty Reward is now UNLOCKED!`;
+    } else {
+      nextRewardUnlocked = false;
+      nextLoyaltyWeightGrams = weightGrams;
+      const remaining = Math.max(0, targetLoyaltyGrams - weightGrams);
+      loyaltyMessage = `🎉 Purchase recorded! Total loyalty weight: ${weightGrams}g / 5,000g (${(weightGrams / 1000).toFixed(2)} KG). ${remaining}g (${(remaining / 1000).toFixed(2)} KG) more to unlock 50% OFF on 1 KG reward.`;
+    }
     nextLoyaltyCount = 1;
-    loyaltyMessage = generateLoyaltyMessage(1, requiredVisits, false, false, rewardAmount);
   } else {
-    // Check if customer already has reward unlocked (from 5 previous purchases)
-    isRewardUnlocked = customer.loyalty_reward_unlocked || customer.loyalty_count >= requiredVisits;
+    // Check if customer already has reward unlocked (from 5000g previous purchases)
+    isRewardUnlocked = customer.loyalty_reward_unlocked || currentLoyaltyWeightGrams >= targetLoyaltyGrams;
 
     if (isRewardUnlocked) {
       if (weightGrams >= minGrams) {
         canApplyReward = true;
-        // Discount is strictly 50% off on 1000g (1 KG). Remaining weight is at regular rate!
+        // Discount is strictly 50% off on 1000g (1 KG).
         discountAmount = rewardAmount;
-        // Upon 6th visit redemption, progress resets to 0 and loyalty cycle repeats!
+        // Upon redemption, progress resets to 0 and loyalty cycle repeats!
+        nextLoyaltyWeightGrams = 0;
         nextLoyaltyCount = 0;
         nextRewardUnlocked = false;
         loyaltyMessage = `🎁 50% OFF on 1 KG Loyalty Reward Applied (-₹${rewardAmount.toFixed(2)})! Thank you for shopping with us!`;
@@ -116,22 +133,25 @@ export function calculateBilling(input: BillingCalculationInput): BillingCalcula
         canApplyReward = false;
         rewardReason = `Minimum 1 KG (1000g) purchase required to redeem 50% off reward.`;
         // Customer keeps the unlocked reward for their next 1kg+ purchase
-        nextLoyaltyCount = customer.loyalty_count;
+        nextLoyaltyWeightGrams = currentLoyaltyWeightGrams;
+        nextLoyaltyCount = customer.loyalty_count || 5;
         nextRewardUnlocked = true;
         loyaltyMessage = `Minimum 1 KG (1000g) purchase required to use your 50% OFF on 1 KG reward. Your reward remains unlocked!`;
       }
     } else {
-      // Normal purchase progress towards 5 purchases
-      const newCount = customer.loyalty_count + 1;
-      if (newCount >= requiredVisits) {
-        nextLoyaltyCount = requiredVisits;
+      // Cumulative weight progress towards 5,000 grams
+      const newWeight = currentLoyaltyWeightGrams + weightGrams;
+      if (newWeight >= targetLoyaltyGrams) {
+        nextLoyaltyWeightGrams = targetLoyaltyGrams;
         nextRewardUnlocked = true;
-        loyaltyMessage = `🔥 Congratulations! You have completed 5 purchases and unlocked your 50% OFF on 1 KG Loyalty Reward! Use it on your next purchase of 1 KG or more.`;
+        loyaltyMessage = `🔥 Congratulations! You have reached 5,000g (5 KG) cumulative clothing! Your 50% OFF on 1 KG Loyalty Reward is now UNLOCKED! Use it on your next purchase of 1 KG or more.`;
       } else {
-        nextLoyaltyCount = newCount;
+        nextLoyaltyWeightGrams = newWeight;
         nextRewardUnlocked = false;
-        loyaltyMessage = generateLoyaltyMessage(newCount, requiredVisits, false, false, rewardAmount);
+        const remaining = Math.max(0, targetLoyaltyGrams - newWeight);
+        loyaltyMessage = `🎉 Purchase recorded! Total loyalty weight: ${newWeight}g / 5,000g (${(newWeight / 1000).toFixed(2)} KG). ${remaining}g (${(remaining / 1000).toFixed(2)} KG) more to unlock 50% OFF on 1 KG reward.`;
       }
+      nextLoyaltyCount = (customer.loyalty_count || 0) + 1;
     }
   }
 
@@ -199,6 +219,9 @@ export function calculateBilling(input: BillingCalculationInput): BillingCalcula
     finalAmount,
     loyaltyMessage,
     nextLoyaltyCount,
+    nextLoyaltyWeightGrams,
+    targetLoyaltyGrams,
+    currentLoyaltyWeightGrams,
     nextRewardUnlocked,
     kiloSubtotal,
     customItemsSubtotal,

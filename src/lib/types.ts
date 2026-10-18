@@ -36,7 +36,8 @@ export interface Customer {
   total_purchases: number;
   total_weight_grams: number;
   total_amount_spent: number;
-  loyalty_count: number; // 0 to 5
+  loyalty_count: number; // legacy count or visits
+  loyalty_weight_grams?: number; // 0 to 5000 grams cumulative weight progress towards 5 KG reward
   loyalty_reward_unlocked: boolean;
   last_purchase_at: string | null;
   created_at: string;
@@ -78,6 +79,8 @@ export interface Purchase {
   loyalty_applied: boolean;
   loyalty_progress_before: number;
   loyalty_progress_after: number;
+  loyalty_weight_after_grams?: number;
+  loyalty_reward_unlocked_after?: boolean;
   loyalty_message: string;
   notes?: string;
   created_at: string;
@@ -120,11 +123,13 @@ export interface ShopSettings {
   address: string;
   phone: string;
   whatsapp_number: string;
+  email?: string;
   gstin: string;
   rate_per_kg: number;
   loyalty_discount: number;
   min_weight_grams: number;
   required_visits: number;
+  target_loyalty_grams?: number; // Default 5000g (5 KG)
   round_off_mode?: RoundOffMode;
   whatsapp_mode: WhatsAppMode;
   whatsapp_access_token?: string;
@@ -145,12 +150,14 @@ export interface ShopSettings {
 export interface DashboardStats {
   todaySales: number; // Net revenue realized today
   todayGrossSales: number; // Exact total bill value before discounts today
-  todayDiscounts: number; // Today's total discount concessions (Store Loss)
+  todayDiscounts: number; // Today's total discount concessions
   todayOrders: number;
+  todayWeightSoldGrams?: number;
+  monthSales?: number; // Total net sales for current month
   totalCustomers: number;
   totalWeightSoldGrams: number;
   totalGrossSales: number; // All-time exact bill value before discounts
-  totalDiscounts: number; // All-time discounts given (Store Loss)
+  totalDiscounts: number; // All-time discounts given
   totalNetSales: number; // All-time net revenue collected
   rewardsRedeemedCount: number;
   recentPurchases: Purchase[];

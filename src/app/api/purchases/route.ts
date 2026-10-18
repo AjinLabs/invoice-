@@ -247,8 +247,10 @@ export async function POST(request: Request) {
         payment_method: paymentMethod,
         status: 'COMPLETED',
         loyalty_applied: calc.canApplyReward,
-        loyalty_progress_before: customer.loyalty_count,
-        loyalty_progress_after: calc.nextLoyaltyCount,
+        loyalty_progress_before: calc.currentLoyaltyWeightGrams,
+        loyalty_progress_after: calc.nextLoyaltyWeightGrams,
+        loyalty_weight_after_grams: calc.nextLoyaltyWeightGrams,
+        loyalty_reward_unlocked_after: calc.nextRewardUnlocked,
         loyalty_message: calc.loyaltyMessage,
         created_at: now,
         updated_at: now,
@@ -264,6 +266,7 @@ export async function POST(request: Request) {
       // Update Customer Stats
       customer.total_purchases += 1;
       customer.total_weight_grams += calc.weightGrams;
+      customer.loyalty_weight_grams = calc.nextLoyaltyWeightGrams;
       customer.total_amount_spent = Math.round((customer.total_amount_spent + calc.finalAmount) * 100) / 100;
       customer.loyalty_count = calc.nextLoyaltyCount;
       customer.loyalty_reward_unlocked = calc.nextRewardUnlocked;
@@ -280,7 +283,7 @@ export async function POST(request: Request) {
         count_after: purchase.loyalty_progress_after,
         notes: calc.canApplyReward
           ? `[${branchInfo.town}] Redeemed 50% OFF on 1 KG (₹${calc.discountAmount}) reward on ${calc.weightGrams}g purchase`
-          : `[${branchInfo.town}] Completed purchase ${customer.total_purchases}. Loyalty progress now ${calc.nextLoyaltyCount}/${db.shop_settings.required_visits}`,
+          : `[${branchInfo.town}] Purchase ${customer.total_purchases} (+${calc.weightGrams}g). Cumulative loyalty weight: ${calc.nextLoyaltyWeightGrams}g / ${calc.targetLoyaltyGrams}g`,
         created_at: now,
       };
 

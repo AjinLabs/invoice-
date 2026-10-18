@@ -479,7 +479,7 @@ export default function BillingPage() {
                 {/* Customer Loyalty Banner if found */}
                 {customer && (
                   <div
-                    className={`p-3.5 rounded-lg border text-xs space-y-1.5 transition-all ${
+                    className={`p-3.5 rounded-2xl border text-xs space-y-2 transition-all ${
                       customer.loyalty_reward_unlocked
                         ? 'bg-amber-50/80 border-amber-300 text-amber-950'
                         : 'bg-neutral-50 border-neutral-200 text-neutral-800'
@@ -489,69 +489,55 @@ export default function BillingPage() {
                       <div className="flex items-center gap-1.5">
                         <Gift className="w-4 h-4 text-amber-600" />
                         <span>
-                          {customer.name} &bull; {customer.total_purchases} Completed Purchases
+                          {customer.name} &bull; {customer.total_purchases} Purchases Recorded
                         </span>
                       </div>
-                      <span className="px-2 py-0.5 bg-white border rounded font-mono text-[11px]">
-                        Spent: ₹{customer.total_amount_spent.toFixed(2)}
+                      <span className="px-2.5 py-0.5 bg-white border border-neutral-200 rounded-full font-mono text-[11px]">
+                        Total Spent: ₹{customer.total_amount_spent.toFixed(2)}
                       </span>
                     </div>
 
-                    {/* Loyalty Progress Tracker */}
+                    {/* Loyalty Progress Tracker - 5,000g Cumulative Weight */}
                     <div className="pt-1">
                       <div className="flex justify-between text-[11px] font-semibold mb-1">
-                        <span>Loyalty Reward Progress:</span>
+                        <span>Cumulative Loyalty Clothing Weight:</span>
                         <span className="font-bold">
                           {customer.loyalty_reward_unlocked
-                            ? '🔥 REWARD UNLOCKED (50% OFF on 1 KG)'
-                            : `${customer.loyalty_count}/5 Purchases`}
+                            ? '🔥 5 KG ACHIEVED - REWARD UNLOCKED (50% OFF 1 KG)'
+                            : `${customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000)}g / 5,000g (${(((customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000))) / 1000).toFixed(2)} KG)`}
                         </span>
                       </div>
-                      <div className="w-full bg-neutral-200 rounded-full h-2 overflow-hidden">
+                      <div className="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden">
                         <div
-                          className={`h-2 rounded-full transition-all duration-300 ${
-                            customer.loyalty_reward_unlocked ? 'bg-amber-500' : 'bg-black'
+                          className={`h-2.5 rounded-full transition-all duration-300 ${
+                            customer.loyalty_reward_unlocked ? 'bg-amber-500' : 'bg-neutral-950'
                           }`}
                           style={{
-                            width: `${Math.min(100, (customer.loyalty_count / 5) * 100)}%`,
+                            width: `${Math.min(100, (((customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000))) / 5000) * 100)}%`,
                           }}
                         />
                       </div>
                       <p className="text-[11px] text-neutral-600 mt-1">
                         {customer.loyalty_reward_unlocked
-                          ? '🎁 Customer is entitled to 50% discount on 1000g (1 KG) today if purchase is at least 1 KG (1000g)!'
-                          : `${5 - customer.loyalty_count} more purchase(s) required to unlock 50% OFF on 1 KG reward.`}
+                          ? '🎁 50% discount on 1000g (1 KG) unlocked! Applicable today if purchase is at least 1 KG (1000g).'
+                          : `${Math.max(0, 5000 - (customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000)))}g more clothing needed to reach 5 KG (5,000g) milestone to unlock 50% OFF on 1 KG reward.`}
                       </p>
                     </div>
                   </div>
                 )}
 
-                {/* Name & Address */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      Customer Name <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter customer name"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-sm outline-hidden"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
-                      City / Location
-                    </label>
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder={activeBranch === 'pkdm' ? 'e.g. Pookkottumpadam' : 'e.g. Vaniyambalam'}
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-sm outline-hidden"
-                    />
-                  </div>
+                {/* Customer Name Only (City/Address removed as requested) */}
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
+                    Customer Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter customer name"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-sm outline-hidden bg-white"
+                  />
                 </div>
               </div>
             </div>
@@ -897,17 +883,15 @@ export default function BillingPage() {
                 </div>
               </div>
 
-              {/* Payment Method Selector */}
+              {/* Payment Method Selector (Only Cash and UPI / GPay as requested) */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                   4. Select Payment Method
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 gap-3">
                   {[
                     { id: 'CASH', label: 'Cash', icon: Banknote },
                     { id: 'UPI', label: 'UPI / GPay', icon: Smartphone },
-                    { id: 'CARD', label: 'Debit/Credit', icon: CreditCard },
-                    { id: 'OTHER', label: 'Other', icon: ChevronRight },
                   ].map((p) => {
                     const Icon = p.icon;
                     const isSelected = paymentMethod === p.id;
@@ -916,7 +900,7 @@ export default function BillingPage() {
                         key={p.id}
                         type="button"
                         onClick={() => setPaymentMethod(p.id as PaymentMethod)}
-                        className={`apple-pressable flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
+                        className={`apple-pressable flex items-center justify-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all ${
                           isSelected
                             ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs'
                             : 'bg-white text-neutral-700 border-neutral-200/90 hover:bg-neutral-50'

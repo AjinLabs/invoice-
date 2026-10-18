@@ -122,34 +122,29 @@ export default function CashMemoPreview({
 
       <div
         id="cash-memo-preview-node"
-        className="invoice-body-font w-full max-w-[620px] mx-auto bg-white text-black p-8 sm:p-12 shadow-xl border border-neutral-200 select-none"
+        className="invoice-body-font w-full max-w-[620px] mx-auto bg-white text-black p-8 sm:p-10 shadow-xl border border-neutral-200 select-none"
         style={{ backgroundColor: '#ffffff', color: '#000000' }}
       >
         {/* ==============================================================
-            1. TOP HEADER: [Circular TE7RY Logo] on Left | [INVOICE] on Right
+            1. TOP HEADER: [Circular TE7RY Logo] Centered with small INVOICE below
            ============================================================== */}
-        <div className="flex items-center justify-between pb-2">
-          {/* Circular logo */}
-          <div className="flex items-center">
-            <img
-              src="/logo.png"
-              alt="Terry Women"
-              className="w-24 h-24 object-contain rounded-full shadow-xs"
-            />
-          </div>
-
-          {/* INVOICE Heading */}
-          <div className="text-right">
-            <h1 className="invoice-serif-title text-4xl sm:text-5xl font-bold uppercase tracking-wider text-black">
-              INVOICE
-            </h1>
-          </div>
+        <div className="flex flex-col items-center justify-center text-center pb-2">
+          {/* Circular logo centered */}
+          <img
+            src="/logo.png"
+            alt="Terry 7 Women"
+            className="w-20 h-20 sm:w-22 sm:h-22 object-contain rounded-full shadow-xs"
+          />
+          {/* Small INVOICE text below logo */}
+          <span className="text-[11px] font-bold tracking-[0.3em] text-neutral-600 uppercase mt-2">
+            INVOICE
+          </span>
         </div>
 
         {/* ==============================================================
-            2. BILLED TO (Left) & INVOICE NO / DATE (Right)
+            2. BILLED TO (Left) & DATE (Right) - (No Invoice Number as requested)
            ============================================================== */}
-        <div className="grid grid-cols-12 items-start justify-between mt-8 mb-6">
+        <div className="grid grid-cols-12 items-start justify-between mt-6 mb-6">
           {/* Billed To */}
           <div className="col-span-7 space-y-1">
             <p className="text-xs font-bold uppercase tracking-wider text-black">
@@ -170,12 +165,9 @@ export default function CashMemoPreview({
             )}
           </div>
 
-          {/* Invoice No. & Date */}
+          {/* Date Only (No Invoice No.) */}
           <div className="col-span-5 text-right space-y-1">
-            <p className="text-xs sm:text-sm font-medium text-black">
-              Invoice No. {effectiveInvoiceNo}
-            </p>
-            <p className="text-xs sm:text-sm font-medium text-neutral-700">
+            <p className="text-xs sm:text-sm font-medium text-neutral-800">
               {displayDate}
             </p>
           </div>
@@ -198,7 +190,7 @@ export default function CashMemoPreview({
         {/* ==============================================================
             4. TABLE ITEMS ROWS
            ============================================================== */}
-        <div className="py-3 space-y-3 min-h-[140px]">
+        <div className="py-3 space-y-3 min-h-[120px]">
           {resolvedItems.map((item: any, idx: number) => {
             const desc = item.description || item.name || 'Garment Item';
             const qty = item.quantity ?? (item.weight_grams ? `${(item.weight_grams / 1000).toFixed(2)} KG` : 1);
@@ -230,7 +222,7 @@ export default function CashMemoPreview({
         <div className="border-t border-black w-full mt-2" />
 
         {/* ==============================================================
-            5. TOTALS SECTION (Right-aligned matching reference image)
+            5. TOTALS SECTION (Right-aligned matching reference image - No Tax)
            ============================================================== */}
         <div className="flex justify-end pt-4 pb-2">
           <div className="w-full sm:w-60 space-y-2 text-xs sm:text-sm">
@@ -258,12 +250,6 @@ export default function CashMemoPreview({
               </div>
             )}
 
-            {/* Tax */}
-            <div className="flex justify-between items-center text-neutral-800">
-              <span className="font-bold">Tax (0%)</span>
-              <span className="font-medium font-mono">₹0</span>
-            </div>
-
             {/* Divider line before Grand Total */}
             <div className="border-t border-neutral-300 pt-2" />
 
@@ -278,12 +264,12 @@ export default function CashMemoPreview({
         </div>
 
         {/* ==============================================================
-            6. "Thank you!" - CENTERED EXACTLY AS REQUESTED
+            6. "Thank you!" - SMALL & CENTERED
            ============================================================== */}
-        <div className="mt-10 mb-4 text-center">
-          <h2 className="invoice-serif-title text-3xl sm:text-4xl font-normal text-black tracking-normal">
+        <div className="mt-8 mb-2 text-center">
+          <p className="text-sm font-semibold text-neutral-600 tracking-wider">
             Thank you!
-          </h2>
+          </p>
         </div>
       </div>
     </>

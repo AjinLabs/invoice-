@@ -110,60 +110,25 @@ export default function DashboardPage() {
       color: 'bg-black text-white',
     },
     {
-      title: "Today's Exact Gross Value",
-      value: `₹${(stats?.todayGrossSales || 0).toFixed(2)}`,
-      icon: TrendingUp,
-      subtitle: 'Original item value before discounts',
-      color: 'bg-white text-neutral-900 border border-neutral-200',
-    },
-    {
-      title: "Today's Discount (Store Loss)",
+      title: "Today's Discounts Given",
       value: `₹${(stats?.todayDiscounts || 0).toFixed(2)}`,
       icon: TrendingUp,
-      subtitle: 'Round off and loyalty concessions today',
+      subtitle: 'Concessions & loyalty applied today',
       color: 'bg-rose-50 text-rose-950 border border-rose-200',
     },
     {
-      title: 'Total Exact Gross Value',
-      value: `₹${(stats?.totalGrossSales || 0).toFixed(2)}`,
-      icon: Receipt,
-      subtitle: 'All-time gross value of stock sold',
-      color: 'bg-white text-neutral-900 border border-neutral-200',
-    },
-    {
-      title: 'Total Discounts Given (Store Loss)',
-      value: `₹${(stats?.totalDiscounts || 0).toFixed(2)}`,
-      icon: TrendingUp,
-      subtitle: 'Customer savings / store margin concessions',
-      color: 'bg-amber-50 text-amber-950 border border-amber-200',
-    },
-    {
-      title: 'Total Net Realized Revenue',
-      value: `₹${(stats?.totalNetSales || 0).toFixed(2)}`,
-      icon: IndianRupee,
-      subtitle: `${stats?.recentPurchases?.length || 0} completed invoices`,
-      color: 'bg-emerald-950 text-emerald-100 border border-emerald-800',
-    },
-    {
-      title: 'Total Garments Sold (Weight)',
-      value: `${((stats?.totalWeightSoldGrams || 0) / 1000).toFixed(2)} KG`,
+      title: "Today's Clothing Sold",
+      value: `${((stats?.todayWeightSoldGrams || 0) / 1000).toFixed(2)} KG`,
       icon: Scale,
-      subtitle: `${stats?.totalWeightSoldGrams || 0} grams cloth sold`,
+      subtitle: `${stats?.todayOrders || 0} bills (${stats?.todayWeightSoldGrams || 0}g)`,
       color: 'bg-white text-neutral-900 border border-neutral-200',
     },
     {
-      title: 'Registered Customers',
-      value: stats?.totalCustomers || 0,
-      icon: Users,
-      subtitle: 'Unique phone numbers on record',
-      color: 'bg-white text-neutral-900 border border-neutral-200',
-    },
-    {
-      title: 'Loyalty Rewards Claimed',
-      value: stats?.rewardsRedeemedCount || 0,
-      icon: Gift,
-      subtitle: '50% OFF on 1 KG bonuses claimed',
-      color: 'bg-amber-500 text-white',
+      title: 'Current Month Sales',
+      value: `₹${(stats?.monthSales || 0).toFixed(2)}`,
+      icon: Calendar,
+      subtitle: 'Resets on the 1st of every month',
+      color: 'bg-emerald-950 text-emerald-100 border border-emerald-800',
     },
   ];
 
@@ -171,6 +136,13 @@ export default function DashboardPage() {
     if (activeBranch === 'all') return 'Master Dashboard (All Stores Combined)';
     if (activeBranch === 'pkdm') return 'TERRY WOMEN - Pookkottumpadam Store';
     return 'TERRY WOMEN - Vaniyambalam Store';
+  };
+
+  const maskPhoneNumber = (phone?: string) => {
+    if (!phone) return '••••';
+    const clean = phone.trim();
+    if (clean.includes('••')) return clean;
+    return clean.length > 4 ? `••••••${clean.slice(-4)}` : clean;
   };
 
   return (
@@ -194,19 +166,29 @@ export default function DashboardPage() {
             {getBranchTitle()}
           </h1>
           <p className="text-xs text-neutral-500 mt-1 tracking-tight">
-            Real-time branch sales revenue, weight metrics, discount concessions, and customer totals.
+            Daily net sales, discount concessions, clothing weight metrics, and store comparison.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Quick Direct Download Buttons for Main Admin & Store Admin */}
+          {/* Monthly Audit PDF for Management */}
+          <a
+            href="/api/reports/monthly-pdf"
+            download
+            className="apple-pressable inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-full text-xs font-bold shadow-xs transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Monthly Audit Report (PDF)</span>
+          </a>
+
+          {/* Direct CSV Export */}
           <a
             href={`/api/reports/export?type=purchases&branch=${activeBranch}`}
             download
             className="apple-pressable inline-flex items-center gap-1.5 px-3.5 py-2 bg-white border border-neutral-200/90 rounded-full text-xs font-semibold text-neutral-700 hover:bg-neutral-50 shadow-2xs transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Download Sales CSV</span>
+            <span>Export CSV</span>
           </a>
 
           {!isMainAdmin && (
@@ -271,7 +253,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="p-3 bg-rose-50/60 rounded-lg border border-rose-100">
-                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount (Loss)</span>
+                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount</span>
                   <span className="text-lg font-black font-mono text-rose-700">
                     -₹{(storesBreakdown.vnb?.todayDiscounts || 0).toFixed(2)}
                   </span>
@@ -280,7 +262,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="p-3 bg-neutral-50 rounded-lg">
-                  <span className="text-neutral-500 text-[11px] block">All-Time Net Realized</span>
+                  <span className="text-neutral-500 text-[11px] block">Total Realized Revenue</span>
                   <span className="text-base font-bold font-mono text-neutral-900">
                     ₹{(storesBreakdown.vnb?.totalNetSales || 0).toFixed(2)}
                   </span>
@@ -289,7 +271,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="p-3 bg-neutral-50 rounded-lg">
-                  <span className="text-neutral-500 text-[11px] block">All-Time Total Discounts</span>
+                  <span className="text-neutral-500 text-[11px] block">Total Discounts</span>
                   <span className="text-base font-bold font-mono text-amber-700">
                     ₹{(storesBreakdown.vnb?.totalDiscounts || 0).toFixed(2)}
                   </span>
@@ -333,7 +315,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100/80">
-                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount (Loss)</span>
+                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount</span>
                   <span className="text-lg font-black font-mono text-rose-700">
                     -₹{(storesBreakdown.pkdm?.todayDiscounts || 0).toFixed(2)}
                   </span>
@@ -342,7 +324,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
-                  <span className="text-neutral-500 text-[11px] block">All-Time Net Realized</span>
+                  <span className="text-neutral-500 text-[11px] block">Total Realized Revenue</span>
                   <span className="text-base font-bold font-mono text-neutral-900">
                     ₹{(storesBreakdown.pkdm?.totalNetSales || 0).toFixed(2)}
                   </span>
@@ -351,7 +333,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
-                  <span className="text-neutral-500 text-[11px] block">All-Time Total Discounts</span>
+                  <span className="text-neutral-500 text-[11px] block">Total Discounts</span>
                   <span className="text-base font-bold font-mono text-amber-700">
                     ₹{(storesBreakdown.pkdm?.totalDiscounts || 0).toFixed(2)}
                   </span>
@@ -366,7 +348,7 @@ export default function DashboardPage() {
       )}
 
       {/* Core Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {cards.map((card, i) => {
           const Icon = card.icon;
           return (
@@ -527,15 +509,13 @@ export default function DashboardPage() {
           <table className="w-full text-xs text-left">
             <thead className="bg-neutral-50 text-neutral-500 uppercase font-bold text-[10px] tracking-wider border-b border-neutral-200">
               <tr>
-                <th className="px-6 py-3">Invoice</th>
                 <th className="px-6 py-3">Branch</th>
                 <th className="px-6 py-3">Customer</th>
-                <th className="px-6 py-3">Weight</th>
-                <th className="px-6 py-3">Gross</th>
-                <th className="px-6 py-3">Discount</th>
+                <th className="px-6 py-3">Garment Weight</th>
+                <th className="px-6 py-3">Discount Concession</th>
                 <th className="px-6 py-3">Net Realized</th>
                 <th className="px-6 py-3">Payment</th>
-                <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3">Time</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 font-medium">
@@ -544,9 +524,6 @@ export default function DashboardPage() {
                   const discount = Math.max(0, p.subtotal - p.final_amount);
                   return (
                     <tr key={p.id} className="hover:bg-neutral-50/80 transition-colors">
-                      <td className="px-6 py-3.5 font-bold font-mono text-black">
-                        {p.invoice_number}
-                      </td>
                       <td className="px-6 py-3.5">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-neutral-100 text-neutral-700">
                           {p.branch === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam'}
@@ -554,13 +531,12 @@ export default function DashboardPage() {
                       </td>
                       <td className="px-6 py-3.5">
                         <div className="font-bold text-neutral-900">{p.customer_name}</div>
-                        <div className="text-[11px] text-neutral-400 font-mono">{p.customer_phone}</div>
+                        <div className="text-[11px] text-neutral-500 font-mono tracking-wider">
+                          {maskPhoneNumber(p.customer_phone)}
+                        </div>
                       </td>
                       <td className="px-6 py-3.5 font-mono">
                         {p.weight_kg ? `${p.weight_kg.toFixed(2)} KG` : `${p.weight_grams}g`}
-                      </td>
-                      <td className="px-6 py-3.5 font-mono text-neutral-600">
-                        ₹{p.subtotal.toFixed(2)}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-rose-600 font-semibold">
                         {discount > 0 ? `-₹${discount.toFixed(2)}` : '₹0.00'}
@@ -581,8 +557,8 @@ export default function DashboardPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={9} className="px-6 py-8 text-center text-neutral-400">
-                    No completed invoices recorded yet.
+                  <td colSpan={7} className="px-6 py-8 text-center text-neutral-400">
+                    No completed transactions recorded yet.
                   </td>
                 </tr>
               )}
