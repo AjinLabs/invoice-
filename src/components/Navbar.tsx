@@ -152,12 +152,12 @@ export default function Navbar() {
                 <img
                   src="/logo.png"
                   alt="Terry Women"
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain border border-emerald-500/30 shadow-xs group-hover:scale-105 transition-transform"
+                  className="w-10 h-10 sm:w-11 sm:h-11 rounded-full object-contain border-2 border-[#094327] shadow-xs group-hover:scale-105 transition-transform"
                 />
                 <span className="text-lg sm:text-xl font-black tracking-tight text-white group-hover:text-neutral-200 transition-colors uppercase">
                   TERRY
                 </span>
-                <span className="text-[10px] font-bold bg-white/10 text-neutral-200 px-2 py-0.5 rounded-full border border-white/15 tracking-widest uppercase">
+                <span className="text-[10px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full border border-emerald-500/40 tracking-widest uppercase">
                   WOMEN
                 </span>
               </Link>
@@ -222,20 +222,20 @@ export default function Navbar() {
                   href={tab.href}
                   className={`flex flex-col items-center justify-center py-1 px-4 sm:px-5 rounded-full transition-all apple-pressable ${
                     isActive
-                      ? 'text-neutral-950 dark:text-white font-bold'
+                      ? 'text-[#094327] dark:text-emerald-400 font-bold'
                       : 'text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 font-medium'
                   }`}
                 >
                   <div
                     className={`p-1.5 rounded-full transition-all duration-150 ${
                       isActive
-                        ? 'bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 shadow-xs scale-105'
+                        ? 'bg-[#094327] text-white shadow-xs scale-105'
                         : 'bg-transparent text-neutral-500'
                     }`}
                   >
                     <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                   </div>
-                  <span className="text-[10px] sm:text-[11px] mt-0.5 tracking-tight">
+                  <span className="text-[10px] sm:text-[11px] mt-0.5 tracking-tight font-semibold">
                     {tab.label}
                   </span>
                 </Link>

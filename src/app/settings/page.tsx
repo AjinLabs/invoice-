@@ -357,17 +357,7 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div>
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                GSTIN / Tax ID
-              </label>
-              <input
-                type="text"
-                value={gstin}
-                onChange={(e) => setGstin(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
-              />
-            </div>
+
 
             <div className="sm:col-span-2">
               <label className="block font-bold text-neutral-700 uppercase mb-1">
@@ -493,62 +483,14 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* 3. Round Off Setting */}
-        <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 border-b pb-3">
-            <Gift className="w-5 h-5 text-neutral-800" />
-            <h3 className="text-sm font-bold text-neutral-900">
-              3. Default Round Off Concession Mode
-            </h3>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                id: 'FLOOR_10',
-                title: 'Round Down (Floor ₹10)',
-                desc: 'Store discount (₹899 → ₹890, ₹815 → ₹810)',
-              },
-              {
-                id: 'NONE',
-                title: 'Exact Amount',
-                desc: 'No round off (₹899.00 exact)',
-              },
-              {
-                id: 'MANUAL',
-                title: 'Manual Custom Price',
-                desc: 'Cashier custom total override',
-              },
-            ].map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setRoundOffMode(opt.id as RoundOffMode)}
-                className={`p-3.5 rounded-lg border text-left transition-all ${
-                  roundOffMode === opt.id
-                    ? 'border-black bg-black text-white shadow-xs'
-                    : 'border-neutral-200 bg-neutral-50 hover:bg-neutral-100 text-neutral-800'
-                }`}
-              >
-                <div className="font-black text-xs uppercase mb-1">{opt.title}</div>
-                <div
-                  className={`text-[11px] leading-snug ${
-                    roundOffMode === opt.id ? 'text-neutral-300' : 'text-neutral-500'
-                  }`}
-                >
-                  {opt.desc}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Save Button */}
         <div className="flex items-center gap-3">
           <button
             type="submit"
             disabled={isSaving}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#094327] hover:bg-[#06311d] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 cursor-pointer shadow-xs"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? 'Saving...' : `Save ${activeBranch.toUpperCase()} Settings`}</span>

@@ -19,6 +19,29 @@
   --apple-glass-border: rgba(255, 255, 255, 0.6);
   --apple-glass-dark-bg: rgba(18, 18, 20, 0.82);
   --apple-glass-dark-border: rgba(255, 255, 255, 0.12);
+
+  /* Signature Terry Brand Green Palette */
+  --terry-green: #094327;
+  --terry-green-light: #0d5f38;
+  --terry-green-dark: #06311d;
+  --terry-green-tint: #ecfdf5;
+  --terry-red: #e11d48;
+}
+
+.bg-terry-green {
+  background-color: #094327;
+}
+.bg-terry-green-dark {
+  background-color: #06311d;
+}
+.text-terry-green {
+  color: #094327;
+}
+.border-terry-green {
+  border-color: #094327;
+}
+.bg-terry-tint {
+  background-color: #f0fdf4;
 }
 
 /* System typography with optical hierarchy (design.md §15) */

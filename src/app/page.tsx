@@ -46,7 +46,7 @@ export default function BillingPage() {
 
   // Payment and round off
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
-  const [roundOffMode, setRoundOffMode] = useState<RoundOffMode>('FLOOR_10');
+  const [roundOffMode, setRoundOffMode] = useState<RoundOffMode>('NONE');
   const [manualAmount, setManualAmount] = useState<string>('');
 
   // Branch & System States
@@ -791,8 +791,8 @@ export default function BillingPage() {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
+                    { id: 'NONE', label: 'Exact (No Rounding)', desc: 'Exact Paisa (Default)' },
                     { id: 'FLOOR_10', label: 'Round Down 10s', desc: 'e.g. ₹899 → ₹890' },
-                    { id: 'NONE', label: 'Exact (No Rounding)', desc: 'Exact Paisa' },
                     { id: 'MANUAL', label: 'Manual Price', desc: 'Custom Amount' },
                   ].map((m) => (
                     <button
@@ -801,12 +801,12 @@ export default function BillingPage() {
                       onClick={() => setRoundOffMode(m.id as RoundOffMode)}
                       className={`apple-pressable p-3 rounded-2xl border text-left transition-all ${
                         roundOffMode === m.id
-                          ? 'border-neutral-950 bg-neutral-950 text-white shadow-xs'
+                          ? 'border-[#094327] bg-[#094327] text-white shadow-xs'
                           : 'border-neutral-200/80 bg-neutral-50/80 text-neutral-800 hover:border-neutral-300'
                       }`}
                     >
                       <p className="text-xs font-bold leading-tight tracking-tight">{m.label}</p>
-                      <p className={`text-[10px] mt-0.5 ${roundOffMode === m.id ? 'text-neutral-300' : 'text-neutral-500'}`}>
+                      <p className={`text-[10px] mt-0.5 ${roundOffMode === m.id ? 'text-emerald-200' : 'text-neutral-500'}`}>
                         {m.desc}
                       </p>
                     </button>
@@ -830,22 +830,22 @@ export default function BillingPage() {
                 )}
               </div>
 
-              {/* Live Amount Display Card */}
-              <div className="bg-neutral-950 text-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl space-y-2.5 shadow-md border border-white/10">
-                <div className="flex justify-between text-xs text-neutral-400">
+              {/* Live Amount Display Card - Styled in Signature Terry Green */}
+              <div className="bg-gradient-to-br from-[#094327] to-[#06311d] text-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl space-y-2.5 shadow-md border border-emerald-800/40">
+                <div className="flex justify-between text-xs text-emerald-200">
                   <span>
                     Items: {billingCalc.customItems?.length || 0} Custom {includeKiloDress && numericWeight > 0 ? `+ ${(numericWeight / 1000).toFixed(2)} KG` : ''}
                   </span>
-                  <span className="font-mono text-neutral-300">BRANCH: {activeBranch.toUpperCase()}</span>
+                  <span className="font-mono text-emerald-100 font-bold">BRANCH: {activeBranch.toUpperCase()}</span>
                 </div>
 
-                <div className="flex justify-between text-sm text-neutral-300 border-b border-white/10 pb-2">
+                <div className="flex justify-between text-sm text-emerald-100 border-b border-white/15 pb-2">
                   <span>Gross Subtotal:</span>
                   <span className="font-semibold font-mono">₹{billingCalc.subtotal.toFixed(2)}</span>
                 </div>
 
                 {billingCalc.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-emerald-400 border-b border-white/10 pb-2">
+                  <div className="flex justify-between text-sm text-amber-300 border-b border-white/15 pb-2">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Gift className="w-4 h-4" /> Loyalty Reward (50% OFF 1 KG):
                     </span>
@@ -854,11 +854,11 @@ export default function BillingPage() {
                 )}
 
                 {billingCalc.roundOffAmount !== 0 && (
-                  <div className="flex justify-between text-sm text-neutral-300 border-b border-white/10 pb-2">
+                  <div className="flex justify-between text-sm text-emerald-100 border-b border-white/15 pb-2">
                     <span>
                       {roundOffMode === 'MANUAL' ? 'Manual Price Adjustment:' : 'Round Down Discount:'}
                     </span>
-                    <span className={`font-mono font-bold ${billingCalc.roundOffAmount < 0 ? 'text-emerald-400' : 'text-neutral-300'}`}>
+                    <span className={`font-mono font-bold ${billingCalc.roundOffAmount < 0 ? 'text-amber-300' : 'text-emerald-100'}`}>
                       {billingCalc.roundOffAmount > 0
                         ? `+₹${billingCalc.roundOffAmount.toFixed(2)}`
                         : `-₹${Math.abs(billingCalc.roundOffAmount).toFixed(2)}`}
@@ -868,11 +868,11 @@ export default function BillingPage() {
 
                 <div className="flex justify-between items-baseline pt-1">
                   <div>
-                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-neutral-300 block">
+                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-emerald-200 block">
                       Net Amount Payable:
                     </span>
                     {billingCalc.subtotal - billingCalc.finalAmount > 0 && (
-                      <span className="text-[11px] text-emerald-400 font-semibold tracking-tight">
+                      <span className="text-[11px] text-amber-300 font-semibold tracking-tight">
                         Total Savings: ₹{(billingCalc.subtotal - billingCalc.finalAmount).toFixed(2)}
                       </span>
                     )}
@@ -902,7 +902,7 @@ export default function BillingPage() {
                         onClick={() => setPaymentMethod(p.id as PaymentMethod)}
                         className={`apple-pressable flex items-center justify-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all ${
                           isSelected
-                            ? 'bg-neutral-950 text-white border-neutral-950 shadow-xs'
+                            ? 'bg-[#094327] text-white border-[#094327] shadow-xs'
                             : 'bg-white text-neutral-700 border-neutral-200/90 hover:bg-neutral-50'
                         }`}
                       >
@@ -938,7 +938,7 @@ export default function BillingPage() {
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => handleCompletePurchase(false)}
-                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-emerald-800 hover:bg-emerald-900 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer"
+                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   <span>{isSubmitting ? 'Processing...' : 'Complete & WhatsApp'}</span>

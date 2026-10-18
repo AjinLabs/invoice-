@@ -37,8 +37,8 @@ export function generateInvoicePdf(purchase: Purchase, settings: ShopSettings): 
   doc.setTextColor(0, 0, 0);
 
   y += 6.5;
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.35);
+  doc.setDrawColor(9, 67, 39); // Signature Terry Green (#094327)
+  doc.setLineWidth(0.8);
   doc.line(14, y, pageWidth - 14, y);
 
   // 2. BILLED TO & Date (Invoice No removed as requested)
@@ -214,8 +214,8 @@ export function generateMonthlyReportPdf(
   doc.setTextColor(0, 0, 0);
 
   y += 18;
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.5);
+  doc.setDrawColor(9, 67, 39); // Signature Terry Green (#094327)
+  doc.setLineWidth(1.2);
   doc.line(14, y, pageWidth - 14, y);
 
   // Month Highlight

@@ -182,7 +182,7 @@ function createInitialSeed(): DatabaseSchema {
     whatsapp_mode: 'DEMO', // Demo mode enabled out of the box
     whatsapp_api_version: 'v20.0',
     whatsapp_verify_token: 'terry_verify_token_2026',
-    round_off_mode: 'FLOOR_10',
+    round_off_mode: 'NONE',
     branches: DEFAULT_BRANCHES,
     message_templates: {
       purchase_confirmation: 'Hi {{customer_name}} 👋\nThank you for shopping with us!\nYour purchase of {{weight}} has been recorded.\nInvoice Amount: ₹{{amount}}\nLoyalty progress: {{loyalty_count}}/5.\nThank you ❤️',

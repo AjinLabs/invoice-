@@ -122,21 +122,24 @@ export default function CashMemoPreview({
 
       <div
         id="cash-memo-preview-node"
-        className="invoice-body-font w-full max-w-[620px] mx-auto bg-white text-black p-8 sm:p-10 shadow-xl border border-neutral-200 select-none"
+        className="invoice-body-font w-full max-w-[620px] mx-auto bg-white text-black p-8 sm:p-10 shadow-xl border border-neutral-200 select-none relative overflow-hidden"
         style={{ backgroundColor: '#ffffff', color: '#000000' }}
       >
+        {/* Subtle Terry Green Top Brand Accent Bar */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#094327]" />
+
         {/* ==============================================================
             1. TOP HEADER: [Circular TE7RY Logo] Centered with small INVOICE below
            ============================================================== */}
-        <div className="flex flex-col items-center justify-center text-center pb-2">
-          {/* Circular logo centered */}
+        <div className="flex flex-col items-center justify-center text-center pb-2 pt-1">
+          {/* Circular logo enlarged and prominent */}
           <img
             src="/logo.png"
             alt="Terry 7 Women"
-            className="w-20 h-20 sm:w-22 sm:h-22 object-contain rounded-full shadow-xs"
+            className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-full shadow-md hover:scale-102 transition-transform"
           />
           {/* Small INVOICE text below logo */}
-          <span className="text-[11px] font-bold tracking-[0.3em] text-neutral-600 uppercase mt-2">
+          <span className="text-[12px] font-bold tracking-[0.35em] text-[#094327] uppercase mt-2.5">
             INVOICE
           </span>
         </div>

@@ -748,7 +748,7 @@
     "whatsapp_mode": "DEMO",
     "whatsapp_api_version": "v20.0",
     "whatsapp_verify_token": "terry_verify_token_2026",
-    "round_off_mode": "FLOOR_10",
+    "round_off_mode": "NONE",
     "message_templates": {
       "purchase_confirmation": "Hi {{customer_name}} 👋\nThank you for shopping with us!\nYour purchase of {{weight}} has been recorded.\nInvoice Amount: ₹{{amount}}\nLoyalty weight: {{loyalty_weight}}g / 5,000g.\nThank you ❤️",
       "loyalty_progress": "Hi {{customer_name}} 👋\nYour total loyalty clothing is {{weight}}g / 5,000g.\nOnly {{remaining}}g more to unlock your 50% OFF on 1 KG loyalty reward 🎁\nKeep shopping with us!",
