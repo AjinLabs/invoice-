@@ -19,7 +19,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toPng } from 'html-to-image';
+import { toPng, toBlob } from 'html-to-image';
 import CashMemoPreview from '@/components/CashMemoPreview';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
@@ -372,24 +372,16 @@ export default function BillingPage() {
       return;
     }
 
-    // ⚡ Pre-open window synchronously within user gesture to prevent popup blocking in Chrome / Mobile
-    let waWindow: Window | null = null;
-    if (!shouldPrintDirectly && typeof window !== 'undefined') {
-      try {
-        waWindow = window.open('about:blank', '_blank');
-      } catch {
-        waWindow = null;
-      }
-    }
-
     setIsSubmitting(true);
     try {
-      // 1. Render Cash Memo to high-res PNG image
+      // 1. Render Cash Memo to high-res PNG image & blob
       const memoNode = document.getElementById('cash-memo-preview-node');
       let base64Image = '';
+      let imageBlob: Blob | null = null;
       if (memoNode) {
         try {
           base64Image = await toPng(memoNode, { quality: 0.95, pixelRatio: 2, cacheBust: false });
+          imageBlob = await toBlob(memoNode, { quality: 0.95, pixelRatio: 2, cacheBust: false });
         } catch (imgErr) {
           console.warn('Could not render cash memo image:', imgErr);
         }
@@ -418,7 +410,6 @@ export default function BillingPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        if (waWindow && !waWindow.closed) waWindow.close();
         throw new Error(data.error || 'Failed to complete purchase');
       }
 
@@ -432,12 +423,34 @@ export default function BillingPage() {
       const encodedText = encodeURIComponent(formattedText);
       const waUrl = `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encodedText}`;
 
-      // Open WhatsApp directly in the pre-opened tab (or navigate directly)
+      // Open WhatsApp for customer
       if (!shouldPrintDirectly) {
-        if (waWindow && !waWindow.closed) {
-          waWindow.location.href = waUrl;
-        } else {
-          window.location.href = waUrl;
+        let sharedViaNative = false;
+        // Mobile / Tablet: Share REAL PHOTO file directly into WhatsApp!
+        if (
+          imageBlob &&
+          typeof navigator !== 'undefined' &&
+          navigator.canShare &&
+          navigator.canShare({
+            files: [new File([imageBlob], `${createdPurchase.invoice_number}.png`, { type: 'image/png' })],
+          })
+        ) {
+          try {
+            const file = new File([imageBlob], `${createdPurchase.invoice_number}.png`, { type: 'image/png' });
+            await navigator.share({
+              title: `TERRY7 WOMEN - Bill ${createdPurchase.invoice_number}`,
+              text: formattedText,
+              files: [file],
+            });
+            sharedViaNative = true;
+          } catch (shareErr) {
+            console.warn('Native share dismissed or failed:', shareErr);
+          }
+        }
+
+        // Desktop / Laptop: Open WhatsApp chat directly (NO lingering about:blank tab)
+        if (!sharedViaNative) {
+          window.open(waUrl, '_blank');
         }
       }
 
@@ -474,9 +487,6 @@ export default function BillingPage() {
         }, 300);
       }
     } catch (err: unknown) {
-      if (waWindow && !waWindow.closed) {
-        waWindow.close();
-      }
       const msg = err instanceof Error ? err.message : 'Error completing purchase';
       setErrorMessage(msg);
     } finally {
