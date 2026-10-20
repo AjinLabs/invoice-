@@ -24,11 +24,13 @@ export function middleware(request: NextRequest) {
 
   const isAuthenticated = Boolean(session && session.id && session.username);
 
-  // Allow public auth endpoints, webhook, and invoice image serving
+  // Allow public auth endpoints, webhook, and public invoice viewing
   if (
     pathname.startsWith('/api/auth/') ||
     pathname.startsWith('/api/whatsapp/webhook') ||
-    pathname.startsWith('/api/invoices/')
+    pathname.startsWith('/api/invoices/') ||
+    pathname.startsWith('/invoice/') ||
+    (pathname.startsWith('/api/purchases/') && request.method === 'GET')
   ) {
     return NextResponse.next();
   }

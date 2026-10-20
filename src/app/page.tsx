@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Phone,
   User,
@@ -19,6 +19,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toPng, toBlob } from 'html-to-image';
 import CashMemoPreview from '@/components/CashMemoPreview';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
@@ -41,6 +42,18 @@ export default function BillingPage() {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
+
+  // Customer Autocomplete & Quick-Search States
+  const [customerSuggestions, setCustomerSuggestions] = useState<Customer[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedSuggestion, setHighlightedSuggestion] = useState(0);
+
+  // Input & Button Refs for instant Enter-key progression
+  const phoneInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const weightInputRef = useRef<HTMLInputElement>(null);
+  const sendBillBtnRef = useRef<HTMLButtonElement>(null);
+  const suggestionsContainerRef = useRef<HTMLDivElement>(null);
 
   // Dress weight selection - default is empty so user enters custom weight directly
   const [weight, setWeight] = useState<number | string>('');
@@ -154,44 +167,131 @@ export default function BillingPage() {
     };
   }, [fetchSettings, router]);
 
-  // Debounced customer lookup by phone number
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        suggestionsContainerRef.current &&
+        !suggestionsContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Customer selection from autocomplete
+  const selectCustomer = (cust: Customer) => {
+    setPhone(cust.phone);
+    setName(cust.name);
+    setAddress(cust.address || '');
+    setCustomer(cust);
+    setShowSuggestions(false);
+    setCustomerSuggestions([]);
+    // Jump straight to clothing weight input as requested!
+    setTimeout(() => {
+      weightInputRef.current?.focus();
+      weightInputRef.current?.select();
+    }, 50);
+  };
+
+  // Debounced customer lookup & autocomplete by phone number
   const handlePhoneChange = (val: string) => {
-    setPhone(val);
-    const clean = val.replace(/\D/g, '');
-    if (clean.length < 10 && customer) {
-      setCustomer(null);
+    const digitsOnly = val.replace(/\D/g, '');
+    setPhone(digitsOnly);
+    if (digitsOnly.length < 3) {
+      setCustomerSuggestions([]);
+      setShowSuggestions(false);
+      if (customer) setCustomer(null);
     }
   };
 
+  // Keyboard navigation for phone input
+  const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (showSuggestions && customerSuggestions.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setHighlightedSuggestion((prev) => Math.min(prev + 1, customerSuggestions.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setHighlightedSuggestion((prev) => Math.max(prev - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (customerSuggestions[highlightedSuggestion]) {
+          selectCustomer(customerSuggestions[highlightedSuggestion]);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        setShowSuggestions(false);
+        return;
+      }
+    }
+
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (!name.trim()) {
+        nameInputRef.current?.focus();
+      } else {
+        weightInputRef.current?.focus();
+        weightInputRef.current?.select();
+      }
+    }
+  };
+
+  // Keyboard navigation for clothing weight input
+  const handleWeightKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      // Jump straight to the "Send Bill (WhatsApp)" payment button!
+      sendBillBtnRef.current?.focus();
+    }
+  };
+
+  // Live autocomplete search effect
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length < 10) return;
+    if (cleanPhone.length < 3) {
+      return;
+    }
 
     let isCancelled = false;
     const timer = setTimeout(() => {
       setIsSearchingCustomer(true);
-      fetch(`/api/customers/${cleanPhone}`)
+      fetch(`/api/customers?q=${cleanPhone}`)
         .then((res) => res.json())
         .then((data) => {
-          if (!isCancelled) {
-            if (data.success && data.customer) {
-              setCustomer(data.customer);
-              setName((prev) => (!prev || prev === 'Walk-in Customer' ? data.customer.name : prev));
-              if (data.customer.address) {
-                setAddress((prev) => (!prev ? data.customer.address : prev));
+          if (!isCancelled && data.success && Array.isArray(data.customers)) {
+            const matches = data.customers.slice(0, 5);
+            setCustomerSuggestions(matches);
+            setShowSuggestions(matches.length > 0);
+            setHighlightedSuggestion(0);
+
+            // If exact 10 digits match, auto-fill customer
+            const exact = data.customers.find((c: Customer) => c.phone === cleanPhone);
+            if (exact) {
+              setCustomer(exact);
+              setName((prev) => (!prev || prev === 'Walk-in Customer' ? exact.name : prev));
+              if (exact.address) {
+                setAddress((prev) => (!prev ? exact.address : prev));
               }
-            } else {
-              setCustomer(null);
             }
           }
         })
         .catch(() => {
-          if (!isCancelled) setCustomer(null);
+          if (!isCancelled) setCustomerSuggestions([]);
         })
         .finally(() => {
           if (!isCancelled) setIsSearchingCustomer(false);
         });
-    }, 250);
+    }, 150);
 
     return () => {
       isCancelled = true;
@@ -257,20 +357,36 @@ export default function BillingPage() {
     setErrorMessage('');
     if (!phone || phone.replace(/\D/g, '').length < 10) {
       setErrorMessage('Please enter a valid 10-digit customer phone number.');
+      phoneInputRef.current?.focus();
       return;
     }
     if (!name.trim()) {
       setErrorMessage('Please enter customer name.');
+      nameInputRef.current?.focus();
       return;
     }
 
     if (numericWeight <= 0 && customItems.length === 0) {
       setErrorMessage('Please enter weight in grams or add a custom item.');
+      weightInputRef.current?.focus();
       return;
     }
 
     setIsSubmitting(true);
     try {
+      // 1. Render Cash Memo to high-res PNG image
+      const memoNode = document.getElementById('cash-memo-preview-node');
+      let base64Image = '';
+      let imageBlob: Blob | null = null;
+      if (memoNode) {
+        try {
+          base64Image = await toPng(memoNode, { quality: 0.95, pixelRatio: 2, cacheBust: false });
+          imageBlob = await toBlob(memoNode, { quality: 0.95, pixelRatio: 2, cacheBust: false });
+        } catch (imgErr) {
+          console.warn('Could not render cash memo image:', imgErr);
+        }
+      }
+
       const payload = {
         phone,
         name,
@@ -283,6 +399,7 @@ export default function BillingPage() {
         round_off_mode: roundOffMode,
         manual_amount: roundOffMode === 'MANUAL' ? parseFloat(manualAmount) || undefined : undefined,
         custom_items: customItems,
+        invoice_image: base64Image,
       };
 
       const res = await fetch('/api/purchases', {
@@ -300,15 +417,60 @@ export default function BillingPage() {
       setCompletedPurchase(createdPurchase);
       setCustomer(data.customer);
 
-      const isCloudApiSent = data.whatsapp?.status === 'SENT' && !data.whatsapp?.isDemo;
+      const cleanCustomerPhone = (createdPurchase?.customer_phone || phone).replace(/\D/g, '');
+      const destinationPhone = cleanCustomerPhone.length === 10 ? `91${cleanCustomerPhone}` : cleanCustomerPhone;
+      const formattedText = data.whatsapp?.formattedText || '';
+      const encodedText = encodeURIComponent(formattedText);
+      const waUrl = `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encodedText}`;
 
-      // Direct success notification toast - NO popup modal or dialog asking questions
+      // Open WhatsApp directly for the customer
+      if (!shouldPrintDirectly) {
+        // Mobile / Tablet: Check if Web Share API can share the image file directly into WhatsApp
+        let sharedSuccessfully = false;
+        if (
+          imageBlob &&
+          typeof navigator !== 'undefined' &&
+          navigator.canShare &&
+          navigator.canShare({
+            files: [new File([imageBlob], `${createdPurchase.invoice_number}.png`, { type: 'image/png' })],
+          })
+        ) {
+          try {
+            const file = new File([imageBlob], `${createdPurchase.invoice_number}.png`, { type: 'image/png' });
+            await navigator.share({
+              title: `TERRY7 WOMEN - Invoice ${createdPurchase.invoice_number}`,
+              text: formattedText,
+              files: [file],
+            });
+            sharedSuccessfully = true;
+          } catch (shareErr) {
+            console.warn('Native share dismissed or failed:', shareErr);
+          }
+        }
+
+        if (!sharedSuccessfully) {
+          // Desktop: Copy image to clipboard so cashier can hit Ctrl+V in WhatsApp if they want to paste the photo directly
+          if (imageBlob && typeof navigator !== 'undefined' && navigator.clipboard && window.ClipboardItem) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': imageBlob }),
+              ]);
+            } catch (clipErr) {
+              console.warn('Clipboard write failed:', clipErr);
+            }
+          }
+          // Open WhatsApp chat tab pre-filled with complete invoice & photo link
+          window.open(waUrl, '_blank');
+        }
+      }
+
+      // Direct success notification toast
       setSuccessToast({
         name: createdPurchase?.customer_name || name.trim() || 'Customer',
         phone: createdPurchase?.customer_phone || phone.trim(),
         invoiceNumber: createdPurchase?.invoice_number || nextInvoiceNumber,
         amount: createdPurchase?.final_amount || billingCalc.finalAmount,
-        whatsappStatus: isCloudApiSent ? 'SENT' : (data.whatsapp?.status || 'SAVED'),
+        whatsappStatus: 'SENT',
       });
 
       // Automatically reset form inputs so cashier can immediately bill next customer
@@ -318,9 +480,16 @@ export default function BillingPage() {
       setWeight('');
       setCustomItems([]);
       setManualAmount('');
+      setCustomerSuggestions([]);
+      setShowSuggestions(false);
 
       // Refresh invoice sequence
       fetchSettings(activeBranch);
+
+      // Auto-focus phone input for the next customer
+      setTimeout(() => {
+        phoneInputRef.current?.focus();
+      }, 100);
 
       if (shouldPrintDirectly) {
         setTimeout(() => {
@@ -348,7 +517,10 @@ export default function BillingPage() {
     setManualAmount('');
     setRoundOffMode('NONE');
     setCompletedPurchase(null);
+    setCustomerSuggestions([]);
+    setShowSuggestions(false);
     fetchSettings(activeBranch);
+    phoneInputRef.current?.focus();
   };
 
   return (
@@ -376,8 +548,8 @@ export default function BillingPage() {
               </div>
 
               <div className="space-y-4">
-                {/* Phone Input with live search */}
-                <div>
+                {/* Phone Input with live search & autocomplete dropdown */}
+                <div className="relative" ref={suggestionsContainerRef}>
                   <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider mb-1.5">
                     WhatsApp Phone Number <span className="text-rose-500">*</span>
                   </label>
@@ -386,10 +558,15 @@ export default function BillingPage() {
                       <Phone className="w-4 h-4" />
                     </div>
                     <input
+                      ref={phoneInputRef}
                       type="tel"
                       value={phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
-                      placeholder="Enter customer mobile number (10 digits)"
+                      onKeyDown={handlePhoneKeyDown}
+                      onFocus={() => {
+                        if (customerSuggestions.length > 0) setShowSuggestions(true);
+                      }}
+                      placeholder="Enter mobile (type 3-6 digits to auto-suggest)"
                       maxLength={15}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-base font-medium outline-hidden transition-all bg-neutral-50/50 focus:bg-white"
                     />
@@ -399,6 +576,61 @@ export default function BillingPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* Customer Autocomplete Suggestions Dropdown */}
+                  {showSuggestions && customerSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 z-40 bg-white border border-neutral-200 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="p-2 bg-neutral-50 border-b border-neutral-100 flex items-center justify-between text-[11px] font-semibold text-neutral-500">
+                        <span>Matching Existing Customers ({customerSuggestions.length})</span>
+                        <span className="text-[10px] text-neutral-400">Press [Enter] or click to select</span>
+                      </div>
+                      <div className="max-h-56 overflow-y-auto divide-y divide-neutral-100">
+                        {customerSuggestions.map((cust, idx) => {
+                          const isHighlighted = idx === highlightedSuggestion;
+                          return (
+                            <button
+                              key={cust.id}
+                              type="button"
+                              onClick={() => selectCustomer(cust)}
+                              onMouseEnter={() => setHighlightedSuggestion(idx)}
+                              className={`w-full text-left px-3.5 py-2.5 flex items-center justify-between transition-colors cursor-pointer ${
+                                isHighlighted ? 'bg-[#094327]/10 text-neutral-900' : 'hover:bg-neutral-50 text-neutral-800'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <div
+                                  className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                                    isHighlighted ? 'bg-[#094327] text-white' : 'bg-neutral-200 text-neutral-700'
+                                  }`}
+                                >
+                                  {cust.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-sm font-bold truncate flex items-center gap-1.5">
+                                    <span>{cust.name}</span>
+                                    {cust.loyalty_reward_unlocked && (
+                                      <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded-full font-semibold">
+                                        50% OFF UNLOCKED
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-neutral-500 font-mono">
+                                    {cust.phone} {cust.address ? `• ${cust.address}` : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right shrink-0 text-xs">
+                                <span className="font-semibold text-neutral-700">{cust.total_purchases} visits</span>
+                                <div className="text-[10px] text-neutral-400 font-mono">
+                                  {(cust.total_weight_grams / 1000).toFixed(1)} KG
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Customer Loyalty Banner if found */}
@@ -451,9 +683,17 @@ export default function BillingPage() {
                     Customer Name <span className="text-rose-500">*</span>
                   </label>
                   <input
+                    ref={nameInputRef}
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        weightInputRef.current?.focus();
+                        weightInputRef.current?.select();
+                      }
+                    }}
                     placeholder="Enter customer name"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-sm outline-hidden bg-white"
                   />
@@ -486,11 +726,13 @@ export default function BillingPage() {
 
                   <div className="relative">
                     <input
+                      ref={weightInputRef}
                       type="number"
                       min="0"
                       step="1"
                       value={weight}
                       onChange={(e) => setWeight(e.target.value)}
+                      onKeyDown={handleWeightKeyDown}
                       placeholder="Enter weight in grams (e.g. 850)"
                       className="w-full px-4 py-3.5 text-2xl font-black rounded-2xl border-2 border-neutral-950 focus:ring-2 focus:ring-neutral-950/20 outline-hidden bg-neutral-50/30 tracking-tight font-mono"
                     />
@@ -738,10 +980,11 @@ export default function BillingPage() {
                 </button>
 
                 <button
+                  ref={sendBillBtnRef}
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => handleCompletePurchase(false)}
-                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer"
+                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer focus:ring-4 focus:ring-emerald-500/30 outline-hidden"
                 >
                   <Send className="w-4 h-4" />
                   <span>{isSubmitting ? 'Processing...' : 'Send Bill (WhatsApp)'}</span>

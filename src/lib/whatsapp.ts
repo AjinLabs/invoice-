@@ -12,7 +12,15 @@ export interface SendWhatsAppResult {
 /**
  * Format official WhatsApp invoice text as specified in Section 7
  */
-export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSettings): string {
+export function formatWhatsAppInvoiceText(
+  purchase: Purchase,
+  settings: ShopSettings,
+  baseUrl?: string
+): string {
+  const host = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://terry7women.vercel.app';
+  const photoUrl = `${host}/api/invoices/${purchase.id}/image`;
+  const digitalBillUrl = `${host}/invoice/${purchase.id}`;
+
   const dateObj = new Date(purchase.created_at);
   const dateFormatted = dateObj.toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -106,7 +114,8 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `🧾 *CASH MEMO*\n\n` +
     `👤 Customer: ${purchase.customer_name}\n` +
-    `📅 Date: ${dateFormatted}\n\n` +
+    `📅 Date: ${dateFormatted}\n` +
+    `📸 *Bill Photo:* ${photoUrl}\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
     `🛍️ *ITEM DETAILS*\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
@@ -130,7 +139,8 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `❤️ Thank you for shopping with *TERRY7 WOMEN!*\n\n` +
     `📍 ${branchTown}\n` +
-    `📞 ${phone}`
+    `📞 ${phone}\n` +
+    `🌐 *Digital Bill:* ${digitalBillUrl}`
   );
 }
 
