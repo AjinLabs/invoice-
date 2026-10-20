@@ -14,25 +14,18 @@ export interface SendWhatsAppResult {
  */
 export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSettings): string {
   const dateObj = new Date(purchase.created_at);
-  const dateFormatted =
-    dateObj.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }) +
-    ', ' +
-    dateObj.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+  const dateFormatted = dateObj.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   const branchKey = (purchase.branch || 'vnb').toLowerCase();
   const branchTown = branchKey === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam';
   const branchTitle =
     branchKey === 'pkdm'
-      ? 'TERRY WOMEN – POOKKOTTUMPADAM'
-      : 'TERRY WOMEN – VANIYAMBALAM';
+      ? 'TERRY7 WOMEN – POOKKOTTUMPADAM'
+      : 'TERRY7 WOMEN – VANIYAMBALAM';
 
   // Format Items
   let itemsBlock = '';
@@ -135,7 +128,7 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
     loyaltySection +
     `\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `❤️ Thank you for shopping with *TERRY WOMEN!*\n\n` +
+    `❤️ Thank you for shopping with *TERRY7 WOMEN!*\n\n` +
     `📍 ${branchTown}\n` +
     `📞 ${phone}`
   );

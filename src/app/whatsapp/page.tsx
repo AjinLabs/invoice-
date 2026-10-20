@@ -362,11 +362,11 @@ export default function WhatsAppCenterPage() {
               {/* Chat Bubble Body */}
               <div className="bg-[#efeae2] p-4 min-h-[300px] flex flex-col justify-end">
                 <div className="bg-white rounded-lg p-3 text-xs text-neutral-900 shadow-xs max-w-[95%] space-y-1 leading-relaxed whitespace-pre-line border border-neutral-200 font-sans">
-                  <p className="font-bold text-emerald-950">👗 *TERRY WOMEN – VANIYAMBALAM* 👗</p>
+                  <p className="font-bold text-emerald-950">👗 *TERRY7 WOMEN – VANIYAMBALAM* 👗</p>
                   <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
                   <p className="font-bold">🧾 *CASH MEMO*</p>
                   <p>👤 Customer: ARJUN</p>
-                  <p>📅 Date: 18 Oct 2026, 11:21 AM</p>
+                  <p>📅 Date: 18 Oct 2026</p>
                   <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
                   <p className="font-bold">🛍️ *ITEM DETAILS*</p>
                   <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
@@ -387,7 +387,7 @@ export default function WhatsAppCenterPage() {
                   <p>🎯 Remaining: 2.90 KG to unlock your reward!</p>
                   <p className="text-emerald-800 font-medium">🎉 Complete 5 KG of eligible purchases to unlock *50% OFF on 1 KG*.</p>
                   <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p>❤️ Thank you for shopping with *TERRY WOMEN!*</p>
+                  <p>❤️ Thank you for shopping with *TERRY7 WOMEN!*</p>
                   <p>📍 Vaniyambalam</p>
                   <p className="font-mono">📞 +91 8330889632</p>
                 </div>

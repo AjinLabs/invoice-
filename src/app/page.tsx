@@ -16,13 +16,12 @@ import {
   Plus,
   Trash2,
   Tag,
+  CheckCircle2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashMemoPreview from '@/components/CashMemoPreview';
-import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
-import { toPng, toBlob } from 'html-to-image';
 
 interface AuthMeResponse {
   authenticated: boolean;
@@ -33,15 +32,6 @@ interface AuthMeResponse {
     branch?: BranchId;
   };
   branchInfo?: BranchInfo;
-}
-
-interface WhatsAppApiResult {
-  success: boolean;
-  isDemo: boolean;
-  status: 'SENT' | 'DELIVERED' | 'FAILED';
-  formattedText: string;
-  errorMessage?: string;
-  messageId?: string;
 }
 
 export default function BillingPage() {
@@ -76,12 +66,18 @@ export default function BillingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Success Modal States
+  // Completed purchase state
   const [completedPurchase, setCompletedPurchase] = useState<Purchase | null>(null);
-  const [whatsappResult, setWhatsappResult] = useState<WhatsAppApiResult | null>(null);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [isResending, setIsResending] = useState(false);
-  const [billImageDataUrl, setBillImageDataUrl] = useState<string | null>(null);
+
+  // Direct success notification toast (NO popups or dialogs)
+  interface SuccessToast {
+    name: string;
+    phone: string;
+    invoiceNumber: string;
+    amount: number;
+    whatsappStatus?: string;
+  }
+  const [successToast, setSuccessToast] = useState<SuccessToast | null>(null);
 
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState<string>('INV-VNB-2026-000101');
 
@@ -107,6 +103,14 @@ export default function BillingPage() {
       console.error(err);
     }
   }, [activeBranch]);
+
+  useEffect(() => {
+    if (!successToast) return;
+    const timer = setTimeout(() => {
+      setSuccessToast(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [successToast]);
 
   // Auth & Settings Check on Mount
   useEffect(() => {
@@ -292,34 +296,29 @@ export default function BillingPage() {
         throw new Error(data.error || 'Failed to complete purchase');
       }
 
-      setCompletedPurchase(data.purchase);
+      const createdPurchase = data.purchase;
+      setCompletedPurchase(createdPurchase);
       setCustomer(data.customer);
-      setWhatsappResult(data.whatsapp);
 
-      // Snapshot invoice memo
-      await new Promise((r) => setTimeout(r, 60));
-      const memoNode = document.getElementById('cash-memo-preview-node');
-      if (memoNode) {
-        try {
-          const capturedDataUrl = await toPng(memoNode, { quality: 0.95, pixelRatio: 2 });
-          const capturedBlob = await toBlob(memoNode, { quality: 0.95, pixelRatio: 2 });
-          setBillImageDataUrl(capturedDataUrl);
+      // Direct success notification toast - NO popup modal or dialog asking to open WhatsApp
+      setSuccessToast({
+        name: createdPurchase?.customer_name || name.trim() || 'Customer',
+        phone: createdPurchase?.customer_phone || phone.trim(),
+        invoiceNumber: createdPurchase?.invoice_number || nextInvoiceNumber,
+        amount: createdPurchase?.final_amount || billingCalc.finalAmount,
+        whatsappStatus: data.whatsapp?.status || 'SENT',
+      });
 
-          if (capturedBlob && navigator.clipboard && 'ClipboardItem' in window) {
-            try {
-              const item = new ClipboardItem({ 'image/png': capturedBlob });
-              await navigator.clipboard.write([item]);
-            } catch {
-              // clipboard non-blocking
-            }
-          }
-        } catch (imgErr) {
-          console.warn('Could not generate bill image snapshot:', imgErr);
-        }
-      }
+      // Automatically reset form inputs so cashier can immediately bill next customer
+      setName('');
+      setPhone('');
+      setAddress('');
+      setWeight('');
+      setCustomItems([]);
+      setManualAmount('');
 
-      // Show success modal confirmation directly - NO popup window or opening another tab
-      setShowSuccessModal(true);
+      // Refresh invoice sequence
+      fetchSettings(activeBranch);
 
       if (shouldPrintDirectly) {
         setTimeout(() => {
@@ -331,27 +330,6 @@ export default function BillingPage() {
       setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  // Resend WhatsApp handler
-  const handleResendWhatsApp = async () => {
-    if (!completedPurchase) return;
-    setIsResending(true);
-    try {
-      const res = await fetch('/api/whatsapp/resend', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ purchaseId: completedPurchase.id }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setWhatsappResult(data.result);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsResending(false);
     }
   };
 
@@ -367,9 +345,7 @@ export default function BillingPage() {
     setErrorMessage('');
     setManualAmount('');
     setRoundOffMode('NONE');
-    setBillImageDataUrl(null);
     setCompletedPurchase(null);
-    setShowSuccessModal(false);
     fetchSettings(activeBranch);
   };
 
@@ -836,17 +812,32 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Success Modal with WhatsApp Delivery and PDF Export */}
-      <WhatsAppSuccessModal
-        isOpen={showSuccessModal}
-        onClose={handleReset}
-        purchase={completedPurchase}
-        settings={shopSettings || undefined}
-        billImageDataUrl={billImageDataUrl}
-        whatsappResult={whatsappResult}
-        onResend={handleResendWhatsApp}
-        isResending={isResending}
-      />
+      {/* Direct WhatsApp Success Notification Toast - Floating at Top */}
+      {successToast && (
+        <div className="fixed top-20 inset-x-4 max-w-lg mx-auto z-50 bg-[#094327] text-white px-5 py-4 rounded-2xl shadow-2xl border border-emerald-500/30 flex items-start gap-3.5 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+                <span>Bill Sent to WhatsApp!</span>
+              </h4>
+              <button
+                type="button"
+                onClick={() => setSuccessToast(null)}
+                className="text-white/60 hover:text-white text-xs font-bold p-1 cursor-pointer"
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
+              Invoice <strong>#{successToast.invoiceNumber}</strong> (₹{successToast.amount.toFixed(2)}) has been delivered directly to <strong>{successToast.name}</strong> ({successToast.phone}) on WhatsApp.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
