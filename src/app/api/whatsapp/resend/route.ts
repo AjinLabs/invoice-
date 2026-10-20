@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const waResult = await sendWhatsAppInvoice(purchase, db.shop_settings);
 
     await withTransaction((database) => {
-      let existingMsg = database.whatsapp_messages.find((m) => m.purchase_id === purchaseId);
+      const existingMsg = database.whatsapp_messages.find((m) => m.purchase_id === purchaseId);
       const now = new Date().toISOString();
 
       if (existingMsg) {
@@ -49,7 +49,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, result: waResult });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error resending WhatsApp message';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

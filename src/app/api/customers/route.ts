@@ -20,8 +20,9 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ success: true, customers });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error fetching customers';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }
 
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
     }
 
     const customer = await withTransaction((db) => {
-      let existing = db.customers.find((c) => c.phone === phone);
+      const existing = db.customers.find((c) => c.phone === phone);
       const now = new Date().toISOString();
 
       if (existing) {
@@ -78,7 +79,8 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, customer });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error creating customer';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

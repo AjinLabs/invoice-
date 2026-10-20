@@ -9,8 +9,6 @@ import {
   RotateCw,
   Ban,
   MessageSquare,
-  CheckCircle2,
-  XCircle,
   Eye,
   AlertTriangle,
 } from 'lucide-react';
@@ -36,21 +34,7 @@ export default function InvoicesPage() {
   // Resending state
   const [resendingId, setResendingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchInvoices();
-    fetchSettings();
-  }, [search, filterStatus]);
-
-  const fetchSettings = async () => {
-    try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      if (data.success) setShopSettings(data.settings);
-    } catch {}
-  };
-
-  const fetchInvoices = async () => {
-    setIsLoading(true);
+  const reloadInvoices = async () => {
     try {
       let url = `/api/purchases?q=${encodeURIComponent(search)}`;
       if (filterStatus) url += `&status=${filterStatus}`;
@@ -61,10 +45,38 @@ export default function InvoicesPage() {
       }
     } catch (err) {
       console.error(err);
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        let url = `/api/purchases?q=${encodeURIComponent(search)}`;
+        if (filterStatus) url += `&status=${filterStatus}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.success && isMounted) {
+          setPurchases(data.purchases || []);
+        }
+
+        const settingsRes = await fetch('/api/settings');
+        const settingsData = await settingsRes.json();
+        if (settingsData.success && isMounted) {
+          setShopSettings(settingsData.settings);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [search, filterStatus]);
 
   const handleDownloadPdf = (purchase: Purchase) => {
     if (!shopSettings) return;
@@ -82,7 +94,7 @@ export default function InvoicesPage() {
       });
       const data = await res.json();
       if (data.success) {
-        fetchInvoices();
+        reloadInvoices();
       }
     } catch (err) {
       console.error(err);
@@ -104,9 +116,10 @@ export default function InvoicesPage() {
         throw new Error(data.error || 'Failed to cancel purchase');
       }
       setCancellingPurchase(null);
-      fetchInvoices();
-    } catch (err: any) {
-      setCancelError(err.message || 'Error during cancellation');
+      reloadInvoices();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error during cancellation';
+      setCancelError(msg);
     } finally {
       setIsCancelling(false);
     }

@@ -1,4 +1,4 @@
-import { Purchase, ShopSettings, WhatsAppMessage } from './types';
+import { Purchase, ShopSettings } from './types';
 
 export interface SendWhatsAppResult {
   success: boolean;
@@ -12,7 +12,7 @@ export interface SendWhatsAppResult {
 /**
  * Format official WhatsApp invoice text as specified in Section 7
  */
-export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSettings, imageUrl?: string): string {
+export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSettings): string {
   const dateObj = new Date(purchase.created_at);
   const dateFormatted =
     dateObj.toLocaleDateString('en-GB', {
@@ -107,7 +107,6 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
     maximumFractionDigits: 2,
   });
   const phone = settings.phone || settings.whatsapp_number || '+91 8330889632';
-  const photoLink = imageUrl || purchase.invoice_image_url;
 
   return (
     `👗 *${branchTitle}* 👗\n` +
@@ -138,8 +137,7 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
     `❤️ Thank you for shopping with *TERRY WOMEN!*\n\n` +
     `📍 ${branchTown}\n` +
-    `📞 ${phone}` +
-    (photoLink ? `\n\n📸 *Bill Photo:* ${photoLink}` : '')
+    `📞 ${phone}`
   );
 }
 
@@ -148,10 +146,9 @@ export function formatWhatsAppInvoiceText(purchase: Purchase, settings: ShopSett
  */
 export async function sendWhatsAppInvoice(
   purchase: Purchase,
-  settings: ShopSettings,
-  imageUrl?: string
+  settings: ShopSettings
 ): Promise<SendWhatsAppResult> {
-  const formattedText = formatWhatsAppInvoiceText(purchase, settings, imageUrl);
+  const formattedText = formatWhatsAppInvoiceText(purchase, settings);
   const isDemo = settings.whatsapp_mode === 'DEMO';
 
   // Demo Mode Simulation
@@ -189,29 +186,17 @@ export async function sendWhatsAppInvoice(
 
     const endpoint = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
 
-    const hasValidImage = Boolean(imageUrl && (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')));
-
-    const payload = hasValidImage
-      ? {
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: recipientPhone,
-          type: 'image',
-          image: {
-            link: imageUrl,
-            caption: formattedText,
-          },
-        }
-      : {
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: recipientPhone,
-          type: 'text',
-          text: {
-            preview_url: true,
-            body: formattedText,
-          },
-        };
+    // Send direct text invoice with no link preview
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: recipientPhone,
+      type: 'text',
+      text: {
+        preview_url: false,
+        body: formattedText,
+      },
+    };
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -243,13 +228,14 @@ export async function sendWhatsAppInvoice(
       messageId,
       formattedText,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Network error sending WhatsApp message:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Unknown network error occurred';
     return {
       success: false,
       isDemo: false,
       status: 'FAILED',
-      errorMessage: err.message || 'Unknown network error occurred',
+      errorMessage,
       formattedText,
     };
   }

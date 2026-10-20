@@ -72,7 +72,8 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true, ...result });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 400 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error cancelling purchase';
+    return NextResponse.json({ success: false, error }, { status: 400 });
   }
 }

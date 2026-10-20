@@ -29,8 +29,9 @@ function InvoiceContent() {
         } else {
           setError(data.error || 'Invoice not found');
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load invoice');
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : 'Failed to load invoice';
+        setError(errorMsg);
       } finally {
         setLoading(false);
       }

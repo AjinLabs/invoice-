@@ -7,12 +7,9 @@ import {
   Search,
   Phone,
   Gift,
-  ShoppingBag,
   History,
-  FileText,
   UserPlus,
   ArrowRight,
-  RotateCw,
 } from 'lucide-react';
 import { Customer, Purchase } from '@/lib/types';
 
@@ -32,12 +29,7 @@ export default function CustomersPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [addError, setAddError] = useState('');
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [searchQuery]);
-
-  const fetchCustomers = async () => {
-    setIsLoading(true);
+  const refreshCustomers = async () => {
     try {
       const res = await fetch(`/api/customers?q=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
@@ -46,10 +38,30 @@ export default function CustomersPage() {
       }
     } catch (err) {
       console.error(err);
-    } finally {
-      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadCustomers = async () => {
+      try {
+        const res = await fetch(`/api/customers?q=${encodeURIComponent(searchQuery)}`);
+        const data = await res.json();
+        if (data.success && isMounted) {
+          setCustomers(data.customers);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadCustomers();
+    return () => {
+      isMounted = false;
+    };
+  }, [searchQuery]);
 
   const handleSelectCustomer = async (cust: Customer) => {
     setSelectedCustomer(cust);
@@ -94,10 +106,11 @@ export default function CustomersPage() {
       setNewPhone('');
       setNewName('');
       setNewAddress('');
-      fetchCustomers();
+      refreshCustomers();
       handleSelectCustomer(data.customer);
-    } catch (err: any) {
-      setAddError(err.message || 'Error creating customer');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error creating customer';
+      setAddError(msg);
     } finally {
       setIsSaving(false);
     }

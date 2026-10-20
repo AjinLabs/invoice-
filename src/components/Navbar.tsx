@@ -2,41 +2,50 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   ShoppingBag,
   LayoutDashboard,
   Settings,
-  Store,
   LogIn,
   LogOut,
-  ShieldCheck,
 } from 'lucide-react';
+
+interface AuthUser {
+  id: string;
+  username: string;
+  role: string;
+  name: string;
+  branch?: string;
+}
 
 export default function Navbar() {
   const pathname = usePathname();
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [branchInfo, setBranchInfo] = useState<any>(null);
-
-  const checkAuth = async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      const data = await res.json();
-      if (data.authenticated) {
-        setCurrentUser(data.user);
-        if (data.branchInfo) {
-          setBranchInfo(data.branchInfo);
-        }
-      } else {
-        setCurrentUser(null);
-      }
-    } catch {}
-  };
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     if (pathname !== '/login') {
-      checkAuth();
+      fetch('/api/auth/me')
+        .then((res) => res.json())
+        .then((data) => {
+          if (isMounted) {
+            if (data.authenticated && data.user) {
+              setCurrentUser(data.user);
+            } else {
+              setCurrentUser(null);
+            }
+          }
+        })
+        .catch(() => {
+          if (isMounted) setCurrentUser(null);
+        });
     }
+    return () => {
+      isMounted = false;
+    };
   }, [pathname]);
 
   // Completely hide all navigation and bottom dock on the login page
@@ -47,13 +56,13 @@ export default function Navbar() {
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setCurrentUser(null);
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   const isMainAdmin =
     currentUser?.role === 'SUPER_ADMIN' || currentUser?.username === 'admin';
 
-  // Bottom dock items: Main Admin only gets Dashboard & Settings; Store Managers get Billing, Dashboard, Settings
+  // Bottom dock items: Main Admin gets Dashboard & Settings; Store Managers get Billing, Dashboard, Settings
   const bottomTabs = isMainAdmin
     ? [
         {
@@ -105,94 +114,43 @@ export default function Navbar() {
         },
       ];
 
-  // Resolve Branch Label in clean English
-  const getBranchBadge = () => {
-    if (isMainAdmin) {
-      return {
-        label: 'Main Admin (All Stores)',
-        bgColor: 'bg-neutral-800 text-neutral-200 border-neutral-700',
-        icon: ShieldCheck,
-      };
-    }
-    if (currentUser?.branch === 'pkdm') {
-      return {
-        label: 'Pookkottumpadam Store',
-        bgColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
-        icon: Store,
-      };
-    }
-    if (currentUser?.branch === 'vnb') {
-      return {
-        label: 'Vaniyambalam Store',
-        bgColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
-        icon: Store,
-      };
-    }
-    return {
-      label: 'Store POS',
-      bgColor: 'bg-neutral-800 text-neutral-300 border-neutral-700',
-      icon: Store,
-    };
-  };
-
-  const branchBadge = getBranchBadge();
-  const BranchIcon = branchBadge.icon;
-
   return (
     <>
       {/* ==============================================================
-          1. TOP APP HEADER (Apple Dark Glass Chrome - design.md §12)
+          1. TOP APP HEADER: Clean, minimal logo-focused navbar
          ============================================================== */}
       <header className="sticky top-0 z-40 no-print bg-neutral-950/85 backdrop-blur-2xl border-b border-white/10 saturate-180 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* Left: Brand Logo & Title */}
-            <div className="flex items-center gap-3">
+            {/* Left: Brand Logo only as requested */}
+            <div className="flex items-center">
               <Link
                 href="/"
-                className="flex items-center gap-2 group apple-pressable bg-white hover:bg-neutral-50 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-xs border border-white/20 transition-all"
+                className="flex items-center gap-2 group apple-pressable bg-white hover:bg-neutral-50 p-1 sm:p-1.5 rounded-full shadow-xs border border-white/20 transition-all"
+                title="TERRY7 WOMEN"
               >
-                <img
+                <Image
                   src="/logo.png"
                   alt="TERRY7 WOMEN"
-                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-contain group-hover:scale-105 transition-transform"
+                  width={34}
+                  height={34}
+                  priority
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain group-hover:scale-105 transition-transform"
                 />
-                <span className="text-sm sm:text-base font-black tracking-wider uppercase flex items-center">
-                  <span className="text-[#094327]">TERRY</span>
-                  <span className="text-[#e11d48]">7</span>
-                </span>
-                <span className="text-[9px] sm:text-[10px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full tracking-widest uppercase">
-                  WOMEN
-                </span>
               </Link>
-
-              {/* Active Branch Badge */}
-              <div className="flex items-center ml-1 sm:ml-3">
-                <div
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold border ${branchBadge.bgColor} shadow-2xs`}
-                >
-                  <BranchIcon className="w-3.5 h-3.5" />
-                  <span className="tracking-tight">{branchBadge.label}</span>
-                </div>
-              </div>
             </div>
 
-            {/* Right: User Information & Logout */}
+            {/* Right: Clean Logout / Login Action */}
             <div className="flex items-center gap-2 sm:gap-3">
               {currentUser ? (
-                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
-                  <span className="text-xs text-neutral-200 font-medium hidden sm:inline tracking-tight">
-                    {currentUser.name}
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    title="Sign Out"
-                    className="flex items-center gap-1 text-xs text-neutral-400 hover:text-rose-400 transition-colors p-1 rounded-md"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Logout</span>
-                  </button>
-                </div>
+                <button
+                  onClick={handleLogout}
+                  title="Sign Out"
+                  className="flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-full transition-all apple-pressable cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span className="font-medium text-xs">Logout</span>
+                </button>
               ) : (
                 <Link
                   href="/login"
@@ -208,8 +166,7 @@ export default function Navbar() {
       </header>
 
       {/* ==============================================================
-          2. BOTTOM APP NAVIGATION DOCK (Apple Floating Glass Dock - design.md §1, §12)
-             Translucent floating pill dock with instant press feedback
+          2. BOTTOM APP NAVIGATION DOCK (Apple Floating Glass Dock)
          ============================================================== */}
       {currentUser && (
         <aside aria-label="Quick Navigation" className="fixed bottom-4 inset-x-0 z-40 pointer-events-none flex justify-center px-4 no-print">

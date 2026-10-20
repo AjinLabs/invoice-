@@ -34,7 +34,8 @@ export async function GET(
       },
       branchInfo,
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error fetching purchase';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

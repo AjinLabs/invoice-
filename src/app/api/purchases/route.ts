@@ -5,7 +5,11 @@ import { cookies } from 'next/headers';
 import { readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR, getBranchInfo } from '@/lib/db';
 import { calculateBilling } from '@/lib/billing';
 import { sendWhatsAppInvoice } from '@/lib/whatsapp';
-import { Customer, Purchase, PurchaseItem, LoyaltyTransaction, WhatsAppMessage, PaymentMethod, RoundOffMode, BranchId } from '@/lib/types';
+import { Purchase, PurchaseItem, LoyaltyTransaction, WhatsAppMessage, PaymentMethod, RoundOffMode, BranchId } from '@/lib/types';
+
+declare global {
+  var __INVOICE_IMAGE_CACHE__: Map<string, Buffer> | undefined;
+}
 
 function saveInvoiceImage(purchaseId: string, imageDataUrl: string) {
   try {
@@ -14,9 +18,9 @@ function saveInvoiceImage(purchaseId: string, imageDataUrl: string) {
     const buffer = Buffer.from(base64Content, 'base64');
     
     // Store in global memory cache
-    const memoryCache = (globalThis as any).__INVOICE_IMAGE_CACHE__ || new Map<string, Buffer>();
+    const memoryCache = globalThis.__INVOICE_IMAGE_CACHE__ || new Map<string, Buffer>();
     memoryCache.set(purchaseId, buffer);
-    (globalThis as any).__INVOICE_IMAGE_CACHE__ = memoryCache;
+    globalThis.__INVOICE_IMAGE_CACHE__ = memoryCache;
 
     // Store in filesystem if writable
     try {
@@ -84,8 +88,9 @@ export async function GET(request: Request) {
       total: purchases.length,
       branch: effectiveBranch || 'all',
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error fetching purchases';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }
 
@@ -305,17 +310,10 @@ export async function POST(request: Request) {
       phone: branchInfoSnapshot.phone,
     };
 
-    // Determine public origin for absolute invoice photo link
-    const host = request.headers.get('host') || 'terrybilling.netlify.app';
-    const proto = request.headers.get('x-forwarded-proto') || (host.includes('localhost') ? 'http' : 'https');
-    const publicOrigin = `${proto}://${host}`;
-    const fullImageUrl = `${publicOrigin}/api/invoices/${createdPurchase.id}/image`;
-
     // Trigger WhatsApp Sending (Meta API or Demo simulation)
     const waResult = await sendWhatsAppInvoice(
       createdPurchase,
-      branchSettings,
-      fullImageUrl
+      branchSettings
     );
 
     // Save WhatsApp message record to database
@@ -343,7 +341,8 @@ export async function POST(request: Request) {
       customer: updatedCustomer,
       whatsapp: waResult,
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error creating purchase';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

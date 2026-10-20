@@ -132,10 +132,21 @@ export async function GET(request: Request) {
       salesByPayment,
     };
 
+    interface StoreStats {
+      todaySales: number;
+      todayGross: number;
+      todayDiscounts: number;
+      todayOrders: number;
+      totalNetSales: number;
+      totalGrossSales: number;
+      totalDiscounts: number;
+      totalOrders: number;
+    }
+
     // If Main Admin (no sessionBranch lock), compute individual store stats for side-by-side comparison
-    let storesBreakdown: any = null;
+    let storesBreakdown: { vnb: StoreStats; pkdm: StoreStats } | null = null;
     if (!sessionBranch) {
-      const calcStoreStats = (bId: 'vnb' | 'pkdm') => {
+      const calcStoreStats = (bId: 'vnb' | 'pkdm'): StoreStats => {
         const storePurchases = db.purchases.filter((p) => p.status === 'COMPLETED' && (p.branch || 'vnb') === bId);
         const storeToday = storePurchases.filter((p) => p.created_at.startsWith(todayStr));
         const sTodaySales = Math.round(storeToday.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
@@ -171,7 +182,8 @@ export async function GET(request: Request) {
       branchInfo,
       storesBreakdown,
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error fetching dashboard stats';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

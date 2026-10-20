@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   }
 
   const sessionCookie = request.cookies.get('terry_session');
-  let session: any = null;
+  let session: { id?: string; username?: string; role?: string; branch?: string } | null = null;
   if (sessionCookie) {
     try {
       session = JSON.parse(sessionCookie.value);

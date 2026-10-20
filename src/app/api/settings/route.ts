@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { readDb, withTransaction, getBranchInfo, DEFAULT_BRANCHES } from '@/lib/db';
-import { ShopSettings, BranchId } from '@/lib/types';
+import { BranchId } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 
 export async function GET(request: Request) {
@@ -43,8 +43,9 @@ export async function GET(request: Request) {
       next_invoice_number,
       active_branch: effectiveBranch,
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error fetching settings';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }
 
@@ -153,7 +154,8 @@ export async function PUT(request: Request) {
     });
 
     return NextResponse.json({ success: true, settings: updated });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error updating settings';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

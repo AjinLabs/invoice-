@@ -19,8 +19,9 @@ export async function GET(request: Request) {
         'Content-Disposition': `attachment; filename="terry7women_monthly_audit_${month || 'current'}.pdf"`,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error generating monthly PDF report:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    const errorMessage = err instanceof Error ? err.message : 'Internal Server Error';
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }

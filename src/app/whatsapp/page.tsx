@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   MessageSquare,
   Sparkles,
@@ -8,17 +9,11 @@ import {
   Save,
   CheckCircle2,
   Key,
-  Globe,
-  RefreshCw,
-  Send,
-  AlertCircle,
 } from 'lucide-react';
-import { ShopSettings, WhatsAppMessage } from '@/lib/types';
+import { Purchase, ShopSettings, WhatsAppMessage } from '@/lib/types';
 
 export default function WhatsAppCenterPage() {
-  const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -36,53 +31,51 @@ export default function WhatsAppCenterPage() {
   const [rewardTemplate, setRewardTemplate] = useState('');
 
   useEffect(() => {
-    fetchData();
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (data.success && data.settings && isMounted) {
+          const s = data.settings;
+          setMode(s.whatsapp_mode || 'DEMO');
+          setPhoneNumberId(s.whatsapp_phone_number_id || '');
+          setBusinessAccountId(s.whatsapp_business_account_id || '');
+          setAccessToken(s.whatsapp_access_token || '');
+          setApiVersion(s.whatsapp_api_version || 'v20.0');
+          setVerifyToken(s.whatsapp_verify_token || '');
+
+          setPurchaseTemplate(s.message_templates?.purchase_confirmation || '');
+          setProgressTemplate(s.message_templates?.loyalty_progress || '');
+          setRewardTemplate(s.message_templates?.reward_unlocked || '');
+        }
+
+        const invRes = await fetch('/api/purchases?limit=20');
+        const invData = await invRes.json();
+        if (invData.success && isMounted) {
+          const msgList: WhatsAppMessage[] = (invData.purchases as Purchase[]).map((p) => ({
+            id: p.id,
+            purchase_id: p.id,
+            phone: p.customer_phone,
+            message_type: 'INVOICE',
+            content: `Invoice ${p.invoice_number} - Amount: ₹${p.final_amount}`,
+            status: 'DELIVERED',
+            is_demo: false,
+            created_at: p.created_at,
+            updated_at: p.created_at,
+          }));
+          setMessages(msgList);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
   }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/settings');
-      const data = await res.json();
-      if (data.success && data.settings) {
-        const s = data.settings;
-        setSettings(s);
-        setMode(s.whatsapp_mode || 'DEMO');
-        setPhoneNumberId(s.whatsapp_phone_number_id || '');
-        setBusinessAccountId(s.whatsapp_business_account_id || '');
-        setAccessToken(s.whatsapp_access_token || '');
-        setApiVersion(s.whatsapp_api_version || 'v20.0');
-        setVerifyToken(s.whatsapp_verify_token || '');
-
-        setPurchaseTemplate(s.message_templates?.purchase_confirmation || '');
-        setProgressTemplate(s.message_templates?.loyalty_progress || '');
-        setRewardTemplate(s.message_templates?.reward_unlocked || '');
-      }
-
-      // Fetch message logs
-      const invRes = await fetch('/api/purchases?limit=20');
-      const invData = await invRes.json();
-      if (invData.success) {
-        // Build mock/real messages list from purchases
-        const msgList: WhatsAppMessage[] = invData.purchases.map((p: any) => ({
-          id: p.id,
-          purchase_id: p.id,
-          phone: p.customer_phone,
-          message_type: 'INVOICE',
-          content: `Invoice ${p.invoice_number} - Amount: ₹${p.final_amount}`,
-          status: 'DELIVERED',
-          is_demo: mode === 'DEMO',
-          created_at: p.created_at,
-          updated_at: p.created_at,
-        }));
-        setMessages(msgList);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -355,7 +348,7 @@ export default function WhatsAppCenterPage() {
               {/* WhatsApp Mock Chat Header */}
               <div className="bg-[#075e54] text-white p-3 flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border border-white/20 bg-white">
-                  <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                  <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-full h-full object-contain" />
                 </div>
                 <div>
                   <span className="text-xs font-bold leading-tight flex items-center gap-1">

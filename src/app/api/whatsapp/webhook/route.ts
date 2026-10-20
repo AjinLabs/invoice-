@@ -34,7 +34,7 @@ export async function POST(request: Request) {
           const status = item.status?.toUpperCase(); // SENT, DELIVERED, READ, FAILED
           const msg = db.whatsapp_messages.find((m) => m.message_id === wamid);
           if (msg && ['SENT', 'DELIVERED', 'READ', 'FAILED'].includes(status)) {
-            msg.status = status === 'READ' ? 'DELIVERED' : (status as any);
+            msg.status = status === 'READ' ? 'DELIVERED' : (status as 'SENT' | 'DELIVERED' | 'FAILED');
             msg.updated_at = new Date().toISOString();
           }
         }
@@ -42,8 +42,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ status: 'ok' });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Webhook processing error:', err);
-    return NextResponse.json({ status: 'error', error: err.message }, { status: 200 });
+    const error = err instanceof Error ? err.message : 'Webhook error';
+    return NextResponse.json({ status: 'error', error }, { status: 200 });
   }
 }

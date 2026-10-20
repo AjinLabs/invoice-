@@ -6,14 +6,13 @@ import {
   MessageSquare,
   Printer,
   Download,
-  RotateCw,
   X,
   Share2,
   Copy,
   ExternalLink,
   Image as ImageIcon,
   Check,
-  Sparkles,
+  RotateCw,
 } from 'lucide-react';
 import { Purchase, ShopSettings } from '@/lib/types';
 import { generateInvoicePdf } from '@/lib/pdf';
@@ -62,7 +61,6 @@ export default function WhatsAppSuccessModal({
 
   if (!isOpen || !purchase) return null;
 
-  const shopPhone = settings?.whatsapp_number || settings?.phone || '+91 8330889632';
   const cleanCustomerPhone = purchase.customer_phone.replace(/\D/g, '');
   const destinationPhone = cleanCustomerPhone.length === 10 ? `91${cleanCustomerPhone}` : cleanCustomerPhone;
   const messageText = whatsappResult?.formattedText || '';
@@ -72,9 +70,10 @@ export default function WhatsAppSuccessModal({
     if (!billImageDataUrl) return false;
     try {
       const blob = dataUrlToBlob(billImageDataUrl);
-      if (navigator.clipboard && (window as any).ClipboardItem) {
-        await navigator.clipboard.write([
-          new (window as any).ClipboardItem({ 'image/png': blob }),
+      const win = window as unknown as { ClipboardItem?: new (items: Record<string, Blob>) => unknown };
+      if (navigator.clipboard && win.ClipboardItem) {
+        await (navigator.clipboard as unknown as { write: (items: unknown[]) => Promise<void> }).write([
+          new win.ClipboardItem({ 'image/png': blob }),
         ]);
         setCopiedPhoto(true);
         setTimeout(() => setCopiedPhoto(false), 4000);
@@ -97,6 +96,30 @@ export default function WhatsAppSuccessModal({
     }
   };
 
+  const isMobileOrTablet =
+    typeof navigator !== 'undefined' &&
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+
+  const isSentViaCloudApi =
+    whatsappResult?.status === 'SENT' && !whatsappResult?.isDemo;
+
+  // Direct open to customer's WhatsApp chat
+  const handleOpenDirectCustomerChat = () => {
+    copyPhotoToClipboard().catch(() => {});
+    const encodedText = encodeURIComponent(messageText);
+    const waUrl = isMobileOrTablet
+      ? `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encodedText}`
+      : `https://web.whatsapp.com/send?phone=${destinationPhone}&text=${encodedText}`;
+
+    if (isMobileOrTablet) {
+      window.location.href = waUrl;
+    } else {
+      window.open(waUrl, '_blank');
+    }
+  };
+
   // Open WhatsApp Web with clipboard photo copy
   const handleOpenWhatsApp = async () => {
     await copyPhotoToClipboard();
@@ -105,18 +128,10 @@ export default function WhatsAppSuccessModal({
     window.open(waUrl, '_blank');
   };
 
-  // Open Mobile wa.me link
-  const handleOpenMobileWhatsApp = async () => {
-    await copyPhotoToClipboard();
-    const encodedText = encodeURIComponent(messageText);
-    const waUrl = `https://wa.me/${destinationPhone}?text=${encodedText}`;
-    window.open(waUrl, '_blank');
-  };
-
   // Native Web Share API (Passes actual PNG file and text caption together!)
   const handleNativeShare = async () => {
     if (!billImageDataUrl) {
-      handleOpenWhatsApp();
+      handleOpenDirectCustomerChat();
       return;
     }
     try {
@@ -131,15 +146,16 @@ export default function WhatsAppSuccessModal({
         });
         return;
       }
-    } catch (err: any) {
-      if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+      const shareError = err as { name?: string };
+      if (shareError?.name === 'AbortError') {
         // User closed or dismissed the share sheet, do not trigger fallback
         return;
       }
       console.warn('Native share cancelled or failed:', err);
     }
-    // Fallback to copy & open for devices without Web Share API
-    handleOpenWhatsApp();
+    // Fallback to direct chat
+    handleOpenDirectCustomerChat();
   };
 
   // Download Bill Photo
@@ -214,73 +230,69 @@ export default function WhatsAppSuccessModal({
             </div>
           </div>
 
-          {/* HIGH-PRIORITY INSTRUCTION BANNER */}
-          <div className="bg-[#f0fdf4] border-2 border-emerald-400 rounded-2xl p-4 space-y-2.5 shadow-xs">
-            <div className="flex items-center justify-between">
+          {/* STATUS / INSTRUCTION BANNER */}
+          {isSentViaCloudApi ? (
+            <div className="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-4 space-y-2 shadow-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <h4 className="text-xs sm:text-sm font-black text-emerald-950 uppercase tracking-wide">
-                  📸 WhatsApp Sharing Instructions
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <h4 className="text-sm font-black text-emerald-950 uppercase tracking-wide">
+                  🎉 Bill Sent Automatically to WhatsApp!
                 </h4>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
-                Tablet & PC
-              </span>
+              <p className="text-xs text-emerald-800 leading-relaxed">
+                The cash memo and details were dispatched directly to <strong>{purchase.customer_name}</strong> (+{cleanCustomerPhone}) via Meta WhatsApp Cloud API. No further action needed!
+              </p>
             </div>
-
-            <div className="bg-white/90 p-3 rounded-xl border border-emerald-200 space-y-2 text-xs text-neutral-800 leading-relaxed">
-              <div className="flex items-start gap-2">
-                <span className="font-bold text-white bg-emerald-700 rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-[10px]">
-                  📱
+          ) : (
+            <div className="bg-[#f0fdf4] border-2 border-emerald-400 rounded-2xl p-4 space-y-2.5 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <h4 className="text-xs sm:text-sm font-black text-emerald-950 uppercase tracking-wide">
+                    💬 Direct WhatsApp Delivery
+                  </h4>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                  Customer: +{cleanCustomerPhone}
                 </span>
+              </div>
+
+              <div className="bg-white/90 p-3 rounded-xl border border-emerald-200 space-y-2 text-xs text-neutral-800 leading-relaxed">
                 <p>
-                  <strong>Tablet / Mobile:</strong> Tap the green button <strong>&apos;Send Bill Photo + Message to WhatsApp&apos;</strong>. Select WhatsApp — the bill photo and text message will be shared together in 1 tap!
+                  Tap the green button <strong>&apos;Open Customer&apos;s WhatsApp Chat&apos;</strong> to immediately open WhatsApp with <strong>{purchase.customer_name}&apos;s chat</strong> and the bill message pre-filled. Just tap Send!
                 </p>
               </div>
 
-              <div className="flex items-start gap-2">
-                <span className="font-bold text-white bg-neutral-800 rounded-full w-5 h-5 flex items-center justify-center shrink-0 text-[10px]">
-                  💻
-                </span>
-                <p>
-                  <strong>PC / Desktop:</strong> Click <strong>&apos;WhatsApp Web (PC)&apos;</strong>. The customer chat opens with the text message. Press{' '}
-                  <span className="px-1.5 py-0.5 bg-neutral-900 text-white rounded font-mono font-bold text-[10px]">
-                    Ctrl + V
-                  </span>{' '}
-                  in the chat box to paste the bill photo.
-                </p>
-              </div>
+              {/* Notification Toast if copied */}
+              {copiedPhoto && (
+                <div className="bg-emerald-600 text-white p-2.5 rounded-xl text-xs font-bold text-center animate-in fade-in flex items-center justify-center gap-2">
+                  <Check className="w-4 h-4" />
+                  <span>Invoice photo copied to clipboard! Press Ctrl + V in WhatsApp to send.</span>
+                </div>
+              )}
             </div>
+          )}
 
-            {/* Notification Toast if copied */}
-            {copiedPhoto && (
-              <div className="bg-emerald-600 text-white p-2.5 rounded-xl text-xs font-bold text-center animate-in fade-in flex items-center justify-center gap-2">
-                <Check className="w-4 h-4" />
-                <span>Invoice photo copied to clipboard! Press Ctrl + V in WhatsApp to send.</span>
-              </div>
-            )}
-          </div>
-
-          {/* PRIMARY ACTIONS: 1-Tap Share for Tablet & Desktop WhatsApp Web */}
+          {/* PRIMARY ACTIONS: Direct 1-Tap Customer Chat for Tablet & PC */}
           <div className="space-y-2 pt-1">
             <button
               type="button"
-              onClick={handleNativeShare}
+              onClick={handleOpenDirectCustomerChat}
               className="w-full flex items-center justify-center gap-2 py-4 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md hover:shadow-lg active:scale-[0.99] cursor-pointer"
             >
-              <Share2 className="w-5 h-5" />
-              <span>📲 Send Bill Photo + Message to WhatsApp</span>
+              <MessageSquare className="w-5 h-5" />
+              <span>💬 Open WhatsApp Chat (+{cleanCustomerPhone})</span>
             </button>
 
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={handleOpenMobileWhatsApp}
+                onClick={handleNativeShare}
                 className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-                title="Direct WhatsApp chat link"
+                title="Share bill image file through device share sheet"
               >
-                <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-                <span>💬 Direct WhatsApp Chat</span>
+                <Share2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>📲 Share Bill Photo File</span>
               </button>
 
               <button
@@ -343,6 +355,7 @@ export default function WhatsAppSuccessModal({
 
               {showPhotoPreview && (
                 <div className="p-3 bg-[#e5e0d3] max-h-80 overflow-y-auto flex justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={billImageDataUrl}
                     alt="TERRY7 WOMEN Cash Memo"
@@ -372,11 +385,11 @@ export default function WhatsAppSuccessModal({
             </div>
           </div>
 
-          {/* Print & PDF Actions */}
-          <div className="grid grid-cols-2 gap-2 pt-1">
+          {/* Print, PDF & Resend Actions */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
             <button
               onClick={handlePrint}
-              className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-800 hover:bg-black text-white rounded-xl text-xs font-bold transition-all"
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-800 hover:bg-black text-white rounded-xl text-xs font-bold transition-all cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print Bill</span>
@@ -384,17 +397,29 @@ export default function WhatsAppSuccessModal({
 
             <button
               onClick={handleDownloadPdf}
-              className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 rounded-xl text-xs font-bold transition-all"
+              className="flex items-center justify-center gap-1.5 py-2.5 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download PDF</span>
+              <span>PDF</span>
             </button>
+
+            {onResend && (
+              <button
+                type="button"
+                onClick={onResend}
+                disabled={isResending}
+                className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+              >
+                <RotateCw className={`w-3.5 h-3.5 ${isResending ? 'animate-spin' : ''}`} />
+                <span>{isResending ? 'Resending...' : 'Resend'}</span>
+              </button>
+            )}
           </div>
 
           <div className="pt-2 border-t border-neutral-100">
             <button
               onClick={onClose}
-              className="w-full py-3.5 bg-neutral-900 hover:bg-black text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-colors"
+              className="w-full py-3.5 bg-neutral-900 hover:bg-black text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer"
             >
               Next Customer (New Bill)
             </button>

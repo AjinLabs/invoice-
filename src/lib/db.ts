@@ -13,6 +13,10 @@ import {
   BranchInfo,
 } from './types';
 
+declare global {
+  var __TERRY_DB_CACHE__: DatabaseSchema | undefined;
+}
+
 export const DEFAULT_BRANCHES: Record<BranchId, BranchInfo> = {
   vnb: {
     id: 'vnb',
@@ -346,7 +350,7 @@ function createInitialSeed(): DatabaseSchema {
 
 export function readDb(): DatabaseSchema {
   // Use memory cache if available and file cannot be accessed
-  const memCache = (globalThis as any).__TERRY_DB_CACHE__ as DatabaseSchema | undefined;
+  const memCache = globalThis.__TERRY_DB_CACHE__;
 
   ensureDataDir();
   if (!fs.existsSync(DB_FILE)) {
@@ -357,7 +361,7 @@ export function readDb(): DatabaseSchema {
     } catch (e) {
       console.warn('Could not write initial seed to disk (in-memory mode):', e);
     }
-    (globalThis as any).__TERRY_DB_CACHE__ = initial;
+    globalThis.__TERRY_DB_CACHE__ = initial;
     return initial;
   }
 
@@ -433,7 +437,7 @@ export function readDb(): DatabaseSchema {
       }
     }
 
-    (globalThis as any).__TERRY_DB_CACHE__ = parsed;
+    globalThis.__TERRY_DB_CACHE__ = parsed;
     return parsed;
   } catch (err) {
     if (memCache) return memCache;
@@ -442,14 +446,14 @@ export function readDb(): DatabaseSchema {
     try {
       fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), 'utf-8');
     } catch {}
-    (globalThis as any).__TERRY_DB_CACHE__ = initial;
+    globalThis.__TERRY_DB_CACHE__ = initial;
     return initial;
   }
 }
 
 export function writeDb(data: DatabaseSchema): void {
   // Always update in-memory cache first so next read immediately sees changes
-  (globalThis as any).__TERRY_DB_CACHE__ = data;
+  globalThis.__TERRY_DB_CACHE__ = data;
 
   try {
     ensureDataDir();

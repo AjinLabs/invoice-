@@ -123,7 +123,8 @@ export async function GET(request: Request) {
         'Content-Disposition': `attachment; filename="terry_${effectiveBranch || 'all'}_sales_${Date.now()}.csv"`,
       },
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error exporting CSV';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

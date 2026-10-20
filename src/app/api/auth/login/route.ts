@@ -69,7 +69,8 @@ export async function POST(request: Request) {
     }
 
     return response;
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Login failed';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

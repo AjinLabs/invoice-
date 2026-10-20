@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+declare global {
+  var __INVOICE_IMAGE_CACHE__: Map<string, Buffer> | undefined;
+}
+
 // Memory cache fallback for serverless/readonly environments
-const memoryCache = (globalThis as any).__INVOICE_IMAGE_CACHE__ || new Map<string, Buffer>();
-(globalThis as any).__INVOICE_IMAGE_CACHE__ = memoryCache;
+const memoryCache = globalThis.__INVOICE_IMAGE_CACHE__ || new Map<string, Buffer>();
+globalThis.__INVOICE_IMAGE_CACHE__ = memoryCache;
 
 import { INVOICES_DIR } from '@/lib/db';
 
@@ -31,7 +35,7 @@ export async function GET(
     // Check in-memory cache first
     if (memoryCache.has(id)) {
       const buffer = memoryCache.get(id)!;
-      return new NextResponse(buffer, {
+      return new NextResponse(new Uint8Array(buffer), {
         status: 200,
         headers: {
           'Content-Type': 'image/png',
@@ -46,7 +50,7 @@ export async function GET(
     if (fs.existsSync(filePath)) {
       const buffer = fs.readFileSync(filePath);
       memoryCache.set(id, buffer);
-      return new NextResponse(buffer, {
+      return new NextResponse(new Uint8Array(buffer), {
         status: 200,
         headers: {
           'Content-Type': 'image/png',
@@ -57,9 +61,10 @@ export async function GET(
     }
 
     return NextResponse.json({ error: 'Invoice image not found' }, { status: 404 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error serving invoice image:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const error = err instanceof Error ? err.message : 'Error serving invoice image';
+    return NextResponse.json({ error }, { status: 500 });
   }
 }
 
@@ -95,8 +100,9 @@ export async function POST(
       success: true,
       url: `/api/invoices/${id}/image`,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error saving invoice image:', err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const error = err instanceof Error ? err.message : 'Error saving invoice image';
+    return NextResponse.json({ error }, { status: 500 });
   }
 }

@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Settings,
   Store,
   Tag,
-  Gift,
   Save,
   CheckCircle2,
   Lock,
@@ -17,11 +17,19 @@ import {
   MessageSquare,
   ArrowRight,
 } from 'lucide-react';
-import { ShopSettings, RoundOffMode, BranchId } from '@/lib/types';
+import { RoundOffMode, BranchId } from '@/lib/types';
+
+interface AuthUser {
+  id: string;
+  username: string;
+  role: string;
+  name: string;
+  branch?: BranchId;
+}
 
 export default function SettingsPage() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [settings, setSettings] = useState<ShopSettings | null>(null);
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
   const [activeBranch, setActiveBranch] = useState<BranchId>('vnb');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,42 +52,13 @@ export default function SettingsPage() {
   // Password change for active branch
   const [newPassword, setNewPassword] = useState('');
 
-  useEffect(() => {
-    checkAuthAndInit();
-  }, []);
-
-  const checkAuthAndInit = async () => {
-    try {
-      const res = await fetch('/api/auth/me');
-      const authData = await res.json();
-      if (!authData.authenticated) {
-        window.location.href = '/login';
-        return;
-      }
-
-      let branchToUse: BranchId = 'vnb';
-
-      if (authData.user) {
-        setCurrentUser(authData.user);
-        if (authData.user.branch) {
-          branchToUse = authData.user.branch;
-          setActiveBranch(branchToUse);
-        }
-      }
-      fetchSettings(branchToUse);
-    } catch {
-      fetchSettings('vnb');
-    }
-  };
-
-  const fetchSettings = async (branch: BranchId) => {
+  const fetchSettings = useCallback(async (branch: BranchId) => {
     setIsLoading(true);
     try {
       const res = await fetch(`/api/settings?branch=${branch}`);
       const data = await res.json();
       if (data.success && data.settings) {
         const s = data.settings;
-        setSettings(s);
         setShopName(
           s.shop_name ||
             (branch === 'pkdm'
@@ -104,7 +83,41 @@ export default function SettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkAuthAndInit = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        const authData = await res.json();
+        if (!authData.authenticated) {
+          router.push('/login');
+          return;
+        }
+
+        let branchToUse: BranchId = 'vnb';
+
+        if (authData.user && isMounted) {
+          setCurrentUser(authData.user);
+          if (authData.user.branch) {
+            branchToUse = authData.user.branch;
+            setActiveBranch(branchToUse);
+          }
+        }
+        if (isMounted) {
+          fetchSettings(branchToUse);
+        }
+      } catch {
+        if (isMounted) fetchSettings('vnb');
+      }
+    };
+
+    checkAuthAndInit();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchSettings, router]);
 
   const handleBranchSwitch = (branch: BranchId) => {
     setActiveBranch(branch);

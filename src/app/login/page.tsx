@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Lock, User, AlertCircle, ArrowRight, Store, ShieldCheck } from 'lucide-react';
 
@@ -40,8 +41,9 @@ export default function LoginPage() {
         router.push('/');
       }
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Login failed';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +54,7 @@ export default function LoginPage() {
       <div className="apple-surface bg-white p-8 sm:p-9 max-w-md w-full space-y-6 border border-black/5 shadow-[0_12px_40px_rgba(0,0,0,0.06)] rounded-3xl">
         <div className="text-center">
           <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden flex items-center justify-center shadow-md border-2 border-[#094327]">
-            <img src="/logo.png" alt="TERRY7 WOMEN" className="w-full h-full object-contain" />
+            <Image src="/logo.png" alt="TERRY7 WOMEN" width={80} height={80} priority className="w-full h-full object-contain" />
           </div>
           <div className="flex items-center justify-center gap-1.5 mb-1">
             <span className="text-2xl sm:text-3xl font-black tracking-wider uppercase apple-display flex items-center">

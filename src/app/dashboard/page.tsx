@@ -1,72 +1,54 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   TrendingUp,
   ShoppingBag,
-  Users,
-  Scale,
-  Gift,
   IndianRupee,
   Calendar,
   CreditCard,
   ArrowUpRight,
-  Receipt,
-  FileSpreadsheet,
   Download,
   Store,
-  ShieldCheck,
-  CheckCircle,
 } from 'lucide-react';
-import { DashboardStats } from '@/lib/types';
+import { DashboardStats, BranchInfo } from '@/lib/types';
+
+interface AuthMeUser {
+  id: string;
+  username: string;
+  role: string;
+  name: string;
+  branch?: string;
+}
+
+interface StoreBranchStats {
+  todaySales: number;
+  todayGross: number;
+  todayDiscounts: number;
+  todayOrders: number;
+  totalNetSales: number;
+  totalGrossSales: number;
+  totalDiscounts: number;
+  totalOrders: number;
+}
+
+interface StoresBreakdown {
+  vnb: StoreBranchStats;
+  pkdm: StoreBranchStats;
+}
 
 export default function DashboardPage() {
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<AuthMeUser | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [storesBreakdown, setStoresBreakdown] = useState<any>(null);
+  const [storesBreakdown, setStoresBreakdown] = useState<StoresBreakdown | null>(null);
   const [activeBranch, setActiveBranch] = useState<string>('vnb');
-  const [branchInfo, setBranchInfo] = useState<any>(null);
+  const [, setBranchInfo] = useState<BranchInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    checkAuthAndInit();
-  }, []);
-
-  useEffect(() => {
-    if (currentUser) {
-      fetchStats();
-    }
-  }, [activeBranch]);
-
-  const checkAuthAndInit = async () => {
-    try {
-      const authRes = await fetch('/api/auth/me');
-      const authData = await authRes.json();
-      if (!authData.authenticated) {
-        window.location.href = '/login';
-        return;
-      }
-
-      let branchToUse = 'vnb';
-
-      if (authData.user) {
-        setCurrentUser(authData.user);
-        if (authData.user.branch) {
-          branchToUse = authData.user.branch;
-        } else if (authData.user.role === 'SUPER_ADMIN' || authData.user.username === 'admin') {
-          branchToUse = 'all'; // Default to all stores for Main Admin
-        }
-      }
-      setActiveBranch(branchToUse);
-      fetchStatsForBranch(branchToUse);
-    } catch {
-      fetchStatsForBranch('vnb');
-    }
-  };
-
-  const fetchStatsForBranch = async (branch: string) => {
-    setIsLoading(true);
+  const fetchStatsForBranch = useCallback(async (branch: string) => {
     try {
       const res = await fetch(`/api/dashboard/stats?branch=${branch}`);
       const data = await res.json();
@@ -84,22 +66,45 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchStats = () => {
-    fetchStatsForBranch(activeBranch);
-  };
+  useEffect(() => {
+    let isMounted = true;
+    const initDashboard = async () => {
+      try {
+        const authRes = await fetch('/api/auth/me');
+        const authData = await authRes.json();
+        if (!authData.authenticated) {
+          router.push('/login');
+          return;
+        }
+
+        let branchToUse = 'vnb';
+        if (authData.user) {
+          if (isMounted) setCurrentUser(authData.user);
+          if (authData.user.branch) {
+            branchToUse = authData.user.branch;
+          } else if (authData.user.role === 'SUPER_ADMIN' || authData.user.username === 'admin') {
+            branchToUse = 'all';
+          }
+        }
+        if (isMounted) {
+          setActiveBranch(branchToUse);
+          fetchStatsForBranch(branchToUse);
+        }
+      } catch {
+        if (isMounted) fetchStatsForBranch('vnb');
+      }
+    };
+
+    initDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchStatsForBranch, router]);
 
   const isMainAdmin =
     currentUser?.role === 'SUPER_ADMIN' || currentUser?.username === 'admin';
-
-  if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-12 text-center text-xs text-neutral-500">
-        Loading analytics dashboard...
-      </div>
-    );
-  }
 
   const cards = [
     {
@@ -126,9 +131,9 @@ export default function DashboardPage() {
   ];
 
   const getBranchTitle = () => {
-    if (activeBranch === 'all') return 'Master Dashboard (TERRY7 WOMEN - All Stores)';
-    if (activeBranch === 'pkdm') return 'TERRY7 WOMEN - Pookkottumpadam Store';
-    return 'TERRY7 WOMEN - Vaniyambalam Store';
+    if (activeBranch === 'all') return 'TERRY7 WOMEN - All Stores Master';
+    if (activeBranch === 'pkdm') return 'TERRY7 WOMEN - Pookkottumpadam';
+    return 'TERRY7 WOMEN - Vaniyambalam';
   };
 
   const maskPhoneNumber = (phone?: string) => {
@@ -137,6 +142,15 @@ export default function DashboardPage() {
     if (clean.includes('••')) return clean;
     return clean.length > 4 ? `••••••${clean.slice(-4)}` : clean;
   };
+
+  if (isLoading && !stats) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16 text-center text-xs font-semibold text-neutral-500">
+        <div className="w-8 h-8 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        Loading analytics dashboard...
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
@@ -173,20 +187,20 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Monthly Audit PDF for Management */}
+          {/* Monthly Audit PDF Download Button */}
           <a
             href="/api/reports/monthly-pdf"
             download
-            className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-[#094327] hover:bg-[#06311d] text-white rounded-full text-xs font-bold shadow-xs transition-colors"
+            className="apple-pressable inline-flex items-center gap-2 px-5 py-2.5 bg-[#094327] hover:bg-[#06311d] text-white rounded-full text-xs font-bold shadow-xs transition-all cursor-pointer"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-4 h-4" />
             <span>Monthly Audit Report (PDF)</span>
           </a>
 
           {!isMainAdmin && (
             <Link
               href="/"
-              className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-950 text-white rounded-full text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors"
+              className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-950 text-white rounded-full text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors cursor-pointer"
             >
               <ShoppingBag className="w-3.5 h-3.5" />
               <span>Open POS Billing</span>
@@ -195,10 +209,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ==============================================================
-          MAIN ADMIN EXCLUSIVE: SIDE-BY-SIDE STORE COMPARISON BREAKDOWN
-          User requested: "Main admin only needs to see dashboard sales details of VNB store and PKDM store"
-         ============================================================== */}
+      {/* Main Admin Branch Comparison Cards */}
       {isMainAdmin && storesBreakdown && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
@@ -230,7 +241,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-neutral-50 rounded-lg">
+                <div className="p-3 bg-neutral-50 rounded-xl">
                   <span className="text-neutral-500 text-[11px] block">Today&apos;s Net Sales</span>
                   <span className="text-lg font-black font-mono text-black">
                     ₹{(storesBreakdown.vnb?.todaySales || 0).toFixed(2)}
@@ -239,7 +250,7 @@ export default function DashboardPage() {
                     {storesBreakdown.vnb?.todayOrders || 0} orders today
                   </span>
                 </div>
-                <div className="p-3 bg-rose-50/60 rounded-lg border border-rose-100">
+                <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-100">
                   <span className="text-rose-900 text-[11px] block">Today&apos;s Discount</span>
                   <span className="text-lg font-black font-mono text-rose-700">
                     -₹{(storesBreakdown.vnb?.todayDiscounts || 0).toFixed(2)}
@@ -248,7 +259,7 @@ export default function DashboardPage() {
                     Concessions given
                   </span>
                 </div>
-                <div className="p-3 bg-neutral-50 rounded-lg">
+                <div className="p-3 bg-neutral-50 rounded-xl">
                   <span className="text-neutral-500 text-[11px] block">Total Realized Revenue</span>
                   <span className="text-base font-bold font-mono text-neutral-900">
                     ₹{(storesBreakdown.vnb?.totalNetSales || 0).toFixed(2)}
@@ -257,7 +268,7 @@ export default function DashboardPage() {
                     {storesBreakdown.vnb?.totalOrders || 0} total invoices
                   </span>
                 </div>
-                <div className="p-3 bg-neutral-50 rounded-lg">
+                <div className="p-3 bg-neutral-50 rounded-xl">
                   <span className="text-neutral-500 text-[11px] block">Total Discounts</span>
                   <span className="text-base font-bold font-mono text-amber-700">
                     ₹{(storesBreakdown.vnb?.totalDiscounts || 0).toFixed(2)}
@@ -287,7 +298,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
+                <div className="p-3 bg-neutral-50 rounded-xl">
                   <span className="text-neutral-500 text-[11px] block">Today&apos;s Net Sales</span>
                   <span className="text-lg font-black font-mono text-black">
                     ₹{(storesBreakdown.pkdm?.todaySales || 0).toFixed(2)}
@@ -296,7 +307,7 @@ export default function DashboardPage() {
                     {storesBreakdown.pkdm?.todayOrders || 0} orders today
                   </span>
                 </div>
-                <div className="p-3.5 bg-rose-50/60 rounded-2xl border border-rose-100/80">
+                <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-100">
                   <span className="text-rose-900 text-[11px] block">Today&apos;s Discount</span>
                   <span className="text-lg font-black font-mono text-rose-700">
                     -₹{(storesBreakdown.pkdm?.todayDiscounts || 0).toFixed(2)}
@@ -305,7 +316,7 @@ export default function DashboardPage() {
                     Concessions given
                   </span>
                 </div>
-                <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
+                <div className="p-3 bg-neutral-50 rounded-xl">
                   <span className="text-neutral-500 text-[11px] block">Total Realized Revenue</span>
                   <span className="text-base font-bold font-mono text-neutral-900">
                     ₹{(storesBreakdown.pkdm?.totalNetSales || 0).toFixed(2)}
@@ -314,7 +325,7 @@ export default function DashboardPage() {
                     {storesBreakdown.pkdm?.totalOrders || 0} total invoices
                   </span>
                 </div>
-                <div className="p-3.5 bg-neutral-50/80 rounded-2xl">
+                <div className="p-3 bg-neutral-50 rounded-xl">
                   <span className="text-neutral-500 text-[11px] block">Total Discounts</span>
                   <span className="text-base font-bold font-mono text-amber-700">
                     ₹{(storesBreakdown.pkdm?.totalDiscounts || 0).toFixed(2)}
@@ -329,7 +340,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Core Metric Cards: Exactly 3 essential cards */}
+      {/* Core Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         {cards.map((card, i) => {
           const Icon = card.icon;
@@ -352,7 +363,7 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Payment Collection Breakdown (Cash & UPI Only - Card & Other Removed) */}
+      {/* Payment Collection Breakdown (Cash & UPI Only) */}
       <div className="apple-surface bg-white p-6 rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] space-y-4">
         <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
           <div className="flex items-center gap-2">
@@ -374,10 +385,9 @@ export default function DashboardPage() {
 
           return (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              {/* Cash Collection Card */}
-              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-neutral-50/90 border border-neutral-200/90 hover:border-[#094327]/40 transition-all space-y-3">
+              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-neutral-50/90 border border-neutral-200/90 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">
                     💵 Cash In Hand
                   </span>
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#094327]/10 text-[#094327] border border-[#094327]/25">
@@ -394,10 +404,9 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* UPI / GPay Collection Card */}
-              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-neutral-50/90 border border-neutral-200/90 hover:border-neutral-400 transition-all space-y-3">
+              <div className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl bg-neutral-50/90 border border-neutral-200/90 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-700">
                     📱 UPI / GPay Digital
                   </span>
                   <span className="px-3 py-1 rounded-full text-xs font-bold bg-neutral-200/80 text-neutral-800 border border-neutral-300">
@@ -419,7 +428,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Invoices Table */}
-      <div className="bg-white rounded-xl border border-neutral-200 shadow-xs overflow-hidden">
+      <div className="bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="p-6 border-b border-neutral-100 flex flex-wrap items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-bold text-neutral-900">Recent Completed Invoices</h3>
@@ -430,7 +439,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/invoices"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#094327] hover:bg-[#06311d] text-white rounded-full text-xs font-bold shadow-2xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#094327] hover:bg-[#06311d] text-white rounded-full text-xs font-bold shadow-2xs transition-colors cursor-pointer"
             >
               <span>View All Invoices</span>
               <ArrowUpRight className="w-3.5 h-3.5" />

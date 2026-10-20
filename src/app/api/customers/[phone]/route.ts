@@ -34,7 +34,8 @@ export async function GET(
         remaining: Math.max(0, db.shop_settings.required_visits - customer.loyalty_count),
       },
     });
-  } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err.message : 'Error fetching customer';
+    return NextResponse.json({ success: false, error }, { status: 500 });
   }
 }

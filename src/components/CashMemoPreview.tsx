@@ -1,8 +1,20 @@
 'use client';
 
-import React from 'react';
-import { Purchase, ShopSettings, PurchaseItem, BranchId } from '@/lib/types';
-import { CustomItemInput } from '@/lib/billing';
+import React, { useSyncExternalStore } from 'react';
+import { Purchase, ShopSettings, BranchId } from '@/lib/types';
+
+const emptySubscribe = () => () => {};
+
+export interface CashMemoItem {
+  id?: string;
+  description?: string;
+  name?: string;
+  quantity?: number | string;
+  unit_price?: number;
+  rate_per_kg?: number;
+  amount?: number;
+  weight_grams?: number;
+}
 
 interface CashMemoPreviewProps {
   purchase?: Partial<Purchase>;
@@ -19,7 +31,7 @@ interface CashMemoPreviewProps {
   paymentMethod?: string;
   invoiceNumber?: string;
   dateStr?: string;
-  items?: any[];
+  items?: CashMemoItem[];
   branch?: BranchId;
   branchName?: string;
 }
@@ -36,40 +48,31 @@ export default function CashMemoPreview({
   finalAmount = 899,
   invoiceNumber = '12345',
   dateStr,
-  settings,
   items,
-  branch,
   purchase,
 }: CashMemoPreviewProps) {
-  // Format date cleanly e.g. "16 June 2025" matching reference
-  const [displayDate, setDisplayDate] = React.useState<string>('16 June 2025');
+  const clientDate = useSyncExternalStore(
+    emptySubscribe,
+    () =>
+      new Date().toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      }),
+    () => ''
+  );
 
-  React.useEffect(() => {
-    if (dateStr) {
-      setDisplayDate(dateStr);
-    } else if (purchase?.created_at) {
-      const d = new Date(purchase.created_at);
-      setDisplayDate(
-        d.toLocaleDateString('en-GB', {
+  const displayDate =
+    dateStr ||
+    (purchase?.created_at
+      ? new Date(purchase.created_at).toLocaleDateString('en-GB', {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
         })
-      );
-    } else {
-      const now = new Date();
-      setDisplayDate(
-        now.toLocaleDateString('en-GB', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })
-      );
-    }
-  }, [dateStr, purchase?.created_at]);
+      : clientDate || 'Today');
 
-  const effectiveInvoiceNo =
-    purchase?.invoice_number || invoiceNumber || '12345';
+  const effectiveInvoiceNo = purchase?.invoice_number || invoiceNumber;
   const effectiveCustomerName = purchase?.customer_name || customerName || 'Walk-in Customer';
   const effectivePhoneNum = purchase?.customer_phone || customerPhone || '';
   const effectiveCustAddress = purchase?.customer_address || customerAddress || '';
@@ -80,7 +83,7 @@ export default function CashMemoPreview({
   const effectiveFinalAmount = purchase?.final_amount ?? finalAmount ?? 0;
 
   // Resolve items to display
-  const resolvedItems = React.useMemo(() => {
+  const resolvedItems = React.useMemo<CashMemoItem[]>(() => {
     if (purchase?.items && purchase.items.length > 0) {
       return purchase.items;
     }
@@ -125,14 +128,12 @@ export default function CashMemoPreview({
         className="invoice-body-font w-full max-w-[620px] mx-auto bg-white text-black p-8 sm:p-10 shadow-xl border border-neutral-200 select-none relative overflow-hidden"
         style={{ backgroundColor: '#ffffff', color: '#000000' }}
       >
-        {/* Subtle Terry Green Top Brand Accent Bar */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#094327]" />
-
         {/* ==============================================================
             1. TOP HEADER: [Circular TERRY7 Logo] Centered with small INVOICE below
            ============================================================== */}
         <div className="flex flex-col items-center justify-center text-center pb-2 pt-1">
           {/* Circular logo enlarged and prominent */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/logo.png"
             alt="TERRY7 WOMEN"
@@ -142,10 +143,15 @@ export default function CashMemoPreview({
           <span className="text-[12px] font-bold tracking-[0.35em] text-[#094327] uppercase mt-2.5">
             INVOICE
           </span>
+          {effectiveInvoiceNo && (
+            <span className="text-[10px] text-neutral-400 font-mono tracking-wider mt-0.5">
+              #{effectiveInvoiceNo}
+            </span>
+          )}
         </div>
 
         {/* ==============================================================
-            2. BILLED TO (Left) & DATE (Right) - (No Invoice Number as requested)
+            2. BILLED TO (Left) & DATE (Right)
            ============================================================== */}
         <div className="grid grid-cols-12 items-start justify-between mt-6 mb-6">
           {/* Billed To */}
@@ -168,7 +174,7 @@ export default function CashMemoPreview({
             )}
           </div>
 
-          {/* Date Only (No Invoice No.) */}
+          {/* Date */}
           <div className="col-span-5 text-right space-y-1">
             <p className="text-xs sm:text-sm font-medium text-neutral-800">
               {displayDate}
@@ -194,7 +200,7 @@ export default function CashMemoPreview({
             4. TABLE ITEMS ROWS
            ============================================================== */}
         <div className="py-3 space-y-3 min-h-[120px]">
-          {resolvedItems.map((item: any, idx: number) => {
+          {resolvedItems.map((item, idx) => {
             const desc = item.description || item.name || 'Garment Item';
             const qty = item.quantity ?? (item.weight_grams ? `${(item.weight_grams / 1000).toFixed(2)} KG` : 1);
             const uPrice = item.unit_price ?? item.rate_per_kg ?? 0;

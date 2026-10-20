@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Phone,
   User,
@@ -11,36 +11,53 @@ import {
   RotateCcw,
   AlertCircle,
   Gift,
-  CreditCard,
   Banknote,
   Smartphone,
-  ChevronRight,
-  Store,
   Plus,
   Trash2,
   Tag,
-  CheckCircle2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CashMemoPreview from '@/components/CashMemoPreview';
 import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
-import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId } from '@/lib/types';
+import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
 import { toPng, toBlob } from 'html-to-image';
 
+interface AuthMeResponse {
+  authenticated: boolean;
+  user?: {
+    id: string;
+    username: string;
+    role: string;
+    branch?: BranchId;
+  };
+  branchInfo?: BranchInfo;
+}
+
+interface WhatsAppApiResult {
+  success: boolean;
+  isDemo: boolean;
+  status: 'SENT' | 'DELIVERED' | 'FAILED';
+  formattedText: string;
+  errorMessage?: string;
+  messageId?: string;
+}
+
 export default function BillingPage() {
   const router = useRouter();
+
   // Input States
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
 
-  // Kilo dress selection
-  const [weight, setWeight] = useState<number | string>(1000);
-  const [unit, setUnit] = useState<'g' | 'kg'>('g');
-  const [itemDesc, setItemDesc] = useState('Ladies Readymade Garment / Dress Material');
+  // Dress weight selection - default is empty so user enters custom weight directly
+  const [weight, setWeight] = useState<number | string>('');
+  const [unit] = useState<'g' | 'kg'>('g');
+  const itemDesc = 'Ladies Readymade Garment / Dress Material';
 
-  // Custom items list (for inners, leggings, etc. with custom prices)
+  // Custom items list
   const [customItems, setCustomItems] = useState<CustomItemInput[]>([]);
 
   // Payment and round off
@@ -50,8 +67,7 @@ export default function BillingPage() {
 
   // Branch & System States
   const [activeBranch, setActiveBranch] = useState<BranchId>('vnb');
-  const [branchInfo, setBranchInfo] = useState<any>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [branchInfo, setBranchInfo] = useState<BranchInfo | null>(null);
 
   // Customer & System States
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -62,52 +78,15 @@ export default function BillingPage() {
 
   // Success Modal States
   const [completedPurchase, setCompletedPurchase] = useState<Purchase | null>(null);
-  const [whatsappResult, setWhatsappResult] = useState<any>(null);
+  const [whatsappResult, setWhatsappResult] = useState<WhatsAppApiResult | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [billImageDataUrl, setBillImageDataUrl] = useState<string | null>(null);
 
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState<string>('INV-VNB-2026-000101');
 
-  // Fetch shop settings & auth on mount
-  useEffect(() => {
-    checkAuthAndSettings();
-  }, []);
-
-  const checkAuthAndSettings = async () => {
-    try {
-      const authRes = await fetch('/api/auth/me');
-      const authData = await authRes.json();
-      let branchToUse: BranchId = 'vnb';
-
-      if (!authData.authenticated) {
-        router.push('/login');
-        return;
-      }
-
-      if (authData.user) {
-        setCurrentUser(authData.user);
-        // Main Admin is strictly for master sales & discounts dashboard, not cashier billing
-        if (authData.user.role === 'SUPER_ADMIN' || authData.user.username === 'admin') {
-          router.push('/dashboard');
-          return;
-        }
-        if (authData.user.branch) {
-          branchToUse = authData.user.branch;
-          setActiveBranch(branchToUse);
-        }
-        if (authData.branchInfo) {
-          setBranchInfo(authData.branchInfo);
-        }
-      }
-
-      fetchSettings(branchToUse);
-    } catch {
-      fetchSettings('vnb');
-    }
-  };
-
-  const fetchSettings = async (branch?: BranchId) => {
+  // Fetch branch settings helper
+  const fetchSettings = useCallback(async (branch?: BranchId) => {
     try {
       const branchQuery = branch || activeBranch;
       const res = await fetch(`/api/settings?branch=${branchQuery}`);
@@ -127,45 +106,94 @@ export default function BillingPage() {
     } catch (err) {
       console.error(err);
     }
+  }, [activeBranch]);
+
+  // Auth & Settings Check on Mount
+  useEffect(() => {
+    let isMounted = true;
+    const checkAuthAndSettings = async () => {
+      try {
+        const authRes = await fetch('/api/auth/me');
+        const authData: AuthMeResponse = await authRes.json();
+        let branchToUse: BranchId = 'vnb';
+
+        if (!authData.authenticated) {
+          router.push('/login');
+          return;
+        }
+
+        if (authData.user) {
+          if (authData.user.role === 'SUPER_ADMIN' || authData.user.username === 'admin') {
+            router.push('/dashboard');
+            return;
+          }
+          if (authData.user.branch) {
+            branchToUse = authData.user.branch;
+            if (isMounted) setActiveBranch(branchToUse);
+          }
+          if (authData.branchInfo && isMounted) {
+            setBranchInfo(authData.branchInfo);
+          }
+        }
+
+        if (isMounted) {
+          fetchSettings(branchToUse);
+        }
+      } catch {
+        if (isMounted) fetchSettings('vnb');
+      }
+    };
+
+    checkAuthAndSettings();
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchSettings, router]);
+
+  // Debounced customer lookup by phone number
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    const clean = val.replace(/\D/g, '');
+    if (clean.length < 10 && customer) {
+      setCustomer(null);
+    }
   };
 
-  const handleBranchSwitch = (newBranch: BranchId) => {
-    setActiveBranch(newBranch);
-    fetchSettings(newBranch);
-  };
-
-  // Debounced Phone Search
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length >= 10) {
-      searchCustomer(cleanPhone);
-    } else {
-      setCustomer(null);
-    }
-  }, [phone]);
+    if (cleanPhone.length < 10) return;
 
-  const searchCustomer = async (searchPhone: string) => {
-    setIsSearchingCustomer(true);
-    try {
-      const res = await fetch(`/api/customers/${searchPhone}`);
-      const data = await res.json();
-      if (data.success && data.customer) {
-        setCustomer(data.customer);
-        if (!name || name === 'Walk-in Customer') {
-          setName(data.customer.name);
-        }
-        if (data.customer.address && !address) {
-          setAddress(data.customer.address);
-        }
-      } else {
-        setCustomer(null);
-      }
-    } catch {
-      setCustomer(null);
-    } finally {
-      setIsSearchingCustomer(false);
-    }
-  };
+    let isCancelled = false;
+    const timer = setTimeout(() => {
+      setIsSearchingCustomer(true);
+      fetch(`/api/customers/${cleanPhone}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (!isCancelled) {
+            if (data.success && data.customer) {
+              setCustomer(data.customer);
+              setName((prev) => (!prev || prev === 'Walk-in Customer' ? data.customer.name : prev));
+              if (data.customer.address) {
+                setAddress((prev) => (!prev ? data.customer.address : prev));
+              }
+            } else {
+              setCustomer(null);
+            }
+          }
+        })
+        .catch(() => {
+          if (!isCancelled) setCustomer(null);
+        })
+        .finally(() => {
+          if (!isCancelled) setIsSearchingCustomer(false);
+        });
+    }, 250);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [phone]);
 
   // Perform Real-Time Billing Calculation
   const numericWeight = typeof weight === 'number'
@@ -185,12 +213,6 @@ export default function BillingPage() {
     });
   }, [numericWeight, unit, customer, shopSettings, roundOffMode, manualAmount, customItems, branchInfo]);
 
-  // Handle Quick Chips
-  const handleQuickGrams = (grams: number) => {
-    setUnit('g');
-    setWeight(grams);
-  };
-
   // Custom Item Handlers
   const handleAddCustomItem = (namePreset: string = '', pricePreset: number = 0) => {
     const newItem: CustomItemInput = {
@@ -203,13 +225,17 @@ export default function BillingPage() {
     setCustomItems([...customItems, newItem]);
   };
 
-  const handleUpdateCustomItem = (id: string, field: 'name' | 'quantity' | 'unitPrice', val: any) => {
+  const handleUpdateCustomItem = (
+    id: string,
+    field: 'name' | 'quantity' | 'unitPrice',
+    val: string | number
+  ) => {
     setCustomItems(
       customItems.map((item) => {
         if (item.id === id) {
           const updated = { ...item, [field]: val };
-          const qty = field === 'quantity' ? Math.max(1, parseInt(val) || 1) : item.quantity;
-          const price = field === 'unitPrice' ? Math.max(0, parseFloat(val) || 0) : item.unitPrice;
+          const qty = field === 'quantity' ? Math.max(1, parseInt(String(val), 10) || 1) : item.quantity;
+          const price = field === 'unitPrice' ? Math.max(0, parseFloat(String(val)) || 0) : item.unitPrice;
           updated.amount = Math.round(qty * price * 100) / 100;
           return updated;
         }
@@ -222,7 +248,7 @@ export default function BillingPage() {
     setCustomItems(customItems.filter((it) => it.id !== id));
   };
 
-  // Form Submission (Complete Purchase)
+  // Form Submission (Complete Purchase & Direct WhatsApp dispatch)
   const handleCompletePurchase = async (shouldPrintDirectly: boolean = false) => {
     setErrorMessage('');
     if (!phone || phone.replace(/\D/g, '').length < 10) {
@@ -235,13 +261,12 @@ export default function BillingPage() {
     }
 
     if (numericWeight <= 0 && customItems.length === 0) {
-      setErrorMessage('Please enter clothing weight or add at least one custom item.');
+      setErrorMessage('Please enter weight in grams or add a custom item.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // Step 1: Submit purchase to backend to get real purchase record & invoice number
       const payload = {
         phone,
         name,
@@ -271,40 +296,29 @@ export default function BillingPage() {
       setCustomer(data.customer);
       setWhatsappResult(data.whatsapp);
 
-      // Step 2: Allow React DOM to refresh with exact purchase details and capture invoice snapshot
+      // Snapshot invoice memo
       await new Promise((r) => setTimeout(r, 60));
-      let capturedDataUrl = '';
-      let capturedBlob: Blob | null = null;
       const memoNode = document.getElementById('cash-memo-preview-node');
       if (memoNode) {
         try {
-          capturedDataUrl = await toPng(memoNode, { quality: 0.95, pixelRatio: 2 });
-          capturedBlob = await toBlob(memoNode, { quality: 0.95, pixelRatio: 2 });
+          const capturedDataUrl = await toPng(memoNode, { quality: 0.95, pixelRatio: 2 });
+          const capturedBlob = await toBlob(memoNode, { quality: 0.95, pixelRatio: 2 });
           setBillImageDataUrl(capturedDataUrl);
 
-          // Upload image to server for public hosting link
-          fetch(`/api/invoices/${data.purchase.id}/image`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: capturedDataUrl }),
-          }).catch((imgPostErr) => console.warn('Could not post invoice image:', imgPostErr));
+          if (capturedBlob && navigator.clipboard && 'ClipboardItem' in window) {
+            try {
+              const item = new ClipboardItem({ 'image/png': capturedBlob });
+              await navigator.clipboard.write([item]);
+            } catch {
+              // clipboard non-blocking
+            }
+          }
         } catch (imgErr) {
           console.warn('Could not generate bill image snapshot:', imgErr);
         }
       }
 
-      // Step 3: Copy image to clipboard so Ctrl+V in WhatsApp Web pastes photo directly on desktop
-      if (capturedBlob && navigator.clipboard && (window as any).ClipboardItem) {
-        try {
-          await navigator.clipboard.write([
-            new (window as any).ClipboardItem({ 'image/png': capturedBlob }),
-          ]);
-        } catch (clipErr) {
-          console.warn('Clipboard write warning:', clipErr);
-        }
-      }
-
-      // Open WhatsApp Success Modal directly (without auto-downloading or premature text-only window popups)
+      // Show success modal confirmation directly - NO popup window or opening another tab
       setShowSuccessModal(true);
 
       if (shouldPrintDirectly) {
@@ -312,8 +326,9 @@ export default function BillingPage() {
           window.print();
         }, 300);
       }
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Error completing purchase');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error completing purchase';
+      setErrorMessage(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -345,14 +360,13 @@ export default function BillingPage() {
     setPhone('');
     setName('');
     setAddress('');
-    setWeight(1000);
-    setUnit('g');
+    setWeight('');
     setCustomItems([]);
     setCustomer(null);
     setPaymentMethod('CASH');
     setErrorMessage('');
     setManualAmount('');
-    setRoundOffMode('FLOOR_10');
+    setRoundOffMode('NONE');
     setBillImageDataUrl(null);
     setCompletedPurchase(null);
     setShowSuccessModal(false);
@@ -363,52 +377,8 @@ export default function BillingPage() {
     <div className="min-h-[calc(100vh-4rem)] bg-neutral-100 p-3 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
         {/* ==============================================================
-            STORE LOCATION HEADER CARD: Shows current branch
-           ============================================================== */}
-        <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 no-print">
-          <div className="flex items-center gap-3.5">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-xs apple-pressable ${
-              activeBranch === 'pkdm' ? 'bg-amber-600' : 'bg-neutral-950'
-            }`}>
-              <Store className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-                  Current Billing Branch:
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-neutral-100 text-neutral-700 font-mono border border-neutral-200/60">
-                  {nextInvoiceNumber}
-                </span>
-              </div>
-              <h1 className="text-lg sm:text-xl font-black tracking-tight apple-headline flex items-center gap-1.5 flex-wrap">
-                <span className="flex items-center">
-                  <span className="text-[#094327]">TERRY</span>
-                  <span className="text-[#e11d48]">7</span>
-                </span>
-                <span className="text-[10px] sm:text-[11px] font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full tracking-widest uppercase">
-                  WOMEN
-                </span>
-                <span className="text-neutral-900 font-bold ml-1 text-sm sm:text-base">
-                  &bull; {activeBranch === 'pkdm' ? 'Pookkottumpadam Store' : 'Vaniyambalam Store'}
-                </span>
-              </h1>
-              <p className="text-xs text-neutral-500 tracking-tight">
-                {branchInfo?.address || (activeBranch === 'pkdm' ? 'Nilambur - Ooty Road, Pookkottumpadam' : 'Railway Station Road, Vaniyambalam')} &bull; Rate: ₹{branchInfo?.rate_per_kg || 899}/KG
-              </p>
-            </div>
-          </div>
-
-          {/* Active Terminal Indicator Badge - No switch buttons */}
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral-100/90 text-neutral-800 border border-neutral-200/80 shadow-2xs">
-              {activeBranch === 'pkdm' ? 'PKDM Store POS Terminal' : 'VNB Store POS Terminal'}
-            </span>
-          </div>
-        </div>
-
-        {/* ==============================================================
             MAIN GRID: POS BILLING INPUTS (Left 7 cols) & LIVE INVOICE (Right 5 cols)
+            (Unwanted top branch/address card removed as requested)
            ============================================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* ==============================================================
@@ -420,10 +390,10 @@ export default function BillingPage() {
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <User className="w-5 h-5 text-neutral-800" />
-                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">1. Customer Information</h2>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">Customer Information</h2>
                 </div>
-                <span className="text-xs bg-neutral-100/90 text-neutral-600 font-semibold px-3 py-0.5 rounded-full border border-neutral-200/60">
-                  Primary ID: Phone
+                <span className="text-xs bg-neutral-100/90 text-neutral-600 font-semibold px-3 py-0.5 rounded-full border border-neutral-200/60 font-mono">
+                  {nextInvoiceNumber}
                 </span>
               </div>
 
@@ -440,10 +410,10 @@ export default function BillingPage() {
                     <input
                       type="tel"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => handlePhoneChange(e.target.value)}
                       placeholder="Enter customer mobile number (10 digits)"
                       maxLength={15}
-                      className="w-full pl-10 pr-4 py-3 rounded-lg border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-base font-medium outline-hidden transition-all bg-neutral-50/50 focus:bg-white"
+                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-base font-medium outline-hidden transition-all bg-neutral-50/50 focus:bg-white"
                     />
                     {isSearchingCustomer && (
                       <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs text-neutral-400">
@@ -474,14 +444,13 @@ export default function BillingPage() {
                       </span>
                     </div>
 
-                    {/* Loyalty Progress Tracker - 5,000g Cumulative Weight */}
                     <div className="pt-1">
                       <div className="flex justify-between text-[11px] font-semibold mb-1">
-                        <span>Cumulative Loyalty Clothing Weight:</span>
+                        <span>Cumulative Loyalty Weight:</span>
                         <span className="font-bold">
                           {customer.loyalty_reward_unlocked
-                            ? '🔥 5 KG ACHIEVED - REWARD UNLOCKED (50% OFF 1 KG)'
-                            : `${customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000)}g / 5,000g (${(((customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000))) / 1000).toFixed(2)} KG)`}
+                            ? '🔥 5 KG ACHIEVED - 50% OFF on 1 KG UNLOCKED'
+                            : `${customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000)}g / 5,000g`}
                         </span>
                       </div>
                       <div className="w-full bg-neutral-200 rounded-full h-2.5 overflow-hidden">
@@ -494,16 +463,11 @@ export default function BillingPage() {
                           }}
                         />
                       </div>
-                      <p className="text-[11px] text-neutral-600 mt-1">
-                        {customer.loyalty_reward_unlocked
-                          ? '🎁 50% discount on 1000g (1 KG) unlocked! Applicable today if purchase is at least 1 KG (1000g).'
-                          : `${Math.max(0, 5000 - (customer.loyalty_weight_grams ?? ((customer.total_weight_grams || 0) % 5000)))}g more clothing needed to reach 5 KG (5,000g) milestone to unlock 50% OFF on 1 KG reward.`}
-                      </p>
                     </div>
                   </div>
                 )}
 
-                {/* Customer Name Only (City/Address removed as requested) */}
+                {/* Customer Name */}
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-1.5">
                     Customer Name <span className="text-rose-500">*</span>
@@ -519,110 +483,84 @@ export default function BillingPage() {
               </div>
             </div>
 
-            {/* 2. Weight & Kilo Dresses Card */}
+            {/* 2. Enter Weight Section (Simplified as requested: no presets, custom weight input) */}
             <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <Scale className="w-5 h-5 text-neutral-800" />
-                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">2. Kilo Clothing (Weight Billing)</h2>
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">Enter Weight</h2>
                 </div>
-                <span className="text-xs bg-neutral-950 text-white font-bold px-3 py-1 rounded-full shadow-2xs">
-                  Rate: ₹{branchInfo?.rate_per_kg || 899} / KG
+                <span className="text-xs bg-neutral-950 text-white font-bold px-3 py-1 rounded-full shadow-2xs font-mono">
+                  ₹{branchInfo?.rate_per_kg || 899} / KG
                 </span>
               </div>
 
               <div className="space-y-4">
-                  {/* Weight Input (Grams only) */}
-                  <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
-                        Enter Dress Weight (Grams)
-                      </label>
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200">
-                        Grams (g)
-                      </span>
-                    </div>
-
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={weight}
-                        onChange={(e) => setWeight(e.target.value)}
-                        placeholder="e.g. 500, 700, 1000"
-                        className="w-full px-4 py-3.5 text-2xl font-black rounded-2xl border-2 border-neutral-950 focus:ring-2 focus:ring-neutral-950/20 outline-hidden bg-neutral-50/30 tracking-tight"
-                      />
-                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-sm font-bold text-neutral-400 uppercase tracking-wider">
-                        Grams
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Quick Grams Chips */}
-                  <div>
-                    <span className="block text-[11px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5">
-                      Quick Select Weight:
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
+                      Weight in Grams
+                    </label>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-800 border border-neutral-200">
+                      Grams (g)
                     </span>
-                    <div className="flex flex-wrap gap-2">
-                      {[250, 500, 700, 1000, 1200, 1500, 2000].map((g) => (
-                        <button
-                          key={g}
-                          type="button"
-                          onClick={() => handleQuickGrams(g)}
-                          className={`apple-pressable px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${
-                            billingCalc.weightGrams === g
-                              ? 'bg-neutral-950 text-white border-neutral-950 shadow-2xs'
-                              : 'bg-neutral-50/80 text-neutral-800 border-neutral-200/90 hover:bg-neutral-100'
-                          }`}
-                        >
-                          {g}g
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
-                  {/* Loyalty Reward Status Feedback */}
-                  {billingCalc.isRewardUnlocked && (
-                    <div
-                      className={`p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 ${
-                        billingCalc.canApplyReward
-                          ? 'bg-emerald-50/80 border-emerald-300/80 text-emerald-950 font-medium'
-                          : 'bg-amber-50/80 border-amber-300/80 text-amber-950'
-                      }`}
-                    >
-                      <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        {billingCalc.canApplyReward ? (
-                          <p>
-                            🎉 <strong>50% OFF on 1 KG Loyalty Discount Applied!</strong> Customer is taking{' '}
-                            {billingCalc.weightGrams}g (≥ 1 KG). 50% discount on 1000g (-₹{billingCalc.discountAmount.toFixed(2)}) is deducted from total.
-                          </p>
-                        ) : (
-                          <p>
-                            ⚠️ <strong>Reward Unlocked (50% OFF on 1 KG):</strong> {billingCalc.rewardReason}{' '}
-                            (Customer is taking {billingCalc.weightGrams}g). Reward remains saved for their next 1 KG+ purchase.
-                          </p>
-                        )}
-                      </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      placeholder="Enter weight in grams (e.g. 850)"
+                      className="w-full px-4 py-3.5 text-2xl font-black rounded-2xl border-2 border-neutral-950 focus:ring-2 focus:ring-neutral-950/20 outline-hidden bg-neutral-50/30 tracking-tight font-mono"
+                    />
+                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-sm font-bold text-neutral-400 uppercase tracking-wider">
+                      {numericWeight >= 1000 ? `${(numericWeight / 1000).toFixed(2)} KG` : 'Grams'}
                     </div>
-                  )}
+                  </div>
                 </div>
+
+                {/* Loyalty Reward Status Feedback */}
+                {billingCalc.isRewardUnlocked && (
+                  <div
+                    className={`p-3.5 rounded-2xl border text-xs flex items-start gap-2.5 ${
+                      billingCalc.canApplyReward
+                        ? 'bg-emerald-50/80 border-emerald-300/80 text-emerald-950 font-medium'
+                        : 'bg-amber-50/80 border-amber-300/80 text-amber-950'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div>
+                      {billingCalc.canApplyReward ? (
+                        <p>
+                          🎉 <strong>50% OFF on 1 KG Loyalty Discount Applied!</strong> Customer is taking{' '}
+                          {billingCalc.weightGrams}g (≥ 1 KG). 50% discount on 1000g (-₹{billingCalc.discountAmount.toFixed(2)}) is deducted.
+                        </p>
+                      ) : (
+                        <p>
+                          ⚠️ <strong>Reward Unlocked (50% OFF on 1 KG):</strong> {billingCalc.rewardReason}{' '}
+                          (Customer is taking {billingCalc.weightGrams}g). Reward saved for next 1 KG+ purchase.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* ==============================================================
-                3. CUSTOM / FIXED-PRICE ITEMS SECTION (Optional)
-               ============================================================== */}
+            {/* 3. Custom Items Section */}
             <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
               <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   <Tag className="w-5 h-5 text-neutral-800" />
                   <div>
                     <h2 className="text-base font-bold text-neutral-900 tracking-tight">
-                      3. Custom Items (Optional)
+                      Custom Items
                     </h2>
                     <p className="text-[11px] text-neutral-500">
-                      Add non-weight items (inners, leggings, etc.) with custom prices
+                      Add non-weight items (inners, leggings, etc.)
                     </p>
                   </div>
                 </div>
@@ -637,9 +575,8 @@ export default function BillingPage() {
                 </button>
               </div>
 
-              {/* Custom Items Table / Inputs */}
               {customItems.length === 0 ? (
-                <div className="p-4 bg-neutral-50 rounded-lg border border-dashed border-neutral-200 text-center text-xs text-neutral-500 space-y-1">
+                <div className="p-4 bg-neutral-50 rounded-xl border border-dashed border-neutral-200 text-center text-xs text-neutral-500 space-y-1">
                   <p className="font-semibold text-neutral-700">No custom items added.</p>
                   <p>Click &ldquo;+ Add Custom Item&rdquo; if customer is purchasing non-weight items.</p>
                 </div>
@@ -656,31 +593,28 @@ export default function BillingPage() {
                   {customItems.map((item) => (
                     <div
                       key={item.id}
-                      className="grid grid-cols-12 gap-2 items-center bg-neutral-50 p-2.5 rounded-lg border border-neutral-200"
+                      className="grid grid-cols-12 gap-2 items-center bg-neutral-50 p-2.5 rounded-xl border border-neutral-200"
                     >
-                      {/* Name */}
                       <div className="col-span-5">
                         <input
                           type="text"
                           value={item.name}
                           onChange={(e) => handleUpdateCustomItem(item.id!, 'name', e.target.value)}
                           placeholder="e.g. Inners / Leggings"
-                          className="w-full px-2.5 py-1.5 text-xs rounded border border-neutral-300 focus:border-black outline-hidden bg-white font-medium"
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-neutral-300 focus:border-black outline-hidden bg-white font-medium"
                         />
                       </div>
 
-                      {/* Quantity */}
                       <div className="col-span-2">
                         <input
                           type="number"
                           min="1"
                           value={item.quantity}
                           onChange={(e) => handleUpdateCustomItem(item.id!, 'quantity', e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs text-center rounded border border-neutral-300 focus:border-black outline-hidden bg-white font-mono"
+                          className="w-full px-2 py-1.5 text-xs text-center rounded-lg border border-neutral-300 focus:border-black outline-hidden bg-white font-mono"
                         />
                       </div>
 
-                      {/* Unit Price */}
                       <div className="col-span-2">
                         <input
                           type="number"
@@ -688,22 +622,20 @@ export default function BillingPage() {
                           step="1"
                           value={item.unitPrice}
                           onChange={(e) => handleUpdateCustomItem(item.id!, 'unitPrice', e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs text-right rounded border border-neutral-300 focus:border-black outline-hidden bg-white font-mono font-semibold"
+                          className="w-full px-2 py-1.5 text-xs text-right rounded-lg border border-neutral-300 focus:border-black outline-hidden bg-white font-mono font-semibold"
                         />
                       </div>
 
-                      {/* Line Amount */}
                       <div className="col-span-2 text-right pr-1 font-bold text-xs text-black font-mono">
                         ₹{(item.amount || item.quantity * item.unitPrice).toFixed(2)}
                       </div>
 
-                      {/* Remove Button */}
                       <div className="col-span-1 text-center">
                         <button
                           type="button"
                           onClick={() => handleRemoveCustomItem(item.id!)}
                           title="Remove item"
-                          className="p-1 text-neutral-400 hover:text-rose-600 rounded transition-colors"
+                          className="p-1 text-neutral-400 hover:text-rose-600 rounded-md transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -721,70 +653,24 @@ export default function BillingPage() {
               )}
             </div>
 
-            {/* 4. Total Calculation & Payment Method Card */}
+            {/* 4. Payment & Complete Card */}
             <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6 space-y-5">
-              {/* Round Off Options */}
-              <div>
-                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
-                  Round Off / Concession Options
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {[
-                    { id: 'NONE', label: 'Exact (No Rounding)', desc: 'Exact Paisa (Default)' },
-                    { id: 'FLOOR_10', label: 'Round Down 10s', desc: 'e.g. ₹899 → ₹890' },
-                    { id: 'MANUAL', label: 'Manual Price', desc: 'Custom Amount' },
-                  ].map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setRoundOffMode(m.id as RoundOffMode)}
-                      className={`apple-pressable p-3 rounded-2xl border text-left transition-all ${
-                        roundOffMode === m.id
-                          ? 'border-[#094327] bg-[#094327] text-white shadow-xs'
-                          : 'border-neutral-200/80 bg-neutral-50/80 text-neutral-800 hover:border-neutral-300'
-                      }`}
-                    >
-                      <p className="text-xs font-bold leading-tight tracking-tight">{m.label}</p>
-                      <p className={`text-[10px] mt-0.5 ${roundOffMode === m.id ? 'text-emerald-200' : 'text-neutral-500'}`}>
-                        {m.desc}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-
-                {roundOffMode === 'MANUAL' && (
-                  <div className="mt-3 p-3.5 bg-neutral-50/80 rounded-2xl border border-neutral-200 space-y-2">
-                    <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider">
-                      Enter Final Agreed Customer Amount (₹):
-                    </label>
-                    <input
-                      type="number"
-                      step="1"
-                      value={manualAmount}
-                      onChange={(e) => setManualAmount(e.target.value)}
-                      placeholder={`Agreed price (Base: ₹${billingCalc.baseAmount.toFixed(2)})`}
-                      className="w-full px-3.5 py-2.5 text-base font-black rounded-xl border border-neutral-300 focus:border-black outline-hidden bg-white font-mono"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Live Amount Display Card - Styled in Signature Terry Green */}
-              <div className="bg-gradient-to-br from-[#094327] to-[#06311d] text-white p-5 sm:p-6 rounded-2xl sm:rounded-3xl space-y-2.5 shadow-md border border-emerald-800/40">
-                <div className="flex justify-between text-xs text-emerald-200">
+              {/* Grand Total Display */}
+              <div className="p-6 rounded-2xl bg-neutral-950 text-white shadow-xs space-y-3">
+                <div className="flex justify-between text-xs text-neutral-400">
                   <span>
                     Items: {billingCalc.customItems?.length || 0} Custom {numericWeight > 0 ? `+ ${(numericWeight / 1000).toFixed(2)} KG` : ''}
                   </span>
-                  <span className="font-mono text-emerald-100 font-bold">BRANCH: {activeBranch.toUpperCase()}</span>
+                  <span className="font-mono text-emerald-400 font-bold">STORE: {activeBranch.toUpperCase()}</span>
                 </div>
 
-                <div className="flex justify-between text-sm text-emerald-100 border-b border-white/15 pb-2">
+                <div className="flex justify-between text-sm text-neutral-300 border-b border-white/10 pb-2">
                   <span>Gross Subtotal:</span>
                   <span className="font-semibold font-mono">₹{billingCalc.subtotal.toFixed(2)}</span>
                 </div>
 
                 {billingCalc.discountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-amber-300 border-b border-white/15 pb-2">
+                  <div className="flex justify-between text-sm text-amber-300 border-b border-white/10 pb-2">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Gift className="w-4 h-4" /> Loyalty Reward (50% OFF 1 KG):
                     </span>
@@ -793,11 +679,11 @@ export default function BillingPage() {
                 )}
 
                 {billingCalc.roundOffAmount !== 0 && (
-                  <div className="flex justify-between text-sm text-emerald-100 border-b border-white/15 pb-2">
+                  <div className="flex justify-between text-sm text-neutral-300 border-b border-white/10 pb-2">
                     <span>
-                      {roundOffMode === 'MANUAL' ? 'Manual Price Adjustment:' : 'Round Down Discount:'}
+                      {roundOffMode === 'MANUAL' ? 'Price Adjustment:' : 'Round Off:'}
                     </span>
-                    <span className={`font-mono font-bold ${billingCalc.roundOffAmount < 0 ? 'text-amber-300' : 'text-emerald-100'}`}>
+                    <span className={`font-mono font-bold ${billingCalc.roundOffAmount < 0 ? 'text-amber-300' : 'text-neutral-200'}`}>
                       {billingCalc.roundOffAmount > 0
                         ? `+₹${billingCalc.roundOffAmount.toFixed(2)}`
                         : `-₹${Math.abs(billingCalc.roundOffAmount).toFixed(2)}`}
@@ -807,7 +693,7 @@ export default function BillingPage() {
 
                 <div className="flex justify-between items-baseline pt-1">
                   <div>
-                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-emerald-200 block">
+                    <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-neutral-300 block">
                       Net Amount Payable:
                     </span>
                     {billingCalc.subtotal - billingCalc.finalAmount > 0 && (
@@ -822,10 +708,10 @@ export default function BillingPage() {
                 </div>
               </div>
 
-              {/* Payment Method Selector (Only Cash and UPI / GPay as requested) */}
+              {/* Payment Method Selector (Cash & UPI/GPay only) */}
               <div>
                 <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
-                  4. Select Payment Method
+                  Select Payment Method
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   {[
@@ -839,7 +725,7 @@ export default function BillingPage() {
                         key={p.id}
                         type="button"
                         onClick={() => setPaymentMethod(p.id as PaymentMethod)}
-                        className={`apple-pressable flex items-center justify-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all ${
+                        className={`apple-pressable flex items-center justify-center gap-2.5 p-3.5 rounded-2xl border text-xs font-bold transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-[#094327] text-white border-[#094327] shadow-xs'
                             : 'bg-white text-neutral-700 border-neutral-200/90 hover:bg-neutral-50'
@@ -880,7 +766,7 @@ export default function BillingPage() {
                   className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Processing...' : 'Complete & WhatsApp'}</span>
+                  <span>{isSubmitting ? 'Processing...' : 'Send Bill (WhatsApp)'}</span>
                 </button>
               </div>
 
@@ -888,7 +774,7 @@ export default function BillingPage() {
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="apple-pressable inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-black font-semibold py-1 px-3 rounded-full hover:bg-neutral-100"
+                  className="apple-pressable inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-black font-semibold py-1 px-3 rounded-full hover:bg-neutral-100 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset Form</span>
@@ -903,18 +789,17 @@ export default function BillingPage() {
           <div className="lg:col-span-5 flex flex-col items-center">
             <div className="w-full flex items-center justify-between mb-3 px-1 no-print">
               <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                Live Invoice Preview ({activeBranch === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam'})
+                Live Invoice Preview
               </span>
               <button
                 onClick={() => window.print()}
-                className="text-xs text-black font-bold flex items-center gap-1 hover:underline"
+                className="text-xs text-black font-bold flex items-center gap-1 hover:underline cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Preview</span>
               </button>
             </div>
 
-            {/* Authentic Printable Cash Memo Pad Matching Reference Image */}
             <CashMemoPreview
               customerName={name.trim() || 'Walk-in Customer'}
               customerPhone={phone.trim() || '-'}
