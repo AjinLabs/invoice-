@@ -302,23 +302,13 @@ export default function BillingPage() {
 
       const isCloudApiSent = data.whatsapp?.status === 'SENT' && !data.whatsapp?.isDemo;
 
-      // If Meta Cloud API is not configured, open customer WhatsApp directly with pre-filled bill
-      if (!isCloudApiSent) {
-        const cleanCustomerPhone = (createdPurchase?.customer_phone || phone).replace(/\D/g, '');
-        const destinationPhone = cleanCustomerPhone.length === 10 ? `91${cleanCustomerPhone}` : cleanCustomerPhone;
-        const formattedText = data.whatsapp?.formattedText || '';
-        const encodedText = encodeURIComponent(formattedText);
-        const waUrl = `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encodedText}`;
-        window.open(waUrl, '_blank');
-      }
-
       // Direct success notification toast - NO popup modal or dialog asking questions
       setSuccessToast({
         name: createdPurchase?.customer_name || name.trim() || 'Customer',
         phone: createdPurchase?.customer_phone || phone.trim(),
         invoiceNumber: createdPurchase?.invoice_number || nextInvoiceNumber,
         amount: createdPurchase?.final_amount || billingCalc.finalAmount,
-        whatsappStatus: isCloudApiSent ? 'SENT' : 'OPENED',
+        whatsappStatus: isCloudApiSent ? 'SENT' : (data.whatsapp?.status || 'SAVED'),
       });
 
       // Automatically reset form inputs so cashier can immediately bill next customer
@@ -835,8 +825,8 @@ export default function BillingPage() {
               <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
                 <span>
                   {successToast.whatsappStatus === 'SENT'
-                    ? 'Bill Sent to WhatsApp!'
-                    : 'WhatsApp Chat Opened!'}
+                    ? 'Bill Sent to WhatsApp (+91 8330889632)!'
+                    : 'Bill Completed & Saved!'}
                 </span>
               </h4>
               <button
@@ -851,8 +841,8 @@ export default function BillingPage() {
             <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
               Invoice <strong>#{successToast.invoiceNumber}</strong> (₹{successToast.amount.toFixed(2)}) for <strong>{successToast.name}</strong> ({successToast.phone}).
               {successToast.whatsappStatus === 'SENT'
-                ? ' Delivered directly via Meta WhatsApp API.'
-                : ' Chat opened with pre-filled bill text; tap Send in WhatsApp.'}
+                ? ' Delivered directly from +91 8330889632 via WhatsApp Cloud API.'
+                : ' Recorded in system. Ready for next customer.'}
             </p>
           </div>
         </div>
