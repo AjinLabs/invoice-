@@ -54,9 +54,16 @@ export default function Navbar() {
   }
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error(err);
+    }
+    document.cookie = 'terry_session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    document.cookie = 'terry_branch=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     setCurrentUser(null);
-    router.push('/login');
+    router.replace('/login');
+    router.refresh();
   };
 
   const isMainAdmin =
