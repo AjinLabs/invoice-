@@ -18,7 +18,6 @@ export function formatWhatsAppInvoiceText(
   baseUrl?: string
 ): string {
   const host = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://terry7women.vercel.app';
-  const photoUrl = `${host}/api/invoices/${purchase.id}/image`;
   const digitalBillUrl = `${host}/invoice/${purchase.id}`;
 
   const dateObj = new Date(purchase.created_at);
@@ -115,7 +114,7 @@ export function formatWhatsAppInvoiceText(
     `🧾 *CASH MEMO*\n\n` +
     `👤 Customer: ${purchase.customer_name}\n` +
     `📅 Date: ${dateFormatted}\n` +
-    `📸 *Bill Photo:* ${photoUrl}\n\n` +
+    `📸 *Bill Photo & Receipt:* ${digitalBillUrl}\n\n` +
     `━━━━━━━━━━━━━━━━━━━━\n` +
     `🛍️ *ITEM DETAILS*\n` +
     `━━━━━━━━━━━━━━━━━━━━\n\n` +
