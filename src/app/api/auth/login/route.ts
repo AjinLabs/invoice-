@@ -57,8 +57,51 @@ export async function POST(request: Request) {
       );
     }
 
+    // Tester / Demo credentials for reviewers & HR (e.g. tester / 123)
+    const normalizedUser = username.trim().toLowerCase();
+    if ((normalizedUser === 'tester' || normalizedUser === 'test') && password === '123') {
+      const response = NextResponse.json({
+        success: true,
+        isDemo: true,
+        user: {
+          id: 'usr_demo',
+          username: 'tester',
+          name: 'Demo Reviewer',
+          role: 'DEMO_VIEWER',
+          branch: 'vnb',
+        },
+      });
+
+      response.cookies.set(
+        'terry_session',
+        JSON.stringify({
+          id: 'usr_demo',
+          username: 'tester',
+          name: 'Demo Reviewer',
+          role: 'DEMO_VIEWER',
+          branch: 'vnb',
+          isDemo: true,
+        }),
+        {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 86400 * 3,
+        }
+      );
+
+      response.cookies.set('terry_branch', 'vnb', {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 86400 * 3,
+      });
+
+      return response;
+    }
+
     const db = readDb();
-    const user = db.users.find((u) => u.username.toLowerCase() === username.trim().toLowerCase());
+    const user = db.users.find((u) => u.username.toLowerCase() === normalizedUser);
 
     if (!user) {
       return NextResponse.json(
