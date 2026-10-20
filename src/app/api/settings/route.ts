@@ -53,15 +53,26 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json();
 
+    let sessionRole: string | undefined;
+    let sessionUsername: string | undefined;
     let sessionBranch: BranchId | undefined;
     try {
       const cookieStore = await cookies();
       const sessionCookie = cookieStore.get('terry_session');
       if (sessionCookie) {
         const session = JSON.parse(sessionCookie.value);
+        sessionRole = session.role;
+        sessionUsername = session.username;
         sessionBranch = session.branch;
       }
     } catch {}
+
+    if (sessionRole === 'DEMO_VIEWER') {
+      return NextResponse.json(
+        { success: false, error: 'Settings cannot be modified in Demo Mode' },
+        { status: 403 }
+      );
+    }
 
     const effectiveBranch: BranchId = (body.branch || sessionBranch || 'vnb') as BranchId;
 
@@ -87,10 +98,12 @@ export async function PUT(request: Request) {
 
       current.branches[effectiveBranch] = bInfo;
 
-      // Update password for branch admin if requested
+      // Update password for user/branch admin if requested
       if (body.new_password && body.new_password.trim().length >= 4) {
-        const username = effectiveBranch === 'pkdm' ? 'adminpkdm' : 'adminvnb';
-        const u = db.users.find((user) => user.username.toLowerCase() === username);
+        const targetUsername = sessionRole === 'SUPER_ADMIN' && sessionUsername
+          ? sessionUsername
+          : (effectiveBranch === 'pkdm' ? 'adminpkdm' : 'adminvnb');
+        const u = db.users.find((user) => user.username.toLowerCase() === targetUsername.toLowerCase());
         if (u) {
           u.password_hash = bcrypt.hashSync(body.new_password.trim(), 10);
         }

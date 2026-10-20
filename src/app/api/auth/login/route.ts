@@ -4,7 +4,51 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
   try {
-    const { username, password } = await request.json();
+    const body = await request.json();
+
+    // 1. Safe Public Demo Mode for visitors / reviewers
+    if (body.isDemo) {
+      const response = NextResponse.json({
+        success: true,
+        isDemo: true,
+        user: {
+          id: 'usr_demo',
+          username: 'demo_guest',
+          name: 'Demo Visitor',
+          role: 'DEMO_VIEWER',
+          branch: 'vnb',
+        },
+      });
+
+      response.cookies.set(
+        'terry_session',
+        JSON.stringify({
+          id: 'usr_demo',
+          username: 'demo_guest',
+          name: 'Demo Visitor',
+          role: 'DEMO_VIEWER',
+          branch: 'vnb',
+          isDemo: true,
+        }),
+        {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 86400 * 3, // 3 days
+        }
+      );
+
+      response.cookies.set('terry_branch', 'vnb', {
+        httpOnly: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 86400 * 3,
+      });
+
+      return response;
+    }
+
+    const { username, password } = body;
 
     if (!username || !password) {
       return NextResponse.json(

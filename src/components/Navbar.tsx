@@ -142,14 +142,22 @@ export default function Navbar() {
 
             {/* Right: Clean Logout / Login Action */}
             <div className="flex items-center gap-2 sm:gap-3">
+              {currentUser?.role === 'DEMO_VIEWER' && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span>Demo Mode</span>
+                </div>
+              )}
               {currentUser ? (
                 <button
                   onClick={handleLogout}
-                  title="Sign Out"
+                  title={currentUser.role === 'DEMO_VIEWER' ? 'Exit Demo Mode' : 'Sign Out'}
                   className="flex items-center gap-1.5 text-xs text-neutral-300 hover:text-white bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-full transition-all apple-pressable cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span className="font-medium text-xs">Logout</span>
+                  <span className="font-medium text-xs">
+                    {currentUser.role === 'DEMO_VIEWER' ? 'Exit Demo' : 'Logout'}
+                  </span>
                 </button>
               ) : (
                 <Link

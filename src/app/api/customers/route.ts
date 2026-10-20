@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { readDb, withTransaction, generateId, normalizePhone } from '@/lib/db';
 import { Customer } from '@/lib/types';
 
@@ -6,6 +7,16 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q')?.trim().toLowerCase() || '';
+
+    let isDemo = false;
+    try {
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('terry_session');
+      if (sessionCookie) {
+        const session = JSON.parse(sessionCookie.value);
+        isDemo = session.role === 'DEMO_VIEWER' || Boolean(session.isDemo);
+      }
+    } catch {}
 
     const db = readDb();
     let customers = db.customers;
@@ -19,7 +30,15 @@ export async function GET(request: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, customers });
+    if (isDemo) {
+      customers = customers.map((c) => ({
+        ...c,
+        phone: c.phone.length > 5 ? `${c.phone.slice(0, 5)}•••••` : '••••••••••',
+        address: c.address ? 'Kerala, India' : '',
+      }));
+    }
+
+    return NextResponse.json({ success: true, customers, isDemo });
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : 'Error fetching customers';
     return NextResponse.json({ success: false, error }, { status: 500 });
@@ -32,6 +51,16 @@ export async function POST(request: Request) {
     const rawPhone = body.phone?.trim();
     const name = body.name?.trim();
     const address = body.address?.trim() || '';
+
+    let isDemo = false;
+    try {
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('terry_session');
+      if (sessionCookie) {
+        const session = JSON.parse(sessionCookie.value);
+        isDemo = session.role === 'DEMO_VIEWER' || Boolean(session.isDemo);
+      }
+    } catch {}
 
     if (!rawPhone || !name) {
       return NextResponse.json(
@@ -46,6 +75,27 @@ export async function POST(request: Request) {
         { success: false, error: 'Please enter a valid 10-digit phone number' },
         { status: 400 }
       );
+    }
+
+    if (isDemo) {
+      return NextResponse.json({
+        success: true,
+        isDemo: true,
+        customer: {
+          id: 'cust_demo_' + Date.now(),
+          phone: `${phone.slice(0, 5)}•••••`,
+          name,
+          address,
+          total_purchases: 0,
+          total_weight_grams: 0,
+          total_amount_spent: 0,
+          loyalty_count: 0,
+          loyalty_reward_unlocked: false,
+          last_purchase_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      });
     }
 
     const customer = await withTransaction((db) => {

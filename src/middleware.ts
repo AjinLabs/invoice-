@@ -4,10 +4,9 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Bypass static files, images, favicon, api routes
+  // Bypass static assets
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
     pathname.startsWith('/favicon.ico') ||
     pathname.startsWith('/logo.png') ||
     pathname.includes('.')
@@ -16,7 +15,7 @@ export function middleware(request: NextRequest) {
   }
 
   const sessionCookie = request.cookies.get('terry_session');
-  let session: { id?: string; username?: string; role?: string; branch?: string } | null = null;
+  let session: { id?: string; username?: string; role?: string; branch?: string; isDemo?: boolean } | null = null;
   if (sessionCookie) {
     try {
       session = JSON.parse(sessionCookie.value);
@@ -24,6 +23,23 @@ export function middleware(request: NextRequest) {
   }
 
   const isAuthenticated = Boolean(session && session.id && session.username);
+
+  // Allow public auth endpoints, webhook, and invoice image serving
+  if (
+    pathname.startsWith('/api/auth/') ||
+    pathname.startsWith('/api/whatsapp/webhook') ||
+    pathname.startsWith('/api/invoices/')
+  ) {
+    return NextResponse.next();
+  }
+
+  // Block unauthorized API calls
+  if (pathname.startsWith('/api/')) {
+    if (!isAuthenticated) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.next();
+  }
 
   // If already logged in and visiting /login, send to appropriate screen
   if (pathname === '/login') {
@@ -51,5 +67,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo.png|.*\\..*).*)'],
 };

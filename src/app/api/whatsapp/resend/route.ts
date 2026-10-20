@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { readDb, withTransaction, generateId } from '@/lib/db';
 import { sendWhatsAppInvoice } from '@/lib/whatsapp';
 import { WhatsAppMessage } from '@/lib/types';
@@ -8,6 +9,29 @@ export async function POST(request: Request) {
     const { purchaseId } = await request.json();
     if (!purchaseId) {
       return NextResponse.json({ success: false, error: 'purchaseId is required' }, { status: 400 });
+    }
+
+    let isDemo = false;
+    try {
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('terry_session');
+      if (sessionCookie) {
+        const session = JSON.parse(sessionCookie.value);
+        isDemo = session.role === 'DEMO_VIEWER' || Boolean(session.isDemo);
+      }
+    } catch {}
+
+    if (isDemo) {
+      return NextResponse.json({
+        success: true,
+        isDemo: true,
+        result: {
+          success: true,
+          status: 'DEMO_SIMULATED',
+          messageId: 'wamid_demo_' + Date.now(),
+          isDemo: true,
+        },
+      });
     }
 
     const db = readDb();

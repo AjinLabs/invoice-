@@ -322,14 +322,14 @@ export default function SettingsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <p className="text-neutral-400">Default Password:</p>
-              <p className="text-sm font-mono font-bold text-white mt-0.5">
-                {activeBranch === 'pkdm' ? 'pkdm123' : 'vnb123'}
+              <p className="text-neutral-400">Store Access Security:</p>
+              <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
+                All passwords are encrypted with bcrypt. Set a new password below anytime to ensure only you have access.
               </p>
             </div>
             <div>
               <label className="block text-neutral-300 font-bold uppercase mb-1">
-                Change Branch Password (Optional):
+                Change Password (New):
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
@@ -339,7 +339,7 @@ export default function SettingsPage() {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new branch password"
+                  placeholder="Enter new password"
                   className="w-full pl-9 pr-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white font-mono text-xs focus:border-white outline-hidden"
                 />
               </div>

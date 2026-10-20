@@ -79,6 +79,13 @@ export async function GET(request: Request) {
       );
     }
 
+    if (sessionUser?.role === 'DEMO_VIEWER') {
+      purchases = purchases.map((p) => ({
+        ...p,
+        customer_phone: p.customer_phone ? `${p.customer_phone.slice(0, 5)}•••••` : '',
+      }));
+    }
+
     // Sort descending by date
     purchases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -147,6 +154,73 @@ export async function POST(request: Request) {
       ? body.manual_amount
       : body.manual_amount ? parseFloat(body.manual_amount) : undefined;
     const customRoundOff = typeof body.custom_round_off === 'number' ? body.custom_round_off : undefined;
+
+    // Safe simulation for Demo Mode
+    if (sessionUser?.role === 'DEMO_VIEWER') {
+      const db = readDb();
+      const branchInfo = getBranchInfo(db, branch);
+      const calc = calculateBilling({
+        weight,
+        unit,
+        ratePerKg: branchInfo.rate_per_kg || db.shop_settings.rate_per_kg,
+        customer: {
+          id: 'cust_demo',
+          phone,
+          name: customerName,
+          address: customerAddress,
+          branch,
+          total_purchases: 1,
+          total_weight_grams: 1000,
+          total_amount_spent: 899,
+          loyalty_count: 1,
+          loyalty_reward_unlocked: false,
+          last_purchase_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        shopSettings: db.shop_settings,
+        roundOffMode,
+        manualAmount,
+        customRoundOff,
+        customItems: customItemsInput,
+      });
+
+      const demoPurchase: Purchase = {
+        id: 'pur_demo_' + Date.now(),
+        invoice_number: `INV-${branchInfo.prefix}-${new Date().getFullYear()}-DEMO88`,
+        customer_id: 'cust_demo',
+        customer_name: customerName,
+        customer_phone: `${phone.slice(0, 5)}•••••`,
+        customer_address: customerAddress || 'Sample Address',
+        weight_grams: calc.weightGrams,
+        weight_kg: calc.weightKg,
+        rate_per_kg: calc.ratePerKg,
+        subtotal: calc.subtotal,
+        discount_amount: calc.discountAmount,
+        final_amount: calc.finalAmount,
+        payment_method: paymentMethod,
+        status: 'COMPLETED',
+        loyalty_applied: calc.isRewardUnlocked,
+        loyalty_progress_before: 0,
+        loyalty_progress_after: 1,
+        loyalty_message: calc.loyaltyMessage,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        items: [],
+        branch,
+      };
+
+      return NextResponse.json({
+        success: true,
+        purchase: demoPurchase,
+        isDemo: true,
+        whatsapp: {
+          success: true,
+          status: 'DEMO_SIMULATED',
+          message: 'Demo Preview: Transaction calculated in demo sandbox. Real WhatsApp API is locked for the store owner.',
+        },
+      });
+    }
 
     // Atomic transaction execution
     const { createdPurchase, updatedCustomer, branchInfoSnapshot } = await withTransaction(async (db) => {
