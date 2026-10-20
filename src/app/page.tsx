@@ -300,13 +300,25 @@ export default function BillingPage() {
       setCompletedPurchase(createdPurchase);
       setCustomer(data.customer);
 
-      // Direct success notification toast - NO popup modal or dialog asking to open WhatsApp
+      const isCloudApiSent = data.whatsapp?.status === 'SENT' && !data.whatsapp?.isDemo;
+
+      // If Meta Cloud API is not configured, open customer WhatsApp directly with pre-filled bill
+      if (!isCloudApiSent) {
+        const cleanCustomerPhone = (createdPurchase?.customer_phone || phone).replace(/\D/g, '');
+        const destinationPhone = cleanCustomerPhone.length === 10 ? `91${cleanCustomerPhone}` : cleanCustomerPhone;
+        const formattedText = data.whatsapp?.formattedText || '';
+        const encodedText = encodeURIComponent(formattedText);
+        const waUrl = `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encodedText}`;
+        window.open(waUrl, '_blank');
+      }
+
+      // Direct success notification toast - NO popup modal or dialog asking questions
       setSuccessToast({
         name: createdPurchase?.customer_name || name.trim() || 'Customer',
         phone: createdPurchase?.customer_phone || phone.trim(),
         invoiceNumber: createdPurchase?.invoice_number || nextInvoiceNumber,
         amount: createdPurchase?.final_amount || billingCalc.finalAmount,
-        whatsappStatus: data.whatsapp?.status || 'SENT',
+        whatsappStatus: isCloudApiSent ? 'SENT' : 'OPENED',
       });
 
       // Automatically reset form inputs so cashier can immediately bill next customer
@@ -821,7 +833,11 @@ export default function BillingPage() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                <span>Bill Sent to WhatsApp!</span>
+                <span>
+                  {successToast.whatsappStatus === 'SENT'
+                    ? 'Bill Sent to WhatsApp!'
+                    : 'WhatsApp Chat Opened!'}
+                </span>
               </h4>
               <button
                 type="button"
@@ -833,7 +849,10 @@ export default function BillingPage() {
               </button>
             </div>
             <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
-              Invoice <strong>#{successToast.invoiceNumber}</strong> (₹{successToast.amount.toFixed(2)}) has been delivered directly to <strong>{successToast.name}</strong> ({successToast.phone}) on WhatsApp.
+              Invoice <strong>#{successToast.invoiceNumber}</strong> (₹{successToast.amount.toFixed(2)}) for <strong>{successToast.name}</strong> ({successToast.phone}).
+              {successToast.whatsappStatus === 'SENT'
+                ? ' Delivered directly via Meta WhatsApp API.'
+                : ' Chat opened with pre-filled bill text; tap Send in WhatsApp.'}
             </p>
           </div>
         </div>
