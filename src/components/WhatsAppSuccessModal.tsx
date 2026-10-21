@@ -104,13 +104,31 @@ export default function WhatsAppSuccessModal({
   };
 
   // Open WhatsApp directly for the customer
-  const handleOpenWhatsAppChat = async () => {
+  const handleOpenWhatsAppChat = () => {
     if (!destinationPhone) return;
 
-    // 1. Ensure photo is freshly copied to clipboard so user can press Ctrl + V in WhatsApp
-    await copyPhoto();
+    // 1. Immediately copy photo to clipboard synchronously in user gesture
+    if (billImageDataUrl) {
+      try {
+        const blob = dataUrlToBlob(billImageDataUrl);
+        const win = window as unknown as { ClipboardItem?: new (items: Record<string, Blob>) => unknown };
+        if (navigator.clipboard && win.ClipboardItem) {
+          (navigator.clipboard as unknown as { write: (items: unknown[]) => Promise<void> })
+            .write([new win.ClipboardItem({ 'image/png': blob })])
+            .then(() => {
+              setCopiedPhoto(true);
+              setTimeout(() => setCopiedPhoto(false), 5000);
+            })
+            .catch((err) => {
+              console.warn('Clipboard write failed:', err);
+            });
+        }
+      } catch (err) {
+        console.warn('Clipboard write error:', err);
+      }
+    }
 
-    // 2. Open customer's WhatsApp chat with the cash memo message pre-filled
+    // 2. Open WhatsApp Web synchronously so popup blockers NEVER block it
     const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const waUrl = isMobile
       ? `https://wa.me/${destinationPhone}?text=${encodeURIComponent(messageText)}`
@@ -151,7 +169,7 @@ export default function WhatsAppSuccessModal({
     }
   };
 
-  // Auto-copy photo to clipboard when modal opens so it's instantly ready
+  // Try to copy photo to clipboard when modal opens
   useEffect(() => {
     if (isOpen && billImageDataUrl) {
       copyPhoto();
@@ -268,27 +286,77 @@ export default function WhatsAppSuccessModal({
               </span>
             </div>
 
-            {/* Step-by-step guidance banner */}
-            <div className="bg-white/95 p-3 rounded-xl border border-emerald-200 text-xs text-neutral-800 leading-relaxed space-y-1">
-              <p className="font-bold text-[#094327] flex items-center gap-1.5">
-                <span>📸 ബിൽ ഫോട്ടോ കോപ്പി ചെയ്തിട്ടുണ്ട്!</span>
-                <span className="text-emerald-600 font-normal">(Photo copied to clipboard)</span>
-              </p>
-              <p className="text-[11px] text-neutral-700">
-                താഴെയുള്ള ബട്ടൺ ക്ലിക്ക് ചെയ്യുമ്പോൾ കസ്റ്റമറുടെ WhatsApp ചാറ്റ് ഓപ്പൺ ആകും. അവിടെ ചെന്ന് <strong>Ctrl + V</strong> അടിച്ചാൽ ബിൽ ഫോട്ടോയും മെസ്സേജും ഒറ്റയടിക്ക് പേസ്റ്റ് ആകും!
-              </p>
-            </div>
+            {/* Cash memo bill photo preview thumbnail */}
+            {billImageDataUrl && (
+              <div className="bg-white rounded-2xl border border-emerald-200 p-2.5 flex items-center gap-3 shadow-xs">
+                <img
+                  src={billImageDataUrl}
+                  alt="Cash Memo Preview"
+                  className="w-14 h-16 object-cover object-top rounded-lg border border-neutral-300 shadow-xs shrink-0 cursor-grab hover:scale-105 transition-transform"
+                  title="Cash Memo Photo"
+                />
+                <div className="flex-1 min-w-0 text-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-[#094327]">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>ബിൽ ഫോട്ടോ തയ്യാറാണ് (Bill Photo Ready)</span>
+                  </div>
+                  <p className="text-[11px] text-neutral-600 mt-0.5 leading-snug">
+                    ലാപ്ടോപ്പിൽ ബട്ടൺ ക്ലിക്ക് ചെയ്യുമ്പോൾ ഫോട്ടോ കോപ്പി ആകും. വാട്സാപ്പിൽ ചെന്ന് <strong>Ctrl + V</strong> അടിച്ചാൽ മതി.
+                  </p>
+                </div>
+              </div>
+            )}
 
-            {/* Big Green Primary Button: Open Customer WhatsApp Chat */}
+            {/* Big Green Primary Button: Open Customer WhatsApp Chat & Copy Photo */}
             <button
               type="button"
               onClick={handleOpenWhatsAppChat}
               className="apple-pressable w-full py-4 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md cursor-pointer flex items-center justify-center gap-2.5 focus:ring-4 focus:ring-emerald-500/30 outline-hidden"
             >
               <MessageSquare className="w-5 h-5 text-emerald-300" />
-              <span>Open WhatsApp Chat ({formattedPhone})</span>
+              <span>Open WhatsApp &amp; Copy Photo ({formattedPhone})</span>
               <ExternalLink className="w-4 h-4 text-emerald-300" />
             </button>
+
+            {/* Step-by-step guidance banner */}
+            <div
+              className={`p-3.5 rounded-2xl border transition-all text-xs leading-relaxed ${
+                chatOpened
+                  ? 'bg-amber-50 border-amber-300 text-amber-950 shadow-xs'
+                  : 'bg-white/95 border-emerald-200 text-neutral-800'
+              }`}
+            >
+              <p className="font-bold flex items-center justify-between gap-1.5">
+                <span className="flex items-center gap-1.5 text-[#094327]">
+                  <span>{chatOpened ? '⌨️ WhatsApp തുറന്നു! അവസാന സ്റ്റെപ്പ്:' : '💡 ലാപ്ടോപ്പിൽ ഫോട്ടോ അയക്കാൻ:'}</span>
+                </span>
+                {copiedPhoto && (
+                  <span className="bg-emerald-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">
+                    Photo Copied!
+                  </span>
+                )}
+              </p>
+              <div className="mt-2 space-y-1.5 text-[11.5px] text-neutral-700">
+                <p className="flex items-start gap-1.5">
+                  <span className="font-bold text-emerald-800 shrink-0">1.</span>
+                  <span>
+                    മുകളിലെ <strong>'Open WhatsApp &amp; Copy Photo'</strong> അമർത്തുക.
+                  </span>
+                </p>
+                <p className="flex items-start gap-1.5 font-semibold text-neutral-900">
+                  <span className="font-bold text-emerald-800 shrink-0">2.</span>
+                  <span>
+                    തുറന്നുവരുന്ന WhatsApp ചാറ്റിൽ ചെന്ന് <strong>Ctrl + V (Paste)</strong> അടിക്കുക.
+                  </span>
+                </p>
+                <p className="flex items-start gap-1.5">
+                  <span className="font-bold text-emerald-800 shrink-0">3.</span>
+                  <span>
+                    ബിൽ ഫോട്ടോയും മെസ്സേജും വരും $\rightarrow$ <strong>Enter</strong> അമർത്തിയാൽ സെന്റാകും!
+                  </span>
+                </p>
+              </div>
+            </div>
 
             {/* Quick Actions Row: Copy Photo, Copy Caption, Save Photo */}
             <div className="grid grid-cols-3 gap-2 pt-1">
@@ -333,14 +401,19 @@ export default function WhatsAppSuccessModal({
 
             {/* Mobile Share Button if on mobile device */}
             {isMobile && (
-              <button
-                type="button"
-                onClick={handleShareMobile}
-                className="w-full flex items-center justify-center gap-2 py-3 px-3 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
-              >
-                <Share2 className="w-4 h-4 text-emerald-300" />
-                <span>Share Bill Photo directly to WhatsApp</span>
-              </button>
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleShareMobile}
+                  className="w-full flex items-center justify-center gap-2 py-3 px-3 bg-neutral-800 hover:bg-neutral-900 text-white rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                >
+                  <Share2 className="w-4 h-4 text-emerald-300" />
+                  <span>Share Photo via Mobile (Select Contact)</span>
+                </button>
+                <span className="text-[10px] text-neutral-500 block text-center mt-1">
+                  *Android opens contact list when sharing files
+                </span>
+              </div>
             )}
           </div>
 
