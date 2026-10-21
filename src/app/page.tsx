@@ -25,6 +25,7 @@ import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
+import { formatWhatsAppInvoiceText } from '@/lib/whatsapp';
 
 interface AuthMeResponse {
   authenticated: boolean;
@@ -464,6 +465,40 @@ export default function BillingPage() {
 
       // Open WhatsApp Success Confirmation Modal ("Bill Generated & Ready!")
       setShowSuccessModal(true);
+
+      // Auto-open customer WhatsApp chat if "Send Bill" was clicked
+      if (!shouldPrintDirectly && phoneValidation.waDestination) {
+        try {
+          const destPhone = phoneValidation.waDestination;
+          const msgText = formatWhatsAppInvoiceText(
+            createdPurchase,
+            shopSettings || {
+              id: 'sett_1',
+              shop_name: branchInfo?.name || 'TERRY7 WOMEN',
+              address: branchInfo?.address || '',
+              phone: branchInfo?.phone || '+91 8330889632',
+              whatsapp_number: '+91 8330889632',
+              gstin: '32AAAAA0000A1Z5',
+              rate_per_kg: 899,
+              loyalty_discount: 449.5,
+              min_weight_grams: 1000,
+              required_visits: 5,
+              round_off_mode: roundOffMode,
+              whatsapp_mode: 'DEMO',
+              whatsapp_api_version: 'v20.0',
+              whatsapp_verify_token: 'tok_1',
+              updated_at: new Date().toISOString(),
+            }
+          );
+          const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          const waUrl = isMobile
+            ? `https://wa.me/${destPhone}?text=${encodeURIComponent(msgText)}`
+            : `https://web.whatsapp.com/send?phone=${destPhone}&text=${encodeURIComponent(msgText)}`;
+          window.open(waUrl, '_blank');
+        } catch (openErr) {
+          console.warn('Could not auto-open WhatsApp tab:', openErr);
+        }
+      }
 
       if (shouldPrintDirectly) {
         setTimeout(() => {
