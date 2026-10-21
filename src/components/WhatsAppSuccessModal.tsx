@@ -46,11 +46,13 @@ export default function WhatsAppSuccessModal({
   const destinationPhone = phoneValidation.waDestination;
   const formattedPhone = phoneValidation.formattedDisplay || (purchase?.customer_phone ?? '');
 
-  // Format the cash memo message text
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://terry7women.vercel.app';
+
+  // Format the cash memo message text with direct invoice photo link
   const messageText = purchase && settings
-    ? formatWhatsAppInvoiceText(purchase, settings)
+    ? formatWhatsAppInvoiceText(purchase, settings, { includeInvoiceLink: true, baseUrl })
     : purchase
-    ? `Receipt: ${purchase.invoice_number} | Customer: ${purchase.customer_name} | Total: Rs ${purchase.final_amount.toFixed(2)}`
+    ? `Receipt: ${purchase.invoice_number} | Customer: ${purchase.customer_name} | Total: Rs ${purchase.final_amount.toFixed(2)}\n\n🧾 *Invoice Photo:*\n${baseUrl}/invoice/${purchase.id}`
     : '';
 
   // Open WhatsApp directly for the customer

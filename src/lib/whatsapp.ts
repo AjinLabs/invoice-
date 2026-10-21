@@ -95,7 +95,8 @@ export async function resolveInvoiceImageBuffer(
  */
 export function formatWhatsAppInvoiceText(
   purchase: Purchase,
-  settings: ShopSettings
+  settings: ShopSettings,
+  options?: { includeInvoiceLink?: boolean; baseUrl?: string }
 ): string {
   const dateObj = new Date(purchase.created_at);
   const dateFormatted = dateObj.toLocaleDateString('en-GB', {
@@ -168,8 +169,7 @@ export function formatWhatsAppInvoiceText(
   const loyaltyBlock = formatWhatsAppLoyaltySection(purchase, settings);
   const phone = settings.phone || settings.whatsapp_number || '+91 8330889632';
 
-  // Assembly strictly per Section 4 with ZERO URLs
-  return (
+  let text = (
     `👗 *${branchTitle}*\n` +
     `${separator}\n` +
     `🧾 *CASH MEMO*\n\n` +
@@ -193,6 +193,13 @@ export function formatWhatsAppInvoiceText(
     `📍 ${branchTown}\n` +
     `📞 ${phone}`
   );
+
+  if (options?.includeInvoiceLink) {
+    const baseUrl = options.baseUrl || 'https://terry7women.vercel.app';
+    text += `\n\n🧾 *Invoice Photo:*\n${baseUrl}/invoice/${purchase.id}`;
+  }
+
+  return text;
 }
 
 /**

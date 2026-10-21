@@ -48,8 +48,8 @@ export default function Navbar() {
     };
   }, [pathname]);
 
-  // Completely hide all navigation and bottom dock on the login page
-  if (pathname === '/login') {
+  // Completely hide all navigation and bottom dock on the login page and customer invoice page
+  if (pathname === '/login' || pathname.startsWith('/invoice/')) {
     return null;
   }
 
