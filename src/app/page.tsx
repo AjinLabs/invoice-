@@ -19,10 +19,12 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toPng, toBlob } from 'html-to-image';
+import { toPng } from 'html-to-image';
 import CashMemoPreview from '@/components/CashMemoPreview';
+import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
+import { normalizeWhatsAppPhone } from '@/lib/phone';
 
 interface AuthMeResponse {
   authenticated: boolean;
@@ -82,15 +84,16 @@ export default function BillingPage() {
   // Completed purchase state
   const [completedPurchase, setCompletedPurchase] = useState<Purchase | null>(null);
 
-  // Direct success notification toast (NO popups or dialogs)
-  interface SuccessToast {
-    name: string;
-    phone: string;
-    invoiceNumber: string;
-    amount: number;
-    whatsappStatus?: string;
-  }
-  const [successToast, setSuccessToast] = useState<SuccessToast | null>(null);
+  // WhatsApp Success Modal States
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [billImageDataUrl, setBillImageDataUrl] = useState<string | null>(null);
+  const [whatsappResult, setWhatsappResult] = useState<{
+    isDemo: boolean;
+    status: string;
+    formattedText: string;
+    errorMessage?: string;
+  } | null>(null);
+  const [isResending, setIsResending] = useState(false);
 
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState<string>('INV-VNB-2026-000101');
 
@@ -117,13 +120,49 @@ export default function BillingPage() {
     }
   }, [activeBranch]);
 
-  useEffect(() => {
-    if (!successToast) return;
-    const timer = setTimeout(() => {
-      setSuccessToast(null);
-    }, 6000);
-    return () => clearTimeout(timer);
-  }, [successToast]);
+  // Reset billing form cleanly for next customer (prevents data leaks)
+  const handleReset = useCallback(() => {
+    setName('');
+    setPhone('');
+    setAddress('');
+    setWeight('');
+    setCustomItems([]);
+    setManualAmount('');
+    setRoundOffMode('NONE');
+    setCustomer(null);
+    setCustomerSuggestions([]);
+    setShowSuggestions(false);
+    setCompletedPurchase(null);
+    setBillImageDataUrl(null);
+    setWhatsappResult(null);
+    setShowSuccessModal(false);
+    setErrorMessage('');
+    fetchSettings(activeBranch);
+    setTimeout(() => {
+      phoneInputRef.current?.focus();
+    }, 100);
+  }, [activeBranch, fetchSettings]);
+
+  // Resend WhatsApp message
+  const handleResendWhatsApp = async () => {
+    if (!completedPurchase) return;
+    setIsResending(true);
+    try {
+      const res = await fetch('/api/whatsapp/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ purchaseId: completedPurchase.id }),
+      });
+      const data = await res.json();
+      if (data.success && data.result) {
+        setWhatsappResult(data.result);
+      }
+    } catch (err) {
+      console.error('Error resending WhatsApp:', err);
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   // Auth & Settings Check on Mount
   useEffect(() => {
@@ -352,11 +391,12 @@ export default function BillingPage() {
     setCustomItems(customItems.filter((it) => it.id !== id));
   };
 
-  // Form Submission (Complete Purchase & Direct WhatsApp dispatch)
+  // Form Submission (Complete Purchase & Open WhatsApp Modal)
   const handleCompletePurchase = async (shouldPrintDirectly: boolean = false) => {
     setErrorMessage('');
-    if (!phone || phone.replace(/\D/g, '').length < 10) {
-      setErrorMessage('Please enter a valid 10-digit customer phone number.');
+    const phoneValidation = normalizeWhatsAppPhone(phone);
+    if (!phoneValidation.isValid) {
+      setErrorMessage(phoneValidation.error || 'Please enter a valid 10-digit customer phone number.');
       phoneInputRef.current?.focus();
       return;
     }
@@ -374,23 +414,21 @@ export default function BillingPage() {
 
     setIsSubmitting(true);
     try {
-      // 1. Render Cash Memo to high-res PNG image & blob
+      // 1. Render Cash Memo to high-res PNG image
       const memoNode = document.getElementById('cash-memo-preview-node');
       let base64Image = '';
-      let imageBlob: Blob | null = null;
       if (memoNode) {
         try {
           base64Image = await toPng(memoNode, { quality: 0.95, pixelRatio: 2, cacheBust: false });
-          imageBlob = await toBlob(memoNode, { quality: 0.95, pixelRatio: 2, cacheBust: false });
         } catch (imgErr) {
           console.warn('Could not render cash memo image:', imgErr);
         }
       }
 
       const payload = {
-        phone,
-        name,
-        address,
+        phone: phoneValidation.normalizedPhone,
+        name: name.trim(),
+        address: address.trim(),
         weight: numericWeight,
         unit,
         branch: activeBranch,
@@ -416,70 +454,11 @@ export default function BillingPage() {
       const createdPurchase = data.purchase;
       setCompletedPurchase(createdPurchase);
       setCustomer(data.customer);
+      setBillImageDataUrl(base64Image);
+      setWhatsappResult(data.whatsapp);
 
-      const cleanCustomerPhone = (createdPurchase?.customer_phone || phone).replace(/\D/g, '');
-      const destinationPhone = cleanCustomerPhone.length === 10 ? `91${cleanCustomerPhone}` : cleanCustomerPhone;
-      const formattedText = data.whatsapp?.formattedText || '';
-      const encodedText = encodeURIComponent(formattedText);
-      const waUrl = `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encodedText}`;
-
-      // Open WhatsApp for customer
-      if (!shouldPrintDirectly) {
-        let sharedViaNative = false;
-        // Mobile / Tablet: Share REAL PHOTO file directly into WhatsApp!
-        if (
-          imageBlob &&
-          typeof navigator !== 'undefined' &&
-          navigator.canShare &&
-          navigator.canShare({
-            files: [new File([imageBlob], `${createdPurchase.invoice_number}.png`, { type: 'image/png' })],
-          })
-        ) {
-          try {
-            const file = new File([imageBlob], `${createdPurchase.invoice_number}.png`, { type: 'image/png' });
-            await navigator.share({
-              title: `TERRY7 WOMEN - Bill ${createdPurchase.invoice_number}`,
-              text: formattedText,
-              files: [file],
-            });
-            sharedViaNative = true;
-          } catch (shareErr) {
-            console.warn('Native share dismissed or failed:', shareErr);
-          }
-        }
-
-        // Desktop / Laptop: Open WhatsApp chat directly (NO lingering about:blank tab)
-        if (!sharedViaNative) {
-          window.open(waUrl, '_blank');
-        }
-      }
-
-      // Direct success notification toast
-      setSuccessToast({
-        name: createdPurchase?.customer_name || name.trim() || 'Customer',
-        phone: createdPurchase?.customer_phone || phone.trim(),
-        invoiceNumber: createdPurchase?.invoice_number || nextInvoiceNumber,
-        amount: createdPurchase?.final_amount || billingCalc.finalAmount,
-        whatsappStatus: 'SENT',
-      });
-
-      // Automatically reset form inputs so cashier can immediately bill next customer
-      setName('');
-      setPhone('');
-      setAddress('');
-      setWeight('');
-      setCustomItems([]);
-      setManualAmount('');
-      setCustomerSuggestions([]);
-      setShowSuggestions(false);
-
-      // Refresh invoice sequence
-      fetchSettings(activeBranch);
-
-      // Auto-focus phone input for the next customer
-      setTimeout(() => {
-        phoneInputRef.current?.focus();
-      }, 100);
+      // Open WhatsApp Success Confirmation Modal ("Bill Generated & Ready!")
+      setShowSuccessModal(true);
 
       if (shouldPrintDirectly) {
         setTimeout(() => {
@@ -494,24 +473,7 @@ export default function BillingPage() {
     }
   };
 
-  // Reset form for next customer
-  const handleReset = () => {
-    setPhone('');
-    setName('');
-    setAddress('');
-    setWeight('');
-    setCustomItems([]);
-    setCustomer(null);
-    setPaymentMethod('CASH');
-    setErrorMessage('');
-    setManualAmount('');
-    setRoundOffMode('NONE');
-    setCompletedPurchase(null);
-    setCustomerSuggestions([]);
-    setShowSuggestions(false);
-    fetchSettings(activeBranch);
-    phoneInputRef.current?.focus();
-  };
+
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-neutral-100 p-3 sm:p-6 lg:p-8">
@@ -1047,39 +1009,17 @@ export default function BillingPage() {
         </div>
       </div>
 
-      {/* Direct WhatsApp Success Notification Toast - Floating at Top */}
-      {successToast && (
-        <div className="fixed top-20 inset-x-4 max-w-lg mx-auto z-50 bg-[#094327] text-white px-5 py-4 rounded-2xl shadow-2xl border border-emerald-500/30 flex items-start gap-3.5 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center shrink-0 mt-0.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
-                <span>
-                  {successToast.whatsappStatus === 'SENT'
-                    ? 'Bill Sent to WhatsApp (+91 8330889632)!'
-                    : 'Bill Completed & Saved!'}
-                </span>
-              </h4>
-              <button
-                type="button"
-                onClick={() => setSuccessToast(null)}
-                className="text-white/60 hover:text-white text-xs font-bold p-1 cursor-pointer"
-                title="Dismiss"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-xs text-emerald-100 mt-1 leading-relaxed">
-              Invoice <strong>#{successToast.invoiceNumber}</strong> (₹{successToast.amount.toFixed(2)}) for <strong>{successToast.name}</strong> ({successToast.phone}).
-              {successToast.whatsappStatus === 'SENT'
-                ? ' Delivered directly from +91 8330889632 via WhatsApp Cloud API.'
-                : ' Recorded in system. Ready for next customer.'}
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Success Modal with WhatsApp Delivery, Bill Photo, and PDF Export */}
+      <WhatsAppSuccessModal
+        isOpen={showSuccessModal}
+        onClose={handleReset}
+        purchase={completedPurchase}
+        settings={shopSettings || undefined}
+        billImageDataUrl={billImageDataUrl}
+        whatsappResult={whatsappResult}
+        onResend={handleResendWhatsApp}
+        isResending={isResending}
+      />
     </div>
   );
 }

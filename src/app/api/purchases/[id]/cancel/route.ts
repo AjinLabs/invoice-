@@ -35,22 +35,25 @@ export async function POST(
           Math.round((customer.total_amount_spent - purchase.final_amount) * 100) / 100
         );
 
-        const countBefore = customer.loyalty_count;
+        const countBefore = customer.loyalty_weight_grams ?? customer.loyalty_count ?? 0;
         let countAfter = countBefore;
 
         // 3. Reverse loyalty status
         if (purchase.loyalty_applied) {
-          // If customer used their reward on this purchase, restore the unlocked reward to them!
-          customer.loyalty_count = db.shop_settings.required_visits;
+          // If customer redeemed their reward on this purchase, restore the unlocked 5 KG milestone to them!
+          customer.loyalty_count = db.shop_settings.required_visits || 5;
           customer.loyalty_reward_unlocked = true;
-          countAfter = db.shop_settings.required_visits;
+          customer.loyalty_weight_grams = 5000;
+          countAfter = 5000;
         } else {
-          // If this purchase contributed to their progress, roll it back
-          customer.loyalty_count = Math.max(0, customer.loyalty_count - 1);
-          countAfter = customer.loyalty_count;
-          if (customer.loyalty_count < db.shop_settings.required_visits) {
+          // If this purchase contributed to their progress, roll back the weight
+          const prevGrams = customer.loyalty_weight_grams ?? 0;
+          customer.loyalty_weight_grams = Math.max(0, prevGrams - purchase.weight_grams);
+          countAfter = customer.loyalty_weight_grams;
+          if (customer.loyalty_weight_grams < 5000) {
             customer.loyalty_reward_unlocked = false;
           }
+          customer.loyalty_count = Math.max(0, (customer.loyalty_count || 1) - 1);
         }
         customer.updated_at = now;
 
@@ -62,7 +65,7 @@ export async function POST(
           type: 'REVERSED',
           count_before: countBefore,
           count_after: countAfter,
-          notes: `Purchase ${purchase.invoice_number} cancelled. Loyalty progress restored from ${countBefore} to ${countAfter}.`,
+          notes: `Purchase ${purchase.invoice_number} cancelled. Loyalty weight reversed from ${countBefore}g to ${countAfter}g.`,
           created_at: now,
         };
         db.loyalty_transactions.push(reversalTx);

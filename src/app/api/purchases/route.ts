@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
 import { readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR, getBranchInfo } from '@/lib/db';
+import { normalizeWhatsAppPhone } from '@/lib/phone';
 import { calculateBilling } from '@/lib/billing';
 import { sendWhatsAppInvoice } from '@/lib/whatsapp';
 import { Purchase, PurchaseItem, LoyaltyTransaction, WhatsAppMessage, PaymentMethod, RoundOffMode, BranchId } from '@/lib/types';
@@ -126,13 +127,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const phone = normalizePhone(rawPhone);
-    if (phone.length < 10) {
+    const phoneRes = normalizeWhatsAppPhone(rawPhone);
+    if (!phoneRes.isValid) {
       return NextResponse.json(
-        { success: false, error: 'Phone number must be at least 10 digits' },
+        { success: false, error: phoneRes.error || 'Please enter a valid mobile number' },
         { status: 400 }
       );
     }
+    const phone = phoneRes.normalizedPhone;
 
     // Must have either weight > 0 or at least one custom item
     if (weight <= 0 && customItemsInput.length === 0) {

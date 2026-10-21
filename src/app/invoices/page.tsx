@@ -15,6 +15,8 @@ import {
 import { Purchase, ShopSettings } from '@/lib/types';
 import { generateInvoicePdf } from '@/lib/pdf';
 import CashMemoPreview from '@/components/CashMemoPreview';
+import { normalizeWhatsAppPhone } from '@/lib/phone';
+import { formatWhatsAppInvoiceText, buildWhatsAppClickToChatUrl } from '@/lib/whatsapp';
 
 export default function InvoicesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -101,6 +103,18 @@ export default function InvoicesPage() {
     } finally {
       setResendingId(null);
     }
+  };
+
+  const handleOpenDirectChat = (purchase: Purchase) => {
+    if (!shopSettings) return;
+    const phoneRes = normalizeWhatsAppPhone(purchase.customer_phone);
+    if (!phoneRes.isValid) {
+      alert(`Cannot open WhatsApp: ${phoneRes.error || 'Invalid customer phone number'}`);
+      return;
+    }
+    const text = formatWhatsAppInvoiceText(purchase, shopSettings);
+    const url = buildWhatsAppClickToChatUrl(phoneRes.waDestination, text);
+    window.open(url, '_blank');
   };
 
   const handleConfirmCancel = async () => {
@@ -263,6 +277,13 @@ export default function InvoicesPage() {
                             className="p-1.5 text-neutral-600 hover:text-black hover:bg-neutral-100 rounded"
                           >
                             <Download className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenDirectChat(p)}
+                            title="Direct WhatsApp Chat"
+                            className="p-1.5 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 rounded"
+                          >
+                            <MessageSquare className="w-4 h-4" />
                           </button>
                           {!isCancelled && (
                             <>

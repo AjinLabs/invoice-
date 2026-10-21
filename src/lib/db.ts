@@ -123,17 +123,7 @@ export function generateId(prefix: string = 'id'): string {
   return `${prefix}_${timestamp}_${random}`;
 }
 
-// Normalize Indian phone numbers
-export function normalizePhone(raw: string): string {
-  const digits = raw.replace(/\D/g, '');
-  if (digits.length === 10) {
-    return digits;
-  }
-  if (digits.length > 10 && digits.startsWith('91')) {
-    return digits.substring(2);
-  }
-  return digits;
-}
+export { normalizePhone } from './phone';
 
 // Initial Seed Data as strictly mandated in prompt requirements 25 & 26
 function createInitialSeed(): DatabaseSchema {
