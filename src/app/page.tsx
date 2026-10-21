@@ -58,6 +58,7 @@ export default function BillingPage() {
   const sendBillBtnRef = useRef<HTMLButtonElement>(null);
   const customAmountInputRef = useRef<HTMLInputElement>(null);
   const suggestionsContainerRef = useRef<HTMLDivElement>(null);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Dress weight selection - default is empty so user enters custom weight directly
   const [weight, setWeight] = useState<number | string>('');
@@ -226,28 +227,62 @@ export default function BillingPage() {
 
   // Customer selection from autocomplete
   const selectCustomer = (cust: Customer) => {
-    setPhone(cust.phone);
+    setPhone(cust.phone.replace(/\D/g, ''));
     setName(cust.name);
     setAddress(cust.address || '');
     setCustomer(cust);
     setShowSuggestions(false);
     setCustomerSuggestions([]);
-    // Jump straight to clothing weight input as requested!
+    // Jump straight to clothing weight input
     setTimeout(() => {
       weightInputRef.current?.focus();
       weightInputRef.current?.select();
     }, 50);
   };
 
-  // Debounced customer lookup & autocomplete by phone number (shows after 6 digits)
+  // Debounced customer lookup & autocomplete by phone number (starts from 3 digits)
   const handlePhoneChange = (val: string) => {
     const digitsOnly = val.replace(/\D/g, '');
     setPhone(digitsOnly);
-    if (digitsOnly.length < 6) {
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    if (digitsOnly.length < 3) {
       setCustomerSuggestions([]);
       setShowSuggestions(false);
       if (customer) setCustomer(null);
+      return;
     }
+
+    setIsSearchingCustomer(true);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/customers?q=${encodeURIComponent(digitsOnly)}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.customers)) {
+          setCustomerSuggestions(data.customers);
+          setShowSuggestions(data.customers.length > 0);
+          setHighlightedSuggestion(0);
+
+          // If exact match by full phone number or 10-digit suffix, auto-populate name!
+          const exact = data.customers.find((c: Customer) => {
+            const cDigits = c.phone.replace(/\D/g, '');
+            return cDigits === digitsOnly || (digitsOnly.length >= 10 && cDigits.endsWith(digitsOnly));
+          });
+          if (exact) {
+            setName(exact.name);
+            setAddress(exact.address || '');
+            setCustomer(exact);
+          }
+        }
+      } catch (err) {
+        console.error('Customer lookup error:', err);
+      } finally {
+        setIsSearchingCustomer(false);
+      }
+    }, 200);
   };
 
   // Keyboard navigation for phone input
@@ -524,7 +559,7 @@ export default function BillingPage() {
                       onFocus={() => {
                         if (customerSuggestions.length > 0) setShowSuggestions(true);
                       }}
-                      placeholder="Enter mobile (type 3-6 digits to auto-suggest)"
+                      placeholder="Enter mobile number"
                       maxLength={15}
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-neutral-300 focus:border-black focus:ring-1 focus:ring-black text-base font-medium outline-hidden transition-all bg-neutral-50/50 focus:bg-white"
                     />
