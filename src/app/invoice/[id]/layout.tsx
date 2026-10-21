@@ -11,19 +11,19 @@ export async function generateMetadata({
   const invoicePageUrl = `${baseUrl}/invoice/${id}`;
 
   return {
-    title: `TERRY7 WOMEN - Cash Memo #${id}`,
-    description: `Official digital cash memo and purchase receipt from TERRY7 WOMEN.`,
+    title: 'Invoice',
+    description: 'TERRY WOMEN',
     openGraph: {
-      title: `👗 TERRY7 WOMEN — Official Cash Memo #${id}`,
-      description: `View digital bill, high-resolution photo, and loyalty reward summary.`,
+      title: 'Invoice',
+      description: 'TERRY WOMEN',
       url: invoicePageUrl,
-      siteName: 'TERRY7 WOMEN',
+      siteName: 'TERRY WOMEN',
       images: [
         {
           url: imageUrl,
           width: 800,
           height: 1200,
-          alt: `TERRY7 WOMEN Cash Memo ${id}`,
+          alt: 'Invoice',
           type: 'image/png',
         },
       ],
@@ -31,8 +31,8 @@ export async function generateMetadata({
     },
     twitter: {
       card: 'summary_large_image',
-      title: `👗 TERRY7 WOMEN — Cash Memo #${id}`,
-      description: `View digital bill, high-resolution photo, and loyalty reward summary.`,
+      title: 'Invoice',
+      description: 'TERRY WOMEN',
       images: [imageUrl],
     },
   };

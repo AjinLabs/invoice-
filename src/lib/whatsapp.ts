@@ -96,7 +96,7 @@ export async function resolveInvoiceImageBuffer(
 export function formatWhatsAppInvoiceText(
   purchase: Purchase,
   settings: ShopSettings,
-  options?: { includeInvoiceLink?: boolean; baseUrl?: string }
+  options?: { includeInvoiceLink?: boolean; baseUrl?: string; hideProgressBar?: boolean }
 ): string {
   const dateObj = new Date(purchase.created_at);
   const dateFormatted = dateObj.toLocaleDateString('en-GB', {
@@ -166,7 +166,9 @@ export function formatWhatsAppInvoiceText(
       : '';
 
   // Loyalty Rewards section (dynamic 10-segment Unicode bar)
-  const loyaltyBlock = formatWhatsAppLoyaltySection(purchase, settings);
+  const loyaltyBlock = options?.hideProgressBar
+    ? ''
+    : `${formatWhatsAppLoyaltySection(purchase, settings)}\n\n${separator}\n`;
   const phone = settings.phone || settings.whatsapp_number || '+91 8330889632';
 
   let text = (
@@ -187,8 +189,7 @@ export function formatWhatsAppInvoiceText(
     `*TOTAL PAID: ₹${finalFormatted}*\n` +
     `Payment: ${purchase.payment_method}\n\n` +
     `${separator}\n` +
-    `${loyaltyBlock}\n\n` +
-    `${separator}\n` +
+    loyaltyBlock +
     `❤️ Thank you for shopping with *TERRY WOMEN!*\n` +
     `📍 ${branchTown}\n` +
     `📞 ${phone}`
@@ -196,7 +197,7 @@ export function formatWhatsAppInvoiceText(
 
   if (options?.includeInvoiceLink) {
     const baseUrl = options.baseUrl || 'https://terry7women.vercel.app';
-    text += `\n\n🧾 *Invoice Photo:*\n${baseUrl}/invoice/${purchase.id}`;
+    text += `\n\nInvoice:\n${baseUrl}/invoice/${purchase.id}`;
   }
 
   return text;
