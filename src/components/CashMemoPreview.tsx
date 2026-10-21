@@ -47,6 +47,7 @@ export default function CashMemoPreview({
   roundOff = 0,
   finalAmount = 899,
   invoiceNumber = '12345',
+  paymentMethod,
   dateStr,
   items,
   purchase,
@@ -140,7 +141,7 @@ export default function CashMemoPreview({
             className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-full shadow-md hover:scale-102 transition-transform"
           />
           {/* Small INVOICE text below logo */}
-          <span className="text-[12px] font-bold tracking-[0.35em] text-[#094327] uppercase mt-2.5">
+          <span className="text-[12px] font-black tracking-[0.35em] text-black uppercase mt-2.5">
             INVOICE
           </span>
           {effectiveInvoiceNo && (
@@ -269,8 +270,31 @@ export default function CashMemoPreview({
                 ₹{effectiveFinalAmount.toFixed(0)}
               </span>
             </div>
+
+            {/* Payment Method */}
+            {(paymentMethod || purchase?.payment_method) && (
+              <div className="flex justify-between items-center text-neutral-600 text-xs pt-0.5">
+                <span>Payment Mode</span>
+                <span className="font-semibold uppercase font-mono">
+                  {purchase?.payment_method || paymentMethod}
+                </span>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Loyalty Progress / Reward Status if available */}
+        {(purchase?.loyalty_applied || (purchase?.loyalty_weight_after_grams !== undefined && purchase.loyalty_weight_after_grams > 0)) && (
+          <div className="mt-4 pt-3 border-t border-dashed border-neutral-300 text-center text-xs text-neutral-700">
+            {purchase.loyalty_applied ? (
+              <p className="font-bold text-neutral-900">🎁 500g FREE Loyalty Reward Redeemed!</p>
+            ) : (
+              <p>
+                Loyalty Progress: <strong>{((purchase.loyalty_weight_after_grams || 0) / 1000).toFixed(2)} KG / 5.00 KG</strong>
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ==============================================================
             6. "Thank you!" - SMALL & CENTERED

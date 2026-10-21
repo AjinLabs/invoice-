@@ -42,6 +42,12 @@ export default function SettingsPage() {
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [gstin, setGstin] = useState('');
 
+  // WhatsApp Cloud API Configuration (Administrator Only)
+  const [whatsappAccessToken, setWhatsappAccessToken] = useState('');
+  const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState('');
+  const [whatsappBusinessAccountId, setWhatsappBusinessAccountId] = useState('');
+  const [whatsappApiVersion, setWhatsappApiVersion] = useState('v20.0');
+
   // Pricing & Loyalty
   const [ratePerKg, setRatePerKg] = useState('899');
   const [loyaltyDiscount, setLoyaltyDiscount] = useState('449.50');
@@ -69,6 +75,11 @@ export default function SettingsPage() {
         setPhone(s.phone || '+91 8330889632');
         setWhatsappNumber(s.whatsapp_number || '+91 8330889632');
         setGstin(s.gstin || '32AAAAA0000A1Z5');
+
+        setWhatsappAccessToken(s.whatsapp_access_token || '');
+        setWhatsappPhoneNumberId(s.whatsapp_phone_number_id || '');
+        setWhatsappBusinessAccountId(s.whatsapp_business_account_id || '');
+        setWhatsappApiVersion(s.whatsapp_api_version || 'v20.0');
 
         setRatePerKg(s.rate_per_kg?.toString() || '899');
         setLoyaltyDiscount(s.loyalty_discount?.toString() || '449.50');
@@ -145,6 +156,10 @@ export default function SettingsPage() {
           min_weight_grams: parseInt(minWeightGrams, 10),
           required_visits: parseInt(requiredVisits, 10),
           round_off_mode: roundOffMode,
+          whatsapp_access_token: whatsappAccessToken.trim() || undefined,
+          whatsapp_phone_number_id: whatsappPhoneNumberId.trim() || undefined,
+          whatsapp_business_account_id: whatsappBusinessAccountId.trim() || undefined,
+          whatsapp_api_version: whatsappApiVersion.trim() || undefined,
           new_password: newPassword.trim() || undefined,
         }),
       });
@@ -491,6 +506,91 @@ export default function SettingsPage() {
               />
               <p className="text-[11px] text-neutral-500 mt-1">
                 5 purchases (reward applied on 6th purchase)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. WhatsApp Business Cloud API Configuration (Administrator Only) */}
+        <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b pb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-neutral-800" />
+              <div>
+                <h3 className="text-sm font-bold text-neutral-900">
+                  3. WhatsApp Business Platform Cloud API (Official Image Delivery)
+                </h3>
+                <p className="text-[11px] text-neutral-500">
+                  Sends the actual invoice image attachment from configured business sender +91 8330889632 to customers
+                </p>
+              </div>
+            </div>
+            <span
+              className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                whatsappAccessToken && whatsappPhoneNumberId
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : 'bg-amber-100 text-amber-900 border border-amber-300'
+              }`}
+            >
+              {whatsappAccessToken && whatsappPhoneNumberId ? 'API Configured' : 'Credentials Missing'}
+            </span>
+          </div>
+
+          <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 text-xs text-neutral-700 leading-relaxed space-y-2">
+            <p className="font-semibold text-neutral-900">
+              📌 Official WhatsApp Sender: <span className="font-mono text-emerald-800 font-bold">+91 8330889632</span>
+            </p>
+            <p className="text-[11px] text-neutral-600">
+              To send generated invoice images directly to customer WhatsApp chats as image attachments, provide your Meta WhatsApp Business Cloud API credentials below. These credentials remain securely stored on the server.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label className="block font-bold text-neutral-700 uppercase mb-1">
+                WhatsApp Phone Number ID
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 109283746501928"
+                value={whatsappPhoneNumberId}
+                onChange={(e) => setWhatsappPhoneNumberId(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
+              />
+              <p className="text-[11px] text-neutral-500 mt-1">
+                Meta Phone Number ID for +91 8330889632
+              </p>
+            </div>
+
+            <div>
+              <label className="block font-bold text-neutral-700 uppercase mb-1">
+                WhatsApp Business Account ID
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 192837465019283"
+                value={whatsappBusinessAccountId}
+                onChange={(e) => setWhatsappBusinessAccountId(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
+              />
+              <p className="text-[11px] text-neutral-500 mt-1">
+                Found in Meta Business Manager WhatsApp Accounts
+              </p>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block font-bold text-neutral-700 uppercase mb-1">
+                WhatsApp Permanent System User Access Token
+              </label>
+              <input
+                type="password"
+                placeholder="EAAG... (Permanent Meta System User Token)"
+                value={whatsappAccessToken}
+                onChange={(e) => setWhatsappAccessToken(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
+              />
+              <p className="text-[11px] text-neutral-500 mt-1">
+                Must have <code>whatsapp_business_messaging</code> and <code>whatsapp_business_management</code> permissions.
               </p>
             </div>
           </div>

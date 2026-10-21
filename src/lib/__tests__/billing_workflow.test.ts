@@ -182,3 +182,210 @@ describe('Billing Workflow, Customer Association & Isolation', () => {
     assert.equal(normalizeWhatsAppPhone('abcdefghij').isValid, false);
   });
 });
+
+describe('Priority 3 — Amount Section with Three Modes & Boundary Tests', () => {
+  // A. Exact Amount (DEFAULT)
+  test('Exact Amount is the default selection and preserves exact calculated amount (e.g. ₹899 -> ₹899)', () => {
+    // 1000g at ₹899/KG = ₹899
+    const calcDefault = calculateBilling({
+      weight: 1000,
+      unit: 'g',
+      ratePerKg: 899,
+      shopSettings: mockShopSettings,
+      // no roundOffMode provided -> must default to 'NONE'
+    });
+
+    assert.equal(calcDefault.roundOffMode, 'NONE');
+    assert.equal(calcDefault.subtotal, 899);
+    assert.equal(calcDefault.finalAmount, 899);
+    assert.equal(calcDefault.roundOffAmount, 0);
+
+    // Explicit mode 'NONE'
+    const calcExplicit = calculateBilling({
+      weight: 1000,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'NONE',
+    });
+    assert.equal(calcExplicit.finalAmount, 899);
+    assert.equal(calcExplicit.roundOffAmount, 0);
+  });
+
+  // B. Round Down to ₹10: Examples from prompt
+  test('Round Down to ₹10 satisfies all user prompt examples (₹899->₹890, ₹896->₹890, ₹891->₹890, ₹890->₹890, ₹904->₹900)', () => {
+    // Formula: floor(calculatedAmount / 10) * 10
+    const cases = [
+      { calculated: 899, expected: 890, expectedRoundOff: -9 },
+      { calculated: 896, expected: 890, expectedRoundOff: -6 },
+      { calculated: 891, expected: 890, expectedRoundOff: -1 },
+      { calculated: 890, expected: 890, expectedRoundOff: 0 },
+      { calculated: 904, expected: 900, expectedRoundOff: -4 },
+    ];
+
+    for (const c of cases) {
+      // Create weight that produces exact calculated amount at rate = 1000
+      const calc = calculateBilling({
+        weight: c.calculated,
+        unit: 'g',
+        ratePerKg: 1000, // 1g = ₹1, so weight = amount
+        roundOffMode: 'FLOOR_10',
+      });
+
+      assert.equal(
+        calc.finalAmount,
+        c.expected,
+        `Amount ₹${c.calculated} in FLOOR_10 mode must equal ₹${c.expected}`
+      );
+      assert.equal(
+        calc.roundOffAmount,
+        c.expectedRoundOff,
+        `Amount ₹${c.calculated} roundOffAmount must be ₹${c.expectedRoundOff}`
+      );
+      // Verify finalAmount = baseAmount + roundOffAmount
+      assert.equal(Math.round((calc.baseAmount + calc.roundOffAmount) * 100) / 100, calc.finalAmount);
+    }
+  });
+
+  // Boundary Values for Round Down to ₹10
+  test('Round Down to ₹10 handles boundary values correctly', () => {
+    const boundaryCases = [
+      { amount: 0, expected: 0 },
+      { amount: 0.5, expected: 0 },
+      { amount: 9, expected: 0 },
+      { amount: 9.99, expected: 0 },
+      { amount: 10, expected: 10 },
+      { amount: 10.01, expected: 10 },
+      { amount: 19.99, expected: 10 },
+      { amount: 20, expected: 20 },
+      { amount: 999.99, expected: 990 },
+      { amount: 1000, expected: 1000 },
+      { amount: 1009.95, expected: 1000 },
+    ];
+
+    for (const b of boundaryCases) {
+      const calc = calculateBilling({
+        weight: 0,
+        unit: 'g',
+        customItems: [{ name: 'Test', quantity: 1, unitPrice: b.amount }],
+        roundOffMode: 'FLOOR_10',
+      });
+      assert.equal(
+        calc.finalAmount,
+        b.expected,
+        `Boundary ₹${b.amount} in FLOOR_10 must be ₹${b.expected}`
+      );
+    }
+  });
+
+  // C. Custom Amount
+  test('Custom Amount allows manual entry and saves exact amount (e.g. ₹899 -> ₹850)', () => {
+    const calc = calculateBilling({
+      weight: 1000,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'MANUAL',
+      manualAmount: 850,
+    });
+
+    assert.equal(calc.subtotal, 899);
+    assert.equal(calc.baseAmount, 899);
+    assert.equal(calc.finalAmount, 850);
+    assert.equal(calc.roundOffAmount, -49);
+    assert.equal(calc.manualAmount, 850);
+  });
+
+  test('Custom Amount gracefully handles non-negative monetary values and invalid inputs', () => {
+    // String numeric input
+    const calcString = calculateBilling({
+      weight: 1000,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'MANUAL',
+      manualAmount: '750.50',
+    });
+    assert.equal(calcString.finalAmount, 750.5);
+
+    // Empty or undefined manual input falls back safely to base amount
+    const calcEmpty = calculateBilling({
+      weight: 1000,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'MANUAL',
+      manualAmount: '',
+    });
+    assert.equal(calcEmpty.finalAmount, 899);
+  });
+
+  // Consistency across Purchase, Invoice & WhatsApp text
+  test('Final amount is used consistently in invoice data and WhatsApp caption', () => {
+    const calc = calculateBilling({
+      weight: 1000,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'FLOOR_10', // 899 -> 890
+    });
+
+    const purchase: Purchase = {
+      id: 'pur_consist',
+      invoice_number: 'INV-VNB-2026-000105',
+      branch: 'vnb',
+      customer_id: 'cust_c',
+      customer_name: 'Zainab',
+      customer_phone: '9847123456',
+      customer_address: 'Vaniyambalam',
+      weight_grams: calc.weightGrams,
+      weight_kg: calc.weightKg,
+      rate_per_kg: calc.ratePerKg,
+      subtotal: calc.subtotal,
+      discount_amount: calc.discountAmount,
+      round_off: calc.roundOffAmount,
+      final_amount: calc.finalAmount,
+      payment_method: 'CASH',
+      status: 'COMPLETED',
+      loyalty_applied: false,
+      loyalty_progress_before: 0,
+      loyalty_progress_after: 1000,
+      loyalty_weight_after_grams: 1000,
+      loyalty_reward_unlocked_after: false,
+      loyalty_message: '',
+      created_at: '2026-10-21T10:00:00.000Z',
+      updated_at: '2026-10-21T10:00:00.000Z',
+      items: [],
+    };
+
+    assert.equal(purchase.final_amount, 890);
+    assert.equal(purchase.round_off, -9);
+
+    const waText = formatWhatsAppInvoiceText(purchase, mockShopSettings);
+    assert.ok(waText.includes('*TOTAL PAID: ₹890.00*'));
+    assert.ok(waText.includes('Round Off: -₹9.00'));
+    assert.ok(!waText.includes('http'), 'Caption must contain zero URLs');
+  });
+
+  test('Switching amount mode does not alter entered dress weight', () => {
+    const initialWeight = 1450;
+    const calcExact = calculateBilling({
+      weight: initialWeight,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'NONE',
+    });
+    const calcFloor = calculateBilling({
+      weight: initialWeight,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'FLOOR_10',
+    });
+    const calcManual = calculateBilling({
+      weight: initialWeight,
+      unit: 'g',
+      ratePerKg: 899,
+      roundOffMode: 'MANUAL',
+      manualAmount: 1200,
+    });
+
+    assert.equal(calcExact.weightGrams, initialWeight);
+    assert.equal(calcFloor.weightGrams, initialWeight);
+    assert.equal(calcManual.weightGrams, initialWeight);
+  });
+});

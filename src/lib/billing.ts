@@ -115,7 +115,7 @@ export function calculateBilling(input: BillingCalculationInput): BillingCalcula
   const baseAmount = Math.max(0, Math.round((subtotal - discountAmount) * 100) / 100);
 
   const roundOffMode: RoundOffMode =
-    input.roundOffMode ?? input.shopSettings?.round_off_mode ?? 'FLOOR_10';
+    input.roundOffMode ?? input.shopSettings?.round_off_mode ?? 'NONE';
 
   let roundOffAmount = 0;
   let finalAmount = baseAmount;
@@ -134,12 +134,12 @@ export function calculateBilling(input: BillingCalculationInput): BillingCalcula
       roundOffAmount = 0;
     }
   } else if (roundOffMode === 'FLOOR_10') {
-    // Round down to tens (Discount): E.g. 779 -> 770 (-9.00), 899 -> 890 (-9.00)
-    const rounded = Math.floor(baseAmount / 10) * 10;
+    // Round down to previous multiple of 10: E.g. 899 -> 890, 896 -> 890, 891 -> 890, 890 -> 890, 904 -> 900
+    const rounded = Math.floor((Math.round(baseAmount * 100) / 100 + 0.00001) / 10) * 10;
     roundOffAmount = Math.round((rounded - baseAmount) * 100) / 100;
-    finalAmount = Math.max(0, Math.round((baseAmount + roundOffAmount) * 100) / 100);
+    finalAmount = Math.max(0, rounded);
   } else if (roundOffMode === 'NONE') {
-    // Exact: no rounding
+    // Exact Amount (DEFAULT): no rounding
     roundOffAmount = 0;
     finalAmount = baseAmount;
   } else if (roundOffMode === 'NEAREST_10') {

@@ -55,6 +55,7 @@ export default function BillingPage() {
   const nameInputRef = useRef<HTMLInputElement>(null);
   const weightInputRef = useRef<HTMLInputElement>(null);
   const sendBillBtnRef = useRef<HTMLButtonElement>(null);
+  const customAmountInputRef = useRef<HTMLInputElement>(null);
   const suggestionsContainerRef = useRef<HTMLDivElement>(null);
 
   // Dress weight selection - default is empty so user enters custom weight directly
@@ -237,11 +238,11 @@ export default function BillingPage() {
     }, 50);
   };
 
-  // Debounced customer lookup & autocomplete by phone number
+  // Debounced customer lookup & autocomplete by phone number (shows after 6 digits)
   const handlePhoneChange = (val: string) => {
     const digitsOnly = val.replace(/\D/g, '');
     setPhone(digitsOnly);
-    if (digitsOnly.length < 3) {
+    if (digitsOnly.length < 6) {
       setCustomerSuggestions([]);
       setShowSuggestions(false);
       if (customer) setCustomer(null);
@@ -285,19 +286,23 @@ export default function BillingPage() {
     }
   };
 
-  // Keyboard navigation for clothing weight input
+  // Keyboard navigation for clothing weight input: Enter moves to Amount Section
   const handleWeightKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      // Jump straight to the "Send Bill (WhatsApp)" payment button!
-      sendBillBtnRef.current?.focus();
+      if (roundOffMode === 'MANUAL') {
+        customAmountInputRef.current?.focus();
+        customAmountInputRef.current?.select();
+      } else {
+        sendBillBtnRef.current?.focus();
+      }
     }
   };
 
-  // Live autocomplete search effect
+  // Live autocomplete search effect: triggers suggestions after first 6 digits
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length < 3) {
+    if (cleanPhone.length < 6) {
       return;
     }
 
@@ -825,9 +830,143 @@ export default function BillingPage() {
               )}
             </div>
 
-            {/* 4. Payment & Complete Card */}
+            {/* 4. Amount Calculation & Payment Section */}
             <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6 space-y-5">
-              {/* Grand Total Display */}
+              
+              {/* Amount Mode Selector Header */}
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Banknote className="w-5 h-5 text-neutral-800" />
+                  <div>
+                    <h2 className="text-base font-bold text-neutral-900 tracking-tight">Billing Amount</h2>
+                    <p className="text-[11px] text-neutral-500">Select amount calculation mode</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider block">Calculated Amount</span>
+                  <span className="text-sm font-black text-neutral-900 font-mono">
+                    ₹{billingCalc.baseAmount.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Three Amount Modes: 1. Exact Amount (DEFAULT), 2. Round Down to ₹10, 3. Custom Amount */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
+                  Amount Mode <span className="text-neutral-400 font-normal">(Default: Exact Amount)</span>
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* Mode 1: Exact Amount (DEFAULT) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoundOffMode('NONE');
+                      setManualAmount('');
+                    }}
+                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      roundOffMode === 'NONE'
+                        ? 'bg-[#094327] text-white border-[#094327] shadow-sm ring-2 ring-emerald-600/30'
+                        : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold">1. Exact Amount</span>
+                      {roundOffMode === 'NONE' && (
+                        <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <span className={`text-base font-black font-mono block mt-1.5 ${roundOffMode === 'NONE' ? 'text-white' : 'text-neutral-950'}`}>
+                      ₹{billingCalc.baseAmount.toFixed(2)}
+                    </span>
+                    <span className={`text-[10px] block mt-0.5 ${roundOffMode === 'NONE' ? 'text-emerald-100' : 'text-neutral-500'}`}>
+                      Exact calculated sum
+                    </span>
+                  </button>
+
+                  {/* Mode 2: Round Down to ₹10 */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoundOffMode('FLOOR_10');
+                      setManualAmount('');
+                    }}
+                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      roundOffMode === 'FLOOR_10'
+                        ? 'bg-[#094327] text-white border-[#094327] shadow-sm ring-2 ring-emerald-600/30'
+                        : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-200'
+                    }`}
+                  >
+                    <span className="text-xs font-bold block">2. Round Down to ₹10</span>
+                    <span className={`text-base font-black font-mono block mt-1.5 ${roundOffMode === 'FLOOR_10' ? 'text-white' : 'text-neutral-950'}`}>
+                      ₹{(Math.floor((Math.round(billingCalc.baseAmount * 100) / 100 + 0.00001) / 10) * 10).toFixed(2)}
+                    </span>
+                    <span className={`text-[10px] block mt-0.5 ${roundOffMode === 'FLOOR_10' ? 'text-emerald-100' : 'text-neutral-500'}`}>
+                      Floor to 10s (₹899 → ₹890)
+                    </span>
+                  </button>
+
+                  {/* Mode 3: Custom Amount */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoundOffMode('MANUAL');
+                      setTimeout(() => {
+                        customAmountInputRef.current?.focus();
+                        customAmountInputRef.current?.select();
+                      }, 50);
+                    }}
+                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                      roundOffMode === 'MANUAL'
+                        ? 'bg-[#094327] text-white border-[#094327] shadow-sm ring-2 ring-emerald-600/30'
+                        : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-200'
+                    }`}
+                  >
+                    <span className="text-xs font-bold block">3. Custom Amount</span>
+                    <span className={`text-base font-black font-mono block mt-1.5 ${roundOffMode === 'MANUAL' ? 'text-white' : 'text-neutral-950'}`}>
+                      {manualAmount ? `₹${parseFloat(manualAmount || '0').toFixed(2)}` : 'Enter amount'}
+                    </span>
+                    <span className={`text-[10px] block mt-0.5 ${roundOffMode === 'MANUAL' ? 'text-emerald-100' : 'text-neutral-500'}`}>
+                      Manual cashier entry
+                    </span>
+                  </button>
+                </div>
+
+                {/* Custom Amount input field when Mode 3 is active */}
+                {roundOffMode === 'MANUAL' && (
+                  <div className="p-3 bg-neutral-50 border border-neutral-200 rounded-2xl space-y-1.5 animate-in fade-in duration-150">
+                    <label className="block text-xs font-bold text-neutral-800 uppercase tracking-wider">
+                      Enter Custom Final Amount (₹)
+                    </label>
+                    <div className="relative">
+                      <input
+                        ref={customAmountInputRef}
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={manualAmount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '' || (!isNaN(Number(val)) && Number(val) >= 0)) {
+                            setManualAmount(val);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            sendBillBtnRef.current?.focus();
+                          }
+                        }}
+                        placeholder={`Calculated amount: ₹${billingCalc.baseAmount.toFixed(2)}`}
+                        className="w-full px-3.5 py-2.5 rounded-xl border-2 border-neutral-900 focus:ring-2 focus:ring-neutral-950/20 text-base font-black font-mono outline-hidden bg-white"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Grand Total & Net Payable Display */}
               <div className="p-6 rounded-2xl bg-neutral-950 text-white shadow-xs space-y-3">
                 <div className="flex justify-between text-xs text-neutral-400">
                   <span>
@@ -850,10 +989,21 @@ export default function BillingPage() {
                   </div>
                 )}
 
+                <div className="flex justify-between text-xs text-neutral-300 border-b border-white/10 pb-2">
+                  <span>Amount Calculation Mode:</span>
+                  <span className="font-semibold text-emerald-300">
+                    {roundOffMode === 'NONE'
+                      ? 'Exact Amount (Default)'
+                      : roundOffMode === 'FLOOR_10'
+                      ? 'Round Down to ₹10'
+                      : 'Custom Amount'}
+                  </span>
+                </div>
+
                 {billingCalc.roundOffAmount !== 0 && (
                   <div className="flex justify-between text-sm text-neutral-300 border-b border-white/10 pb-2">
                     <span>
-                      {roundOffMode === 'MANUAL' ? 'Price Adjustment:' : 'Round Off:'}
+                      {roundOffMode === 'MANUAL' ? 'Manual Price Adjustment:' : 'Round Down Adjustment:'}
                     </span>
                     <span className={`font-mono font-bold ${billingCalc.roundOffAmount < 0 ? 'text-amber-300' : 'text-neutral-200'}`}>
                       {billingCalc.roundOffAmount > 0
@@ -866,7 +1016,7 @@ export default function BillingPage() {
                 <div className="flex justify-between items-baseline pt-1">
                   <div>
                     <span className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-neutral-300 block">
-                      Net Amount Payable:
+                      Final Payable Amount:
                     </span>
                     {billingCalc.subtotal - billingCalc.finalAmount > 0 && (
                       <span className="text-[11px] text-amber-300 font-semibold tracking-tight">
@@ -919,39 +1069,40 @@ export default function BillingPage() {
                 </div>
               )}
 
-              {/* Main Submit Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => handleCompletePurchase(true)}
-                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-neutral-950 hover:bg-neutral-800 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer"
-                >
-                  <Printer className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Processing...' : 'Complete & Print Bill'}</span>
-                </button>
-
+              {/* PRIMARY ACTION: SEND BILL */}
+              <div className="space-y-2.5 pt-1">
                 <button
                   ref={sendBillBtnRef}
                   type="button"
                   disabled={isSubmitting}
                   onClick={() => handleCompletePurchase(false)}
-                  className="apple-pressable w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50 shadow-xs cursor-pointer focus:ring-4 focus:ring-emerald-500/30 outline-hidden"
+                  className="apple-pressable w-full flex items-center justify-center gap-2.5 py-4 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer focus:ring-4 focus:ring-emerald-500/30 outline-hidden"
                 >
-                  <Send className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Processing...' : 'Send Bill (WhatsApp)'}</span>
+                  <Send className="w-5 h-5 text-emerald-300" />
+                  <span>{isSubmitting ? 'Sending Bill to WhatsApp...' : 'Send Bill'}</span>
                 </button>
-              </div>
 
-              <div className="text-center pt-1">
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="apple-pressable inline-flex items-center gap-1.5 text-xs text-neutral-500 hover:text-black font-semibold py-1 px-3 rounded-full hover:bg-neutral-100 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset Form</span>
-                </button>
+                {/* Secondary Actions: Print Bill & Reset Form */}
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleCompletePurchase(true)}
+                    className="apple-pressable inline-flex items-center gap-1.5 py-2 px-3 text-xs text-neutral-600 hover:text-black font-bold rounded-xl hover:bg-neutral-100 transition-colors cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print Bill Receipt</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="apple-pressable inline-flex items-center gap-1.5 py-2 px-3 text-xs text-neutral-500 hover:text-rose-600 font-semibold rounded-xl hover:bg-neutral-100 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset Form</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
