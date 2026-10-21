@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Purchase not found' }, { status: 404 });
     }
 
-    const waResult = await sendWhatsAppInvoice(purchase, db.shop_settings);
+    const waResult = await sendWhatsAppInvoice(purchase, db.shop_settings, { forceResend: true });
 
     await withTransaction((database) => {
       const existingMsg = database.whatsapp_messages.find((m) => m.purchase_id === purchaseId);
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         existingMsg.content = waResult.formattedText;
         existingMsg.message_id = waResult.messageId;
         existingMsg.error_message = waResult.errorMessage;
-        existingMsg.is_demo = waResult.isDemo;
+        existingMsg.is_demo = false;
         existingMsg.updated_at = now;
       } else {
         const newMsg: WhatsAppMessage = {
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
           status: waResult.status,
           message_id: waResult.messageId,
           error_message: waResult.errorMessage,
-          is_demo: waResult.isDemo,
+          is_demo: false,
           created_at: now,
           updated_at: now,
         };

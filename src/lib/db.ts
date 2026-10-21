@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import {
+import type {
   User,
   Customer,
   Purchase,
@@ -11,7 +11,7 @@ import {
   ShopSettings,
   BranchId,
   BranchInfo,
-} from './types';
+} from './types.ts';
 
 declare global {
   var __TERRY_DB_CACHE__: DatabaseSchema | undefined;
@@ -123,7 +123,7 @@ export function generateId(prefix: string = 'id'): string {
   return `${prefix}_${timestamp}_${random}`;
 }
 
-export { normalizePhone } from './phone';
+export { normalizePhone } from './phone.ts';
 
 // Initial Seed Data as strictly mandated in prompt requirements 25 & 26
 function createInitialSeed(): DatabaseSchema {

@@ -7,14 +7,11 @@ import {
   Printer,
   Download,
   X,
-  Share2,
   Copy,
-  ExternalLink,
   Image as ImageIcon,
   Check,
   RotateCw,
   AlertTriangle,
-  Smartphone,
   Laptop,
 } from 'lucide-react';
 import { Purchase, ShopSettings } from '@/lib/types';
@@ -33,10 +30,13 @@ interface WhatsAppSuccessModalProps {
   settings?: ShopSettings;
   billImageDataUrl?: string | null;
   whatsappResult?: {
-    isDemo: boolean;
+    isDemo?: boolean;
     status: string;
     formattedText: string;
+    messageId?: string;
+    mediaId?: string;
     errorMessage?: string;
+    errorCode?: string;
   } | null;
   onResend?: () => void;
   isResending?: boolean;
@@ -127,21 +127,21 @@ export default function WhatsAppSuccessModal({
     try {
       await navigator.clipboard.writeText(messageText);
       setCopiedText(true);
-      showNotice('Bill message text copied to clipboard!');
+      showNotice('Cash memo caption copied to clipboard!');
       setTimeout(() => setCopiedText(false), 3000);
     } catch (err) {
       console.warn('Copy text error:', err);
     }
   };
 
-  // 1. Direct WhatsApp Chat: Opens exact customer's WhatsApp conversation
+  // 1. Direct WhatsApp Chat: Opens exact customer's WhatsApp conversation with the clean caption (NO URLs)
   const handleDirectWhatsAppChat = () => {
     if (!phoneValidation.isValid) {
       showNotice(`Cannot open chat: ${phoneValidation.error || 'Invalid customer phone number'}`);
       return;
     }
 
-    // Try pre-copying photo to clipboard so user can paste it in chat if desired
+    // Pre-copy image to clipboard so user can immediately paste the invoice image in WhatsApp
     copyPhotoToClipboard().catch(() => {});
 
     const waUrl = buildWhatsAppClickToChatUrl(destinationPhone, messageText);
@@ -155,32 +155,7 @@ export default function WhatsAppSuccessModal({
     }
   };
 
-  // 2. Send Bill Photo + Message to WhatsApp
-  // Solves the Android bug: Opens customer chat directly with bill preview card + copied photo,
-  // preventing Android from dumping the user into the generic contact picker.
-  const handleSendBillPhotoAndMessage = async () => {
-    if (!phoneValidation.isValid) {
-      showNotice(`Cannot send bill: ${phoneValidation.error || 'Invalid customer phone number'}`);
-      return;
-    }
-
-    const copied = await copyPhotoToClipboard();
-    const waUrl = buildWhatsAppClickToChatUrl(destinationPhone, messageText);
-
-    if (copied) {
-      showNotice('Bill photo copied! Opening customer chat — press Paste in WhatsApp.');
-    } else {
-      showNotice('Opening customer chat with bill message & receipt link...');
-    }
-
-    if (isMobileOrTablet) {
-      window.location.href = waUrl;
-    } else {
-      window.open(waUrl, '_blank');
-    }
-  };
-
-  // 3. Open WhatsApp Web (PC)
+  // 2. Open WhatsApp Web (PC)
   const handleOpenWhatsAppWeb = async () => {
     if (!phoneValidation.isValid) {
       showNotice(`Cannot open WhatsApp Web: ${phoneValidation.error || 'Invalid phone number'}`);
@@ -189,38 +164,8 @@ export default function WhatsAppSuccessModal({
 
     await copyPhotoToClipboard();
     const waWebUrl = buildWhatsAppWebUrl(destinationPhone, messageText);
-    showNotice('Invoice photo copied! Opening WhatsApp Web — press Ctrl + V to attach photo.');
+    showNotice('Invoice photo copied! Opening WhatsApp Web — press Ctrl + V to paste photo.');
     window.open(waWebUrl, '_blank');
-  };
-
-  // 4. Native OS Share Sheet (For users who explicitly want to share the raw file)
-  const handleNativeShareSheet = async () => {
-    if (!billImageDataUrl) {
-      handleDirectWhatsAppChat();
-      return;
-    }
-    try {
-      const blob = dataUrlToBlob(billImageDataUrl);
-      const file = new File([blob], `${purchase.invoice_number}.png`, { type: 'image/png' });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `TERRY7 WOMEN - ${purchase.invoice_number}`,
-          text: messageText,
-        });
-        return;
-      }
-    } catch (err: unknown) {
-      const shareError = err as { name?: string };
-      if (shareError?.name === 'AbortError') {
-        // User dismissed share sheet
-        return;
-      }
-      console.warn('Native share error:', err);
-    }
-    // Fallback if share unsupported
-    handleDirectWhatsAppChat();
   };
 
   // Download Bill Photo
@@ -306,7 +251,7 @@ export default function WhatsAppSuccessModal({
             <div>
               <span className="text-[10px] font-semibold text-neutral-500 uppercase block">Loyalty</span>
               <span className={`text-[11px] font-bold ${purchase.loyalty_applied ? 'text-emerald-700' : 'text-neutral-700'}`}>
-                {purchase.loyalty_applied ? '50% OFF (1KG)' : `${purchase.loyalty_progress_after}/5 Visits`}
+                {purchase.loyalty_applied ? '500g FREE Redeemed' : `${(purchase.loyalty_weight_after_grams || 0) / 1000} KG / 5 KG`}
               </span>
             </div>
           </div>
@@ -324,77 +269,72 @@ export default function WhatsAppSuccessModal({
             </div>
           )}
 
-          {/* STATUS / INSTRUCTION BANNER */}
+          {/* ACTUAL CLOUD API STATUS BANNER */}
           {isSentViaCloudApi ? (
             <div className="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-4 space-y-2 shadow-xs">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 <h4 className="text-sm font-black text-emerald-950 uppercase tracking-wide">
-                  🎉 Bill Sent Automatically to WhatsApp!
+                  🎉 Invoice Image Sent via WhatsApp!
                 </h4>
               </div>
-              <p className="text-xs text-emerald-800 leading-relaxed">
-                The cash memo and details were dispatched directly to <strong>{purchase.customer_name}</strong> ({formattedPhone}) via Meta WhatsApp Cloud API.
-              </p>
+              <div className="text-xs text-emerald-900 space-y-1">
+                <p>
+                  The actual invoice image attachment with the cash memo caption was sent directly to <strong>{purchase.customer_name}</strong> (<span className="font-mono">{formattedPhone}</span>).
+                </p>
+                <p className="text-[11px] text-emerald-700">
+                  Sender: <strong>{settings?.whatsapp_number || '+91 8330889632'}</strong> • Message ID: <span className="font-mono">{whatsappResult?.messageId}</span>
+                </p>
+                <p className="text-[11px] text-emerald-800 font-medium">
+                  ✅ Sent directly as an image attachment in chat. No web links or external URLs.
+                </p>
+              </div>
             </div>
           ) : (
-            <div className="bg-[#f0fdf4] border-2 border-emerald-400 rounded-2xl p-4 space-y-2.5 shadow-xs">
+            <div className="bg-amber-50/80 border-2 border-amber-400 rounded-2xl p-4 space-y-2.5 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <h4 className="text-xs sm:text-sm font-black text-emerald-950 uppercase tracking-wide">
-                    💬 Direct WhatsApp Delivery
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <h4 className="text-xs sm:text-sm font-black text-amber-950 uppercase tracking-wide">
+                    WhatsApp Cloud API Status
                   </h4>
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
                   Recipient: {formattedPhone}
                 </span>
               </div>
 
-              <div className="bg-white/90 p-3 rounded-xl border border-emerald-200 text-xs text-neutral-800 leading-relaxed space-y-1.5">
-                <p>
-                  Click <strong>&apos;Direct WhatsApp Chat&apos;</strong> to open <strong>{purchase.customer_name}&apos;s chat</strong> immediately with the invoice pre-filled.
+              <div className="bg-white/90 p-3 rounded-xl border border-amber-200 text-xs text-neutral-800 leading-relaxed space-y-1.5">
+                <p className="text-amber-950 font-medium">
+                  {whatsappResult?.errorMessage || 'WhatsApp Cloud API credentials are not yet configured.'}
                 </p>
                 <p className="text-[11px] text-neutral-600">
-                  💡 The message contains the official digital bill link with a live photo preview card. The bill photo is also copied to your clipboard.
+                  To automatically send the generated invoice image as an attachment from business sender <strong>+91 8330889632</strong> to customer numbers, configure <code>WHATSAPP_ACCESS_TOKEN</code> and <code>WHATSAPP_PHONE_NUMBER_ID</code> in Settings.
                 </p>
               </div>
 
               {copiedPhoto && (
                 <div className="bg-emerald-700 text-white p-2.5 rounded-xl text-xs font-bold text-center animate-in fade-in flex items-center justify-center gap-2">
                   <Check className="w-4 h-4" />
-                  <span>Invoice photo copied to clipboard! Press Ctrl + V (Paste) in WhatsApp.</span>
+                  <span>Invoice photo copied to clipboard! You can paste in WhatsApp with Ctrl + V.</span>
                 </div>
               )}
             </div>
           )}
 
-          {/* PRIMARY ACTIONS: WhatsApp Buttons as requested by User */}
+          {/* PRIMARY ACTIONS */}
           <div className="space-y-2.5 pt-1">
-            
-            {/* 1. Send Bill Photo + Message to WhatsApp */}
-            <button
-              type="button"
-              onClick={handleSendBillPhotoAndMessage}
-              disabled={!phoneValidation.isValid}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md hover:shadow-lg active:scale-[0.99] cursor-pointer"
-              title="Open customer chat directly with bill photo copied to clipboard"
-            >
-              <Share2 className="w-5 h-5 text-emerald-200" />
-              <span>Send Bill Photo + Message to WhatsApp</span>
-            </button>
-
-            {/* 2. Direct WhatsApp Chat & WhatsApp Web (PC) */}
+            {/* Direct WhatsApp Chat with Clean Caption & Copied Photo */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={handleDirectWhatsAppChat}
                 disabled={!phoneValidation.isValid}
                 className="flex items-center justify-center gap-2 py-3 px-3 bg-[#094327] hover:bg-[#07301c] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
-                title="Open customer chat directly using official wa.me link"
+                title="Open customer chat directly with pre-filled cash memo caption"
               >
                 <MessageSquare className="w-4 h-4 text-emerald-300" />
-                <span>Direct WhatsApp Chat</span>
+                <span>Open WhatsApp Chat</span>
               </button>
 
               <button
@@ -409,7 +349,7 @@ export default function WhatsAppSuccessModal({
               </button>
             </div>
 
-            {/* 3. Utility Actions: Copy Photo, Copy Text, Save Photo */}
+            {/* Utility Actions: Copy Photo, Copy Caption, Save Photo */}
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
@@ -428,10 +368,10 @@ export default function WhatsAppSuccessModal({
                 type="button"
                 onClick={copyTextToClipboard}
                 className="flex items-center justify-center gap-1.5 py-2.5 px-2 bg-neutral-50 hover:bg-neutral-100 text-neutral-800 rounded-xl text-xs font-semibold border border-neutral-200 cursor-pointer"
-                title="Copy formatted invoice message text"
+                title="Copy formatted invoice cash memo text without links"
               >
                 <Copy className="w-3.5 h-3.5" />
-                <span>{copiedText ? 'Copied! ✓' : 'Copy Text'}</span>
+                <span>{copiedText ? 'Copied! ✓' : 'Copy Caption'}</span>
               </button>
 
               <button
@@ -444,19 +384,6 @@ export default function WhatsAppSuccessModal({
                 <span>Save Photo</span>
               </button>
             </div>
-
-            {/* Optional Device Share Sheet for Android */}
-            {isMobileOrTablet && (
-              <button
-                type="button"
-                onClick={handleNativeShareSheet}
-                className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xl text-[11px] font-medium border border-neutral-200 transition-colors cursor-pointer"
-                title="Share raw PNG file via Android OS system share sheet"
-              >
-                <Smartphone className="w-3.5 h-3.5" />
-                <span>Share Raw PNG File via Device Share Sheet (Select Contact)</span>
-              </button>
-            )}
           </div>
 
           {/* BILL PHOTO PREVIEW */}

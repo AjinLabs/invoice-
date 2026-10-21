@@ -5,12 +5,14 @@ import {
   buildWhatsAppClickToChatUrl,
   buildWhatsAppWebUrl,
   buildWhatsAppMobileAppUrl,
+  sendWhatsAppInvoice,
+  resolveInvoiceImageBuffer,
 } from '../whatsapp.ts';
 import type { Purchase, ShopSettings } from '../types.ts';
 
 const mockSettings: ShopSettings = {
   id: 'sett_1',
-  shop_name: 'TERRY7 WOMEN - Vaniyambalam',
+  shop_name: 'TERRY WOMEN - Vaniyambalam',
   address: 'Near Town Hall & Railway Station, Vaniyambalam',
   phone: '+91 8330889632',
   whatsapp_number: '+91 8330889632',
@@ -20,7 +22,7 @@ const mockSettings: ShopSettings = {
   min_weight_grams: 1000,
   required_visits: 5,
   round_off_mode: 'NONE',
-  whatsapp_mode: 'DEMO',
+  whatsapp_mode: 'PRODUCTION',
   whatsapp_api_version: 'v20.0',
   whatsapp_verify_token: 'tok_1',
   updated_at: '2026-10-21T10:00:00.000Z',
@@ -64,9 +66,9 @@ const mockPurchase: Purchase = {
   ],
 };
 
-describe('WhatsApp Message Formatting & Link Builders', () => {
-  test('formatWhatsAppInvoiceText matches Section 4 cash memo format', () => {
-    const text = formatWhatsAppInvoiceText(mockPurchase, mockSettings, 'https://terry7women.vercel.app');
+describe('WhatsApp Message Formatting — Strict Zero URL Guarantee', () => {
+  test('formatWhatsAppInvoiceText contains NO invoice URL, NO website URL, and NO Bill Link', () => {
+    const text = formatWhatsAppInvoiceText(mockPurchase, mockSettings);
 
     // Section 4 required elements
     assert.ok(text.includes('👗 *TERRY WOMEN — VANIYAMBALAM*'), 'Must have brand header');
@@ -74,7 +76,6 @@ describe('WhatsApp Message Formatting & Link Builders', () => {
     assert.ok(text.includes('🧾 *CASH MEMO*'), 'Must have cash memo header');
     assert.ok(text.includes('👤 Customer: Priya Sharma'), 'Must show customer name');
     assert.ok(text.includes('🧾 Invoice: INV-VNB-2026-000101'), 'Must include invoice number');
-    assert.ok(text.includes('🌐 Bill Link: https://terry7women.vercel.app/invoice/pur_test_101'), 'Must include bill URL');
     assert.ok(text.includes('🛍️ *ITEM DETAILS*'), 'Must have item details header');
     assert.ok(text.includes('Ladies Readymade Garment — 1.25 KG'), 'Must have product and weight');
     assert.ok(text.includes('Amount: ₹1,123.75'), 'Must have line total');
@@ -88,9 +89,16 @@ describe('WhatsApp Message Formatting & Link Builders', () => {
     assert.ok(text.includes('❤️ Thank you for shopping with *TERRY WOMEN!*'), 'Must include brand thank you');
     assert.ok(text.includes('📍 Vaniyambalam'), 'Must include town');
     assert.ok(text.includes('📞 +91 8330889632'), 'Must include contact phone');
+
+    // Strict Negative Checks — Zero URLs
+    assert.ok(!text.includes('Bill Link'), 'Must NOT contain any "Bill Link"');
+    assert.ok(!text.includes('http://'), 'Must NOT contain "http://"');
+    assert.ok(!text.includes('https://'), 'Must NOT contain "https://"');
+    assert.ok(!text.includes('invoice/'), 'Must NOT contain any invoice webpage path');
+    assert.ok(!text.includes('terry7women.vercel.app'), 'Must NOT contain any domain name');
   });
 
-  test('formatWhatsAppInvoiceText correctly reflects loyalty rewards when redeemed', () => {
+  test('formatWhatsAppInvoiceText correctly reflects loyalty rewards without links when redeemed', () => {
     const redeemedPurchase: Purchase = {
       ...mockPurchase,
       loyalty_applied: true,
@@ -101,21 +109,80 @@ describe('WhatsApp Message Formatting & Link Builders', () => {
     assert.ok(text.includes('🎉 *500g FREE REWARD REDEEMED!*'));
     assert.ok(text.includes('Applied: 500g FREE Dress Material (-₹449.50)'));
     assert.ok(text.includes('0.70 KG / 5.00 KG'));
+    assert.ok(!text.includes('http'), 'Redeemed message must also contain ZERO URLs');
   });
 
-  test('buildWhatsAppClickToChatUrl creates proper wa.me link with encoded text', () => {
-    const url = buildWhatsAppClickToChatUrl('919876543210', 'Hello Priya! Your bill is ₹1023');
+  test('buildWhatsAppClickToChatUrl creates proper wa.me link with encoded text and zero URLs in text', () => {
+    const cleanText = formatWhatsAppInvoiceText(mockPurchase, mockSettings);
+    const url = buildWhatsAppClickToChatUrl('919876543210', cleanText);
     assert.ok(url.startsWith('https://wa.me/919876543210?text='));
-    assert.ok(url.includes(encodeURIComponent('Hello Priya! Your bill is ₹1023')));
+    assert.ok(url.includes(encodeURIComponent('👗 *TERRY WOMEN — VANIYAMBALAM*')));
+    assert.ok(!decodeURIComponent(url).includes('Bill Link'));
   });
 
-  test('buildWhatsAppWebUrl creates web.whatsapp.com link', () => {
-    const url = buildWhatsAppWebUrl('919876543210', 'Test message');
-    assert.ok(url.startsWith('https://web.whatsapp.com/send?phone=919876543210&text=Test%20message'));
+  test('buildWhatsAppWebUrl creates web.whatsapp.com link with customer phone', () => {
+    const url = buildWhatsAppWebUrl('919876543210', 'Test memo');
+    assert.ok(url.startsWith('https://web.whatsapp.com/send?phone=919876543210&text=Test%20memo'));
   });
 
-  test('buildWhatsAppMobileAppUrl creates api.whatsapp.com link', () => {
-    const url = buildWhatsAppMobileAppUrl('919876543210', 'Test message');
-    assert.ok(url.startsWith('https://api.whatsapp.com/send?phone=919876543210&text=Test%20message'));
+  test('buildWhatsAppMobileAppUrl creates api.whatsapp.com link with customer phone', () => {
+    const url = buildWhatsAppMobileAppUrl('919876543210', 'Test memo');
+    assert.ok(url.startsWith('https://api.whatsapp.com/send?phone=919876543210&text=Test%20memo'));
+  });
+});
+
+describe('Meta WhatsApp Business Cloud API Integration & Image Delivery', () => {
+  test('sendWhatsAppInvoice reports CREDENTIALS_MISSING when unconfigured and does NOT simulate success', async () => {
+    // Empty credentials settings
+    const unconfiguredSettings: ShopSettings = {
+      ...mockSettings,
+      whatsapp_access_token: '',
+      whatsapp_phone_number_id: '',
+    };
+
+    // Ensure env does not provide credentials during this test
+    const origToken = process.env.WHATSAPP_ACCESS_TOKEN;
+    const origPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+    delete process.env.WHATSAPP_ACCESS_TOKEN;
+    delete process.env.WHATSAPP_PHONE_NUMBER_ID;
+
+    try {
+      const result = await sendWhatsAppInvoice(mockPurchase, unconfiguredSettings);
+
+      assert.strictEqual(result.success, false, 'Must report failure when credentials missing');
+      assert.strictEqual(result.status, 'FAILED');
+      assert.strictEqual(result.errorCode, 'CREDENTIALS_MISSING');
+      assert.ok(
+        result.errorMessage?.includes('WHATSAPP_ACCESS_TOKEN and/or WHATSAPP_PHONE_NUMBER_ID are missing'),
+        'Must explain exactly what configuration is missing'
+      );
+      assert.strictEqual(result.recipientPhone, '919876543210', 'Recipient must be customer number');
+      assert.strictEqual(result.senderPhone, '+91 8330889632', 'Sender must be store number');
+    } finally {
+      if (origToken) process.env.WHATSAPP_ACCESS_TOKEN = origToken;
+      if (origPhoneId) process.env.WHATSAPP_PHONE_NUMBER_ID = origPhoneId;
+    }
+  });
+
+  test('sendWhatsAppInvoice strictly separates Sender and Recipient fields', async () => {
+    const customCustomerPurchase: Purchase = {
+      ...mockPurchase,
+      customer_phone: '+91 94471 23456',
+    };
+
+    const res = await sendWhatsAppInvoice(customCustomerPurchase, mockSettings);
+    // Recipient must be the entered customer number normalized
+    assert.strictEqual(res.recipientPhone, '919447123456');
+    // Sender must be the business sender number (+91 8330889632)
+    assert.strictEqual(res.senderPhone, '+91 8330889632');
+    assert.notStrictEqual(res.recipientPhone, res.senderPhone, 'Sender and recipient must be separate');
+  });
+
+  test('resolveInvoiceImageBuffer retrieves image buffer from base64 data URL', async () => {
+    const sampleBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const buffer = await resolveInvoiceImageBuffer('pur_sample', { imageDataUrl: sampleBase64 });
+    assert.ok(buffer !== null, 'Buffer must be resolved');
+    assert.ok(Buffer.isBuffer(buffer), 'Result must be a Buffer');
+    assert.strictEqual(buffer!.length > 0, true, 'Buffer must not be empty');
   });
 });

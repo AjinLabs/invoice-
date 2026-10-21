@@ -499,7 +499,7 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
       ],
     };
 
-    const memo = formatWhatsAppInvoiceText(purchase, testSettings, 'https://terry7women.vercel.app');
+    const memo = formatWhatsAppInvoiceText(purchase, testSettings);
 
     // Structural checks from Section 4
     assert.ok(memo.startsWith('👗 *TERRY WOMEN — VANIYAMBALAM*\n━━━━━━━━━━━━━━━━━━\n🧾 *CASH MEMO*'));
@@ -516,6 +516,12 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
     assert.ok(memo.includes('Completed: 1.63 KG'));
     assert.ok(memo.includes('Remaining: 3.37 KG to go'));
     assert.ok(memo.includes('❤️ Thank you for shopping with *TERRY WOMEN!*\n📍 Vaniyambalam\n📞 +91 8330889632'));
+
+    // Zero-URL Guarantee
+    assert.ok(!memo.includes('Bill Link'), 'Must NOT contain any Bill Link');
+    assert.ok(!memo.includes('http://'), 'Must NOT contain http://');
+    assert.ok(!memo.includes('https://'), 'Must NOT contain https://');
+    assert.ok(!memo.includes('invoice/'), 'Must NOT contain invoice path');
 
     // Test URL encoding
     const clickUrl = buildWhatsAppClickToChatUrl('919876543210', memo);

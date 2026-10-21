@@ -156,6 +156,7 @@ export async function POST(request: Request) {
       ? body.manual_amount
       : body.manual_amount ? parseFloat(body.manual_amount) : undefined;
     const customRoundOff = typeof body.custom_round_off === 'number' ? body.custom_round_off : undefined;
+    const invoiceImage = typeof body.invoice_image === 'string' ? body.invoice_image : '';
 
     // Safe simulation for Demo Mode
     if (sessionUser?.role === 'DEMO_VIEWER') {
@@ -338,7 +339,6 @@ export async function POST(request: Request) {
         items: purchaseItems,
       };
 
-      const invoiceImage = body.invoice_image;
       if (invoiceImage) {
         saveInvoiceImage(purchase.id, invoiceImage);
         purchase.invoice_image_url = `/api/invoices/${purchase.id}/image`;
@@ -386,10 +386,11 @@ export async function POST(request: Request) {
       phone: branchInfoSnapshot.phone,
     };
 
-    // Trigger WhatsApp Sending (Meta API or Demo simulation)
+    // Trigger WhatsApp Sending via Meta Business Cloud API with actual invoice image
     const waResult = await sendWhatsAppInvoice(
       createdPurchase,
-      branchSettings
+      branchSettings,
+      { imageDataUrl: invoiceImage }
     );
 
     // Save WhatsApp message record to database
@@ -404,7 +405,7 @@ export async function POST(request: Request) {
         status: waResult.status,
         message_id: waResult.messageId,
         error_message: waResult.errorMessage,
-        is_demo: waResult.isDemo,
+        is_demo: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
