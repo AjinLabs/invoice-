@@ -165,10 +165,22 @@ export function formatWhatsAppInvoiceText(
       ? `Round Off: ${purchase.round_off < 0 ? '-' : '+'}₹${Math.abs(purchase.round_off).toFixed(2)}\n`
       : '';
 
-  // Loyalty Rewards section (dynamic 10-segment Unicode bar)
-  const loyaltyBlock = options?.hideProgressBar
-    ? ''
-    : `${formatWhatsAppLoyaltySection(purchase, settings)}\n\n${separator}\n`;
+  // Loyalty note (concise 2-line notice if hideProgressBar is enabled, otherwise full block)
+  let loyaltyBlock = '';
+  if (options?.hideProgressBar) {
+    const currentWeightGrams = typeof purchase.loyalty_weight_after_grams === 'number'
+      ? purchase.loyalty_weight_after_grams
+      : (purchase.weight_grams || 0);
+    const completedKg = (currentWeightGrams / 1000).toFixed(2);
+
+    if (purchase.loyalty_applied) {
+      loyaltyBlock = `🎉 *500g FREE Dress Material Redeemed!*\n(New Cycle: ${completedKg} KG / 5.00 KG)\n\n${separator}\n`;
+    } else {
+      loyaltyBlock = `🎁 *Special Offer:* Complete 5 KG dress purchases & get 500g FREE dress material!\n(Your Progress: ${completedKg} KG / 5.00 KG)\n\n${separator}\n`;
+    }
+  } else {
+    loyaltyBlock = `${formatWhatsAppLoyaltySection(purchase, settings)}\n\n${separator}\n`;
+  }
   const phone = settings.phone || settings.whatsapp_number || '+91 8330889632';
 
   let text = (
