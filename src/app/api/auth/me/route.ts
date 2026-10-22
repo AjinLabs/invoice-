@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readDb } from '@/lib/db';
+import { getDb, readDb } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -12,7 +12,7 @@ export async function GET() {
     }
 
     const session = JSON.parse(sessionCookie.value);
-    const db = readDb();
+    const db = await getDb();
     const { getBranchInfo } = await import('@/lib/db');
 
     if (session.role === 'DEMO_VIEWER' || session.isDemo) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readDb, withTransaction, getBranchInfo, DEFAULT_BRANCHES } from '@/lib/db';
+import { getDb, readDb, withTransaction, getBranchInfo, DEFAULT_BRANCHES, generateId } from '@/lib/db';
 import { BranchId } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     } catch {}
 
     const effectiveBranch: BranchId = (sessionBranch || branchParam || 'vnb') as BranchId;
-    const db = readDb();
+    const db = await getDb();
     const branchInfo = getBranchInfo(db, effectiveBranch);
     const settings = {
       ...db.shop_settings,
@@ -100,21 +100,41 @@ export async function PUT(request: Request) {
 
       // Update password for user/branch admin if requested
       if (body.new_password && body.new_password.trim().length >= 4) {
-        const targetUsername = sessionRole === 'SUPER_ADMIN' && sessionUsername
-          ? sessionUsername
-          : (effectiveBranch === 'pkdm' ? 'adminpkdm' : 'adminvnb');
-        const u = db.users.find((user) => user.username.toLowerCase() === targetUsername.toLowerCase());
-        if (u) {
-          u.password_hash = bcrypt.hashSync(body.new_password.trim(), 10);
+        const targetUsername = body.target_username || (effectiveBranch === 'pkdm' ? 'adminpkdm' : 'adminvnb');
+        const user = db.users.find((u) => u.username.toLowerCase() === targetUsername.toLowerCase());
+        if (user) {
+          user.password_hash = bcrypt.hashSync(body.new_password.trim(), 10);
+        } else {
+          db.users.push({
+            id: generateId('usr'),
+            username: targetUsername,
+            password_hash: bcrypt.hashSync(body.new_password.trim(), 10),
+            role: 'ADMIN',
+            name: effectiveBranch === 'pkdm' ? 'Store Manager (Pookkottumpadam)' : 'Store Manager (Vaniyambalam)',
+            branch: effectiveBranch,
+            created_at: new Date().toISOString(),
+          });
         }
       }
 
-      if (body.whatsapp_number !== undefined) current.whatsapp_number = body.whatsapp_number.trim();
+      if (body.whatsapp_number !== undefined) {
+        const cleanWhatsApp = body.whatsapp_number.trim();
+        current.whatsapp_number = cleanWhatsApp;
+        bInfo.phone = cleanWhatsApp;
+      }
       if (body.gstin !== undefined) current.gstin = body.gstin.trim();
+
+      if (body.target_loyalty_grams !== undefined) {
+        const tg = parseInt(body.target_loyalty_grams, 10);
+        if (!isNaN(tg) && tg > 0) current.target_loyalty_grams = tg;
+      }
 
       if (body.loyalty_discount !== undefined) {
         const disc = parseFloat(body.loyalty_discount);
         if (!isNaN(disc) && disc >= 0) current.loyalty_discount = disc;
+      } else if (body.rate_per_kg !== undefined) {
+        const rate = parseFloat(body.rate_per_kg);
+        if (!isNaN(rate) && rate > 0) current.loyalty_discount = Math.round((rate * 0.5) * 100) / 100;
       }
 
       if (body.min_weight_grams !== undefined) {

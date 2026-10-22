@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
-import { readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR, getBranchInfo } from '@/lib/db';
+import { getDb, readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR, getBranchInfo } from '@/lib/db';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
 import { calculateBilling } from '@/lib/billing';
 import { sendWhatsAppInvoice } from '@/lib/whatsapp';
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     const sessionUser = await getSessionUser();
     const effectiveBranch = sessionUser?.branch || branchParam;
 
-    const db = readDb();
+    const db = await getDb();
     let purchases = [...db.purchases];
 
     // Branch isolation: If logged in as branch admin or branch specified, only return that branch's invoices

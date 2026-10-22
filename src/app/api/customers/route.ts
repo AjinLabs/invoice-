@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readDb, withTransaction, generateId, normalizePhone } from '@/lib/db';
+import { getDb, readDb, withTransaction, generateId, normalizePhone } from '@/lib/db';
 import { Customer } from '@/lib/types';
 
 export async function GET(request: Request) {
@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       }
     } catch {}
 
-    const db = readDb();
+    const db = await getDb();
     let customers = db.customers;
 
     if (query) {

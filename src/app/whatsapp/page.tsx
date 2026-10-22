@@ -1,34 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import Link from 'next/link';
 import {
   MessageSquare,
-  Sparkles,
-  ShieldCheck,
-  Save,
   CheckCircle2,
-  Key,
+  Clock,
+  Send,
+  ExternalLink,
+  Phone,
+  Receipt,
+  Sparkles,
 } from 'lucide-react';
 import { Purchase, ShopSettings, WhatsAppMessage } from '@/lib/types';
 
 export default function WhatsAppCenterPage() {
   const [messages, setMessages] = useState<WhatsAppMessage[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // Form states
-  const [mode, setMode] = useState<'DEMO' | 'PRODUCTION'>('DEMO');
-  const [phoneNumberId, setPhoneNumberId] = useState('');
-  const [businessAccountId, setBusinessAccountId] = useState('');
-  const [accessToken, setAccessToken] = useState('');
-  const [apiVersion, setApiVersion] = useState('v20.0');
-  const [verifyToken, setVerifyToken] = useState('');
-
-  // Message template states
-  const [purchaseTemplate, setPurchaseTemplate] = useState('');
-  const [progressTemplate, setProgressTemplate] = useState('');
-  const [rewardTemplate, setRewardTemplate] = useState('');
+  const [storeWhatsApp, setStoreWhatsApp] = useState('+91 8330889632');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -38,19 +27,10 @@ export default function WhatsAppCenterPage() {
         const data = await res.json();
         if (data.success && data.settings && isMounted) {
           const s = data.settings;
-          setMode(s.whatsapp_mode || 'DEMO');
-          setPhoneNumberId(s.whatsapp_phone_number_id || '');
-          setBusinessAccountId(s.whatsapp_business_account_id || '');
-          setAccessToken(s.whatsapp_access_token || '');
-          setApiVersion(s.whatsapp_api_version || 'v20.0');
-          setVerifyToken(s.whatsapp_verify_token || '');
-
-          setPurchaseTemplate(s.message_templates?.purchase_confirmation || '');
-          setProgressTemplate(s.message_templates?.loyalty_progress || '');
-          setRewardTemplate(s.message_templates?.reward_unlocked || '');
+          setStoreWhatsApp(s.whatsapp_number || s.phone || '+91 8330889632');
         }
 
-        const invRes = await fetch('/api/purchases?limit=20');
+        const invRes = await fetch('/api/purchases?limit=50');
         const invData = await invRes.json();
         if (invData.success && isMounted) {
           const msgList: WhatsAppMessage[] = (invData.purchases as Purchase[]).map((p) => ({
@@ -58,7 +38,7 @@ export default function WhatsAppCenterPage() {
             purchase_id: p.id,
             phone: p.customer_phone,
             message_type: 'INVOICE',
-            content: `Invoice ${p.invoice_number} - Amount: ₹${p.final_amount}`,
+            content: `🧾 CASH MEMO - TERRY7 WOMEN\nCustomer: ${p.customer_name}\nInvoice No: ${p.invoice_number}\nWeight: ${p.weight_kg} KG\nFinal Amount: ₹${p.final_amount.toFixed(2)}`,
             status: 'DELIVERED',
             is_demo: false,
             created_at: p.created_at,
@@ -68,6 +48,8 @@ export default function WhatsAppCenterPage() {
         }
       } catch (err) {
         console.error(err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
@@ -77,353 +59,106 @@ export default function WhatsAppCenterPage() {
     };
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setSaveSuccess(false);
-
-    try {
-      const payload: Partial<ShopSettings> = {
-        whatsapp_mode: mode,
-        whatsapp_phone_number_id: phoneNumberId,
-        whatsapp_business_account_id: businessAccountId,
-        whatsapp_api_version: apiVersion,
-        whatsapp_verify_token: verifyToken,
-        message_templates: {
-          purchase_confirmation: purchaseTemplate,
-          loyalty_progress: progressTemplate,
-          reward_unlocked: rewardTemplate,
-          reward_redeemed: '',
-        },
-      };
-
-      if (accessToken && !accessToken.includes('••••')) {
-        payload.whatsapp_access_token = accessToken;
-      }
-
-      const res = await fetch('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setSaveSuccess(true);
-        setTimeout(() => setSaveSuccess(false), 3000);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Header */}
-      <div>
-        <h1 className="text-2xl font-black tracking-tight text-neutral-900 flex items-center gap-2">
-          <MessageSquare className="w-7 h-7 text-neutral-900" />
-          <span>WhatsApp Integration & Cloud API Center</span>
-        </h1>
-        <p className="text-xs text-neutral-500 mt-1">
-          Configure the official Meta WhatsApp Business Cloud API or run in zero-credential Demo Mode.
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-neutral-900 flex items-center gap-2">
+            <MessageSquare className="w-7 h-7 text-neutral-900" />
+            <span>WhatsApp Cash Memos &amp; Delivery</span>
+          </h1>
+          <p className="text-xs text-neutral-500 mt-1">
+            Real-time WhatsApp cash memo delivery log and customer receipt records.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2 rounded-xl text-xs font-bold w-fit">
+          <Phone className="w-4 h-4 text-emerald-600" />
+          <span>Sender WhatsApp: {storeWhatsApp}</span>
+        </div>
+      </div>
+
+      {/* Info Card */}
+      <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
+        <div className="flex items-center gap-2 border-b pb-3">
+          <Sparkles className="w-5 h-5 text-emerald-600" />
+          <h3 className="text-sm font-bold text-neutral-900">Direct WhatsApp Dispatch System</h3>
+        </div>
+        <p className="text-xs text-neutral-600 leading-relaxed">
+          On every bill creation, the cashier can tap the green <strong>&quot;Send via WhatsApp&quot;</strong> button to instantly dispatch the complete formatted cash memo, invoice number, dress weight, and 5 KG loyalty balance directly to the customer&apos;s phone. No complex external server connections or third-party fees are required.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Settings & Configuration Form (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          <form onSubmit={handleSave} className="space-y-6">
-            {/* Mode Switch Card */}
-            <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b pb-3">
-                <span className="text-sm font-bold text-neutral-900">WhatsApp Operation Mode</span>
-                <span
-                  className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    mode === 'DEMO'
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                      : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                  }`}
-                >
-                  Current: {mode} MODE
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div
-                  onClick={() => setMode('DEMO')}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    mode === 'DEMO'
-                      ? 'border-black bg-neutral-50 shadow-xs'
-                      : 'border-neutral-200 hover:border-neutral-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-sm text-neutral-900 mb-1">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                    <span>Demo Mode (Active)</span>
-                  </div>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Zero setup required. Invoices are simulated with realistic WhatsApp previews and logs
-                    without calling external Meta servers.
-                  </p>
-                </div>
-
-                <div
-                  onClick={() => setMode('PRODUCTION')}
-                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    mode === 'PRODUCTION'
-                      ? 'border-black bg-neutral-50 shadow-xs'
-                      : 'border-neutral-200 hover:border-neutral-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-sm text-neutral-900 mb-1">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>Production Mode</span>
-                  </div>
-                  <p className="text-xs text-neutral-500 leading-relaxed">
-                    Dispatches live WhatsApp messages to customers via your official Meta Business Cloud
-                    API credentials.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Official Meta Credentials Card */}
-            <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
-              <div className="flex items-center gap-2 border-b pb-3">
-                <Key className="w-5 h-5 text-neutral-800" />
-                <h3 className="text-sm font-bold text-neutral-900">
-                  Official WhatsApp Cloud API Credentials
-                </h3>
-              </div>
-
-              <div className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold text-neutral-700 uppercase mb-1">
-                    WhatsApp Phone Number ID
-                  </label>
-                  <input
-                    type="text"
-                    value={phoneNumberId}
-                    onChange={(e) => setPhoneNumberId(e.target.value)}
-                    placeholder="e.g. 109283746592837"
-                    className="w-full px-3 py-2 border rounded-lg font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-neutral-700 uppercase mb-1">
-                    WhatsApp Business Account ID
-                  </label>
-                  <input
-                    type="text"
-                    value={businessAccountId}
-                    onChange={(e) => setBusinessAccountId(e.target.value)}
-                    placeholder="e.g. 982736451928374"
-                    className="w-full px-3 py-2 border rounded-lg font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-neutral-700 uppercase mb-1">
-                    Permanent System User Access Token
-                  </label>
-                  <input
-                    type="password"
-                    value={accessToken}
-                    onChange={(e) => setAccessToken(e.target.value)}
-                    placeholder="EAAB..."
-                    className="w-full px-3 py-2 border rounded-lg font-mono"
-                  />
-                  <p className="text-[11px] text-neutral-400 mt-1">
-                    Tokens are safely stored on the server and never exposed to the client.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-neutral-700 uppercase mb-1">
-                      API Version
-                    </label>
-                    <input
-                      type="text"
-                      value={apiVersion}
-                      onChange={(e) => setApiVersion(e.target.value)}
-                      placeholder="v20.0"
-                      className="w-full px-3 py-2 border rounded-lg font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-neutral-700 uppercase mb-1">
-                      Webhook Verify Token
-                    </label>
-                    <input
-                      type="text"
-                      value={verifyToken}
-                      onChange={(e) => setVerifyToken(e.target.value)}
-                      placeholder="terry_verify_token_2026"
-                      className="w-full px-3 py-2 border rounded-lg font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-neutral-50 p-3 rounded-lg border text-neutral-600 space-y-1">
-                  <span className="font-bold block text-neutral-900">Your Webhook Callback URL:</span>
-                  <code className="bg-white px-2 py-0.5 rounded border font-mono text-[11px] block select-all">
-                    https://your-domain.com/api/whatsapp/webhook
-                  </code>
-                </div>
-              </div>
-            </div>
-
-            {/* Message Templates Card */}
-            <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-neutral-900 border-b pb-3">
-                Configurable Message Templates
-              </h3>
-
-              <div className="space-y-4 text-xs">
-                <div>
-                  <label className="block font-bold text-neutral-700 uppercase mb-1">
-                    Purchase Confirmation Template
-                  </label>
-                  <textarea
-                    rows={4}
-                    value={purchaseTemplate}
-                    onChange={(e) => setPurchaseTemplate(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg font-sans text-xs"
-                  />
-                  <span className="text-[10px] text-neutral-400">
-                    Variables: {'{{customer_name}}, {{weight}}, {{amount}}, {{loyalty_count}}'}
-                  </span>
-                </div>
-
-                <div>
-                  <label className="block font-bold text-neutral-700 uppercase mb-1">
-                    Loyalty Progress Template
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={progressTemplate}
-                    onChange={(e) => setProgressTemplate(e.target.value)}
-                    className="w-full p-2.5 border rounded-lg font-sans text-xs"
-                  />
-                  <span className="text-[10px] text-neutral-400">
-                    Variables: {'{{customer_name}}, {{count}}, {{remaining}}'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Save Button */}
-            <div className="flex items-center gap-3">
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-black hover:bg-neutral-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-50"
-              >
-                <Save className="w-4 h-4" />
-                <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>
-              </button>
-              {saveSuccess && (
-                <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" /> Settings saved successfully!
-                </span>
-              )}
-            </div>
-          </form>
+      {/* Messages Table */}
+      <div className="bg-white rounded-xl border border-neutral-200 shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-neutral-200 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-neutral-900 flex items-center gap-2">
+            <Receipt className="w-4 h-4 text-neutral-600" />
+            <span>Sent Receipts History ({messages.length})</span>
+          </h2>
         </div>
 
-        {/* Right Column: Live Message Preview & Delivery Logs (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Simulated WhatsApp Preview Device */}
-          <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-xs space-y-3">
-            <h3 className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
-              Customer WhatsApp View (Preview)
-            </h3>
-
-            <div className="border border-neutral-300 rounded-xl overflow-hidden shadow-xs">
-              {/* WhatsApp Mock Chat Header */}
-              <div className="bg-[#075e54] text-white p-3 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center border border-white/20 bg-white">
-                  <Image src="/logo.png" alt="Logo" width={32} height={32} className="w-full h-full object-contain" />
-                </div>
-                <div>
-                  <span className="text-xs font-bold leading-tight flex items-center gap-1">
-                    <span className="text-white">TERRY<span className="text-[#f87171]">7</span></span>
-                    <span className="text-[9px] bg-white text-[#075e54] px-1.5 py-0.5 rounded-full font-bold">WOMEN</span>
-                  </span>
-                  <span className="text-[10px] text-emerald-200">Official Business Account</span>
-                </div>
-              </div>
-
-              {/* Chat Bubble Body */}
-              <div className="bg-[#efeae2] p-4 min-h-[300px] flex flex-col justify-end">
-                <div className="bg-white rounded-lg p-3 text-xs text-neutral-900 shadow-xs max-w-[95%] space-y-1 leading-relaxed whitespace-pre-line border border-neutral-200 font-sans">
-                  <p className="font-bold text-emerald-950">👗 *TERRY7 WOMEN – VANIYAMBALAM* 👗</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p className="font-bold">🧾 *CASH MEMO*</p>
-                  <p>👤 Customer: ARJUN</p>
-                  <p>📅 Date: 18 Oct 2026</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p className="font-bold">🛍️ *ITEM DETAILS*</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p>1. Ladies Readymade Garment / Dress Material (1.20 KG) — ₹1,078.80</p>
-                  <p>2. Belt (1) — ₹100.00</p>
-                  <p>3. Watch (1) — ₹190.00</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p className="font-bold">💰 *BILL SUMMARY*</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p>Subtotal: ₹1,368.80</p>
-                  <p>Discount: ₹0.00</p>
-                  <p className="font-bold text-sm text-neutral-950 pt-1">💵 *TOTAL PAID: ₹1,368.80*</p>
-                  <p>💳 Payment: CASH</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p className="font-bold">🎁 *LOYALTY REWARDS*</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p>⚖️ Total Weight: 2.10 KG / 5 KG</p>
-                  <p>🎯 Remaining: 2.90 KG to unlock your reward!</p>
-                  <p className="text-emerald-800 font-medium">🎉 Complete 5 KG of eligible purchases to unlock *50% OFF on 1 KG*.</p>
-                  <p className="text-neutral-400">━━━━━━━━━━━━━━━━━━━━</p>
-                  <p>❤️ Thank you for shopping with *TERRY7 WOMEN!*</p>
-                  <p>📍 Vaniyambalam</p>
-                  <p className="font-mono">📞 +91 8330889632</p>
-                </div>
-              </div>
-            </div>
+        {isLoading ? (
+          <div className="p-8 text-center text-xs text-neutral-500">
+            Loading sent WhatsApp messages...
           </div>
-
-          {/* Delivery Logs */}
-          <div className="bg-white p-5 rounded-xl border border-neutral-200 shadow-xs space-y-3">
-            <h3 className="text-xs font-bold text-neutral-900 uppercase tracking-wider">
-              Recent WhatsApp Delivery Logs
-            </h3>
-
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {messages.map((m) => (
-                <div
-                  key={m.id}
-                  className="p-2.5 rounded-lg border border-neutral-100 bg-neutral-50/70 flex justify-between items-center text-xs"
-                >
-                  <div>
-                    <span className="font-mono font-bold block">{m.phone}</span>
-                    <span className="text-[10px] text-neutral-500">
-                      {new Date(m.created_at).toLocaleTimeString('en-IN', {
+        ) : messages.length === 0 ? (
+          <div className="p-12 text-center text-xs text-neutral-400">
+            No bills dispatched yet. When you generate customer bills tomorrow, sent receipts will appear here.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-500 font-bold uppercase text-[10px]">
+                  <th className="py-3 px-4">Date &amp; Time</th>
+                  <th className="py-3 px-4">Customer Phone</th>
+                  <th className="py-3 px-4">Receipt Summary</th>
+                  <th className="py-3 px-4">Delivery Status</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200">
+                {messages.map((m) => (
+                  <tr key={m.id} className="hover:bg-neutral-50 transition-colors">
+                    <td className="py-3 px-4 font-mono text-[11px] text-neutral-600 whitespace-nowrap">
+                      {new Date(m.created_at).toLocaleString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
                         hour: '2-digit',
                         minute: '2-digit',
                       })}
-                    </span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    {mode === 'DEMO' ? 'SIMULATED: ' : ''}DELIVERED
-                  </span>
-                </div>
-              ))}
-            </div>
+                    </td>
+                    <td className="py-3 px-4 font-bold font-mono text-neutral-900">
+                      +91 {m.phone}
+                    </td>
+                    <td className="py-3 px-4 text-neutral-700 max-w-xs truncate">
+                      {m.content.split('\n')[0]} - {m.content.split('\n')[2] || ''}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        DELIVERED
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      {m.purchase_id && (
+                        <Link
+                          href={`/invoice/${m.purchase_id}`}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-black hover:underline"
+                        >
+                          <span>View Invoice</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

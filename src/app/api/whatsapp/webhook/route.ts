@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb, withTransaction } from '@/lib/db';
+import { getDb, readDb, withTransaction } from '@/lib/db';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const token = searchParams.get('hub.verify_token');
   const challenge = searchParams.get('hub.challenge');
 
-  const db = readDb();
+  const db = await getDb();
   const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN || db.shop_settings.whatsapp_verify_token;
 
   if (mode === 'subscribe' && token === verifyToken) {

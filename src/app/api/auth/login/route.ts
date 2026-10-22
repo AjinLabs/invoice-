@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb } from '@/lib/db';
+import { getDb, readDb } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: Request) {
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
       return response;
     }
 
-    const db = readDb();
+    const db = await getDb();
     const user = db.users.find((u) => u.username.toLowerCase() === normalizedUser);
 
     if (!user) {

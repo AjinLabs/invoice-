@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readDb, withTransaction, generateId } from '@/lib/db';
+import { getDb, readDb, withTransaction, generateId } from '@/lib/db';
 import { sendWhatsAppInvoice } from '@/lib/whatsapp';
 import { WhatsAppMessage } from '@/lib/types';
 
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
       });
     }
 
-    const db = readDb();
+    const db = await getDb();
     const purchase = db.purchases.find((p) => p.id === purchaseId);
     if (!purchase) {
       return NextResponse.json({ success: false, error: 'Purchase not found' }, { status: 404 });

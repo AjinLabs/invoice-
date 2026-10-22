@@ -11,7 +11,11 @@ import type {
   ShopSettings,
   BranchId,
   BranchInfo,
+  DatabaseSchema,
 } from './types.ts';
+import { fetchDbFromPostgres, saveDbToPostgres } from './postgres.ts';
+
+export type { DatabaseSchema };
 
 declare global {
   var __TERRY_DB_CACHE__: DatabaseSchema | undefined;
@@ -44,20 +48,6 @@ export function getBranchInfo(db: DatabaseSchema, branchId?: BranchId | string |
   const branches = db.shop_settings?.branches || DEFAULT_BRANCHES;
   if (branchId === 'pkdm') return branches.pkdm || DEFAULT_BRANCHES.pkdm;
   return branches.vnb || DEFAULT_BRANCHES.vnb;
-}
-
-export interface DatabaseSchema {
-  users: User[];
-  customers: Customer[];
-  purchases: Purchase[];
-  purchase_items: PurchaseItem[];
-  loyalty_transactions: LoyaltyTransaction[];
-  whatsapp_messages: WhatsAppMessage[];
-  shop_settings: ShopSettings;
-  meta: {
-    invoice_sequence: number;
-    version: string;
-  };
 }
 
 import os from 'os';
@@ -453,12 +443,42 @@ export function writeDb(data: DatabaseSchema): void {
   } catch (writeErr) {
     console.warn('Could not persist database to disk (persisting in memory cache):', writeErr);
   }
+
+  // Asynchronously sync to Supabase PostgreSQL if configured
+  if (process.env.DATABASE_URL) {
+    saveDbToPostgres(data).catch((err) => {
+      console.warn('Background sync to PostgreSQL failed:', err);
+    });
+  }
+}
+
+// Asynchronously fetch latest data from Supabase PostgreSQL with local disk fallback
+export async function getDb(): Promise<DatabaseSchema> {
+  if (process.env.DATABASE_URL) {
+    try {
+      const pgDb = await fetchDbFromPostgres();
+      if (pgDb) {
+        globalThis.__TERRY_DB_CACHE__ = pgDb;
+        return pgDb;
+      }
+    } catch (pgErr) {
+      console.warn('Could not fetch from PostgreSQL, using local fallback:', pgErr);
+    }
+  }
+  return readDb();
 }
 
 // Transaction lock helper for atomic purchase execution
 export async function withTransaction<T>(callback: (db: DatabaseSchema) => Promise<T> | T): Promise<T> {
-  const db = readDb();
+  const db = await getDb();
   const result = await callback(db);
   writeDb(db);
+  if (process.env.DATABASE_URL) {
+    try {
+      await saveDbToPostgres(db);
+    } catch (saveErr) {
+      console.warn('Failed to commit transaction to PostgreSQL:', saveErr);
+    }
+  }
   return result;
 }

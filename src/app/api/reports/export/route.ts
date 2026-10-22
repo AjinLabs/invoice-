@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readDb } from '@/lib/db';
+import { getDb, readDb } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
     const effectiveBranch = sessionBranch || branchParam;
 
-    const db = readDb();
+    const db = await getDb();
     let purchases = [...db.purchases];
 
     // Branch isolation for reports

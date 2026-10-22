@@ -171,3 +171,17 @@ export interface DashboardStats {
   }[];
   salesByPayment: { method: PaymentMethod; amount: number; count: number }[];
 }
+
+export interface DatabaseSchema {
+  users: User[];
+  customers: Customer[];
+  purchases: Purchase[];
+  purchase_items: PurchaseItem[];
+  loyalty_transactions: LoyaltyTransaction[];
+  whatsapp_messages: WhatsAppMessage[];
+  shop_settings: ShopSettings;
+  meta: {
+    invoice_sequence: number;
+    version: string;
+  };
+}

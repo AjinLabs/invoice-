@@ -16,6 +16,8 @@ import {
   FileSpreadsheet,
   MessageSquare,
   ArrowRight,
+  Phone,
+  Gift,
 } from 'lucide-react';
 import { RoundOffMode, BranchId } from '@/lib/types';
 
@@ -35,24 +37,17 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Shop Info
+  // Store WhatsApp & Contact
   const [shopName, setShopName] = useState('TERRY7 WOMEN - Vaniyambalam');
   const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
-  const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [gstin, setGstin] = useState('');
-
-  // WhatsApp Cloud API Configuration (Administrator Only)
-  const [whatsappAccessToken, setWhatsappAccessToken] = useState('');
-  const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState('');
-  const [whatsappBusinessAccountId, setWhatsappBusinessAccountId] = useState('');
-  const [whatsappApiVersion, setWhatsappApiVersion] = useState('v20.0');
+  const [phone, setPhone] = useState('+91 8330889632');
+  const [whatsappNumber, setWhatsappNumber] = useState('+91 8330889632');
 
   // Pricing & Loyalty
   const [ratePerKg, setRatePerKg] = useState('899');
+  const [targetLoyaltyGrams, setTargetLoyaltyGrams] = useState('5000');
   const [loyaltyDiscount, setLoyaltyDiscount] = useState('449.50');
   const [minWeightGrams, setMinWeightGrams] = useState('1000');
-  const [requiredVisits, setRequiredVisits] = useState('5');
   const [roundOffMode, setRoundOffMode] = useState<RoundOffMode>('FLOOR_10');
 
   // Password change for active branch
@@ -73,18 +68,12 @@ export default function SettingsPage() {
         );
         setAddress(s.address || '');
         setPhone(s.phone || '+91 8330889632');
-        setWhatsappNumber(s.whatsapp_number || '+91 8330889632');
-        setGstin(s.gstin || '32AAAAA0000A1Z5');
-
-        setWhatsappAccessToken(s.whatsapp_access_token || '');
-        setWhatsappPhoneNumberId(s.whatsapp_phone_number_id || '');
-        setWhatsappBusinessAccountId(s.whatsapp_business_account_id || '');
-        setWhatsappApiVersion(s.whatsapp_api_version || 'v20.0');
+        setWhatsappNumber(s.whatsapp_number || s.phone || '+91 8330889632');
 
         setRatePerKg(s.rate_per_kg?.toString() || '899');
+        setTargetLoyaltyGrams(s.target_loyalty_grams?.toString() || '5000');
         setLoyaltyDiscount(s.loyalty_discount?.toString() || '449.50');
         setMinWeightGrams(s.min_weight_grams?.toString() || '1000');
-        setRequiredVisits(s.required_visits?.toString() || '5');
         if (s.round_off_mode) {
           setRoundOffMode(s.round_off_mode);
         }
@@ -150,17 +139,13 @@ export default function SettingsPage() {
           address,
           phone,
           whatsapp_number: whatsappNumber,
-          gstin,
           rate_per_kg: parseFloat(ratePerKg),
+          target_loyalty_grams: parseInt(targetLoyaltyGrams, 10),
           loyalty_discount: parseFloat(loyaltyDiscount),
           min_weight_grams: parseInt(minWeightGrams, 10),
-          required_visits: parseInt(requiredVisits, 10),
           round_off_mode: roundOffMode,
-          whatsapp_access_token: whatsappAccessToken.trim() || undefined,
-          whatsapp_phone_number_id: whatsappPhoneNumberId.trim() || undefined,
-          whatsapp_business_account_id: whatsappBusinessAccountId.trim() || undefined,
-          whatsapp_api_version: whatsappApiVersion.trim() || undefined,
           new_password: newPassword.trim() || undefined,
+          target_username: activeBranch === 'pkdm' ? 'adminpkdm' : 'adminvnb',
         }),
       });
 
@@ -168,7 +153,7 @@ export default function SettingsPage() {
       if (data.success) {
         setSaveSuccess(true);
         setNewPassword('');
-        setTimeout(() => setSaveSuccess(false), 3000);
+        setTimeout(() => setSaveSuccess(false), 3500);
       }
     } catch (err) {
       console.error(err);
@@ -195,20 +180,20 @@ export default function SettingsPage() {
         <div>
           <h1 className="text-2xl font-black tracking-tight text-neutral-900 flex items-center gap-2">
             <Settings className="w-7 h-7 text-neutral-900" />
-            <span>Store & Application Settings</span>
+            <span>Store &amp; Application Settings</span>
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Access records, export reports, configure billing rates, addresses, and branch passwords.
+            Configure clothing rates, 5 KG loyalty rules, store WhatsApp number, and branch passwords.
           </p>
         </div>
 
-        {/* Branch Selector Tabs - Shown to Main Admin only */}
+        {/* Branch Selector Tabs - Shown to Main Admin */}
         {isMainAdmin && (
           <div className="inline-flex rounded-xl border border-neutral-200 bg-white p-1.5 shadow-xs">
             <button
               type="button"
               onClick={() => handleBranchSwitch('vnb')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeBranch === 'vnb'
                   ? 'bg-black text-white shadow-xs'
                   : 'text-neutral-600 hover:text-black'
@@ -219,7 +204,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => handleBranchSwitch('pkdm')}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeBranch === 'pkdm'
                   ? 'bg-black text-white shadow-xs'
                   : 'text-neutral-600 hover:text-black'
@@ -232,8 +217,7 @@ export default function SettingsPage() {
       </div>
 
       {/* ==============================================================
-          SETTINGS HUB: Secondary App Modules (Invoices, Customers, Reports, WhatsApp)
-          User requested: "bottom bar has billing, dashboard, settings, and inside settings all other features"
+          SETTINGS HUB: Secondary App Modules
          ============================================================== */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 1. Invoices */}
@@ -247,7 +231,7 @@ export default function SettingsPage() {
             </div>
             <h3 className="text-sm font-bold text-neutral-900 pt-2">Invoices Register</h3>
             <p className="text-[11px] text-neutral-500">
-              Search and view past printed invoices and WhatsApp receipts
+              View and print past customer bills &amp; receipts
             </p>
           </div>
           <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
@@ -267,7 +251,7 @@ export default function SettingsPage() {
             </div>
             <h3 className="text-sm font-bold text-neutral-900 pt-2">Customer Directory</h3>
             <p className="text-[11px] text-neutral-500">
-              Track customer visit counts, spending, and loyalty reward eligibility
+              Track 5 KG loyalty weight progress and purchases
             </p>
           </div>
           <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
@@ -287,7 +271,7 @@ export default function SettingsPage() {
             </div>
             <h3 className="text-sm font-bold text-neutral-900 pt-2">Reports &amp; Downloads</h3>
             <p className="text-[11px] text-neutral-500">
-              Download CSV spreadsheets of daily sales, discounts, and items
+              Download CSV spreadsheets of daily sales and bills
             </p>
           </div>
           <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
@@ -296,7 +280,7 @@ export default function SettingsPage() {
           </div>
         </Link>
 
-        {/* 4. WhatsApp Logs */}
+        {/* 4. WhatsApp Messages */}
         <Link
           href="/whatsapp"
           className="bg-white p-4 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
@@ -305,22 +289,22 @@ export default function SettingsPage() {
             <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
               <MessageSquare className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-neutral-900 pt-2">WhatsApp Logs</h3>
+            <h3 className="text-sm font-bold text-neutral-900 pt-2">WhatsApp Receipts</h3>
             <p className="text-[11px] text-neutral-500">
-              Verify sent messages, toggle Demo mode, and configure templates
+              View customer cash memo messages and delivery logs
             </p>
           </div>
           <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
-            <span>Manage WhatsApp</span>
+            <span>View WhatsApp</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
-        {/* Branch Admin Login Credentials Info */}
-        <div className="bg-neutral-900 text-white p-6 rounded-xl shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+        {/* 1. Branch Manager Login & Store Contact */}
+        <div className="bg-neutral-900 text-white p-6 rounded-xl shadow-xs space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-neutral-800 pb-4">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-400" />
               <h3 className="text-sm font-bold">
@@ -330,21 +314,15 @@ export default function SettingsPage() {
                   : 'Vaniyambalam Store'}
               </h3>
             </div>
-            <span className="text-xs bg-neutral-800 text-neutral-300 px-2.5 py-1 rounded font-mono font-bold">
-              Username: {activeBranch === 'pkdm' ? 'adminpkdm' : 'adminvnb'}
+            <span className="text-xs bg-neutral-800 text-neutral-300 px-3 py-1.5 rounded-lg font-mono font-bold w-fit">
+              Login ID: {activeBranch === 'pkdm' ? 'adminpkdm' : 'adminvnb'}
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
-              <p className="text-neutral-400">Store Access Security:</p>
-              <p className="text-xs text-neutral-300 mt-1 leading-relaxed">
-                All passwords are encrypted with bcrypt. Set a new password below anytime to ensure only you have access.
-              </p>
-            </div>
-            <div>
               <label className="block text-neutral-300 font-bold uppercase mb-1">
-                Change Password (New):
+                Change Password (പുതിയ പാസ്‌വേഡ്):
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
@@ -354,76 +332,31 @@ export default function SettingsPage() {
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full pl-9 pr-3 py-1.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white font-mono text-xs focus:border-white outline-hidden"
+                  placeholder="Enter new password (min 4 chars)"
+                  className="w-full pl-9 pr-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white font-mono text-xs focus:border-white outline-hidden"
                 />
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 1. Branch Information */}
-        <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 border-b pb-3">
-            <Store className="w-5 h-5 text-neutral-800" />
-            <h3 className="text-sm font-bold text-neutral-900">
-              1. {activeBranch.toUpperCase()} Branch Location &amp; Contact Details
-            </h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Store Branch Name
-              </label>
-              <input
-                type="text"
-                required
-                value={shopName}
-                onChange={(e) => setShopName(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              />
-            </div>
-
-
-
-            <div className="sm:col-span-2">
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Store Physical Address (Printed on Invoices)
-              </label>
-              <input
-                type="text"
-                required
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-white"
-              />
+              <p className="text-[11px] text-neutral-400 mt-1">
+                Leave blank to keep existing password unchanged.
+              </p>
             </div>
 
             <div>
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Store Landline / Phone
-              </label>
-              <input
-                type="text"
-                required
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Store WhatsApp Number
+              <label className="block text-neutral-300 font-bold uppercase mb-1 flex items-center gap-1.5">
+                <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Store WhatsApp Number (ഷോപ്പ് വാട്സ്ആപ്പ് നമ്പർ):</span>
               </label>
               <input
                 type="text"
                 required
                 value={whatsappNumber}
                 onChange={(e) => setWhatsappNumber(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
+                placeholder="+91 8330889632"
+                className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white font-mono text-xs focus:border-white outline-hidden"
               />
+              <p className="text-[11px] text-neutral-400 mt-1">
+                All customer invoices &amp; bills reflect this store WhatsApp number.
+              </p>
             </div>
           </div>
         </div>
@@ -433,7 +366,7 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 border-b pb-3">
             <Tag className="w-5 h-5 text-neutral-800" />
             <h3 className="text-sm font-bold text-neutral-900">
-              2. Kilo Clothing Pricing &amp; Loyalty Rules
+              Kilo Clothing Pricing &amp; 5 KG Loyalty Rules
             </h3>
           </div>
 
@@ -448,15 +381,46 @@ export default function SettingsPage() {
                 min="100"
                 required
                 value={ratePerKg}
-                onChange={(e) => setRatePerKg(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setRatePerKg(val);
+                  const num = parseFloat(val);
+                  if (!isNaN(num) && num > 0) {
+                    setLoyaltyDiscount((num * 0.5).toFixed(2));
+                  }
+                }}
                 className="w-full px-3 py-2 border rounded-lg text-sm font-bold font-mono bg-white"
               />
-              <p className="text-[11px] text-neutral-500 mt-1">Default: ₹899 / KG</p>
+              <p className="text-[11px] text-neutral-500 mt-1">Standard Selling Price: ₹899 / KG</p>
+            </div>
+
+            <div>
+              <label className="block font-bold text-neutral-700 uppercase mb-1 flex items-center gap-1">
+                <Gift className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Loyalty Target (ലക്ഷ്യം - എപ്പോൾ റിവാർഡ് ലഭിക്കും)</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="500"
+                  min="1000"
+                  required
+                  value={targetLoyaltyGrams}
+                  onChange={(e) => setTargetLoyaltyGrams(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm font-bold font-mono bg-white"
+                />
+                <span className="text-xs font-bold text-neutral-500 whitespace-nowrap">
+                  Grams ({Number(targetLoyaltyGrams) / 1000} KG)
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-500 mt-1">
+                ഒരു കസ്റ്റമർ 5 KG (5000g) ഡ്രസ്സ് എടുത്തു കഴിയുമ്പോൾ റിവാർഡ് അൺലോക്ക് ആകും.
+              </p>
             </div>
 
             <div>
               <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Loyalty Reward Discount (₹)
+                Loyalty Reward Value (500g FREE Discount in ₹)
               </label>
               <input
                 type="number"
@@ -468,138 +432,37 @@ export default function SettingsPage() {
                 className="w-full px-3 py-2 border rounded-lg text-sm font-bold font-mono bg-white"
               />
               <p className="text-[11px] text-neutral-500 mt-1">
-                50% OFF on 1 KG discount value (₹449.50)
+                50% OFF on 1 KG dress material (500 grams FREE = ₹449.50)
               </p>
             </div>
 
             <div>
               <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Minimum Weight for Reward (Grams)
+                Minimum Purchase to Redeem Reward (കുറഞ്ഞത് വാങ്ങേണ്ടത്)
               </label>
-              <input
-                type="number"
-                step="100"
-                min="100"
-                required
-                value={minWeightGrams}
-                onChange={(e) => setMinWeightGrams(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-bold font-mono bg-white"
-              />
-              <p className="text-[11px] text-neutral-500 mt-1">
-                1000g (1 KG) required to unlock 50% off
-              </p>
-            </div>
-
-            <div>
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Required Purchases to Unlock
-              </label>
-              <input
-                type="number"
-                step="1"
-                min="1"
-                max="10"
-                required
-                value={requiredVisits}
-                onChange={(e) => setRequiredVisits(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-bold font-mono bg-white"
-              />
-              <p className="text-[11px] text-neutral-500 mt-1">
-                5 purchases (reward applied on 6th purchase)
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* 3. WhatsApp Business Cloud API Configuration (Administrator Only) */}
-        <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b pb-3">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-neutral-800" />
-              <div>
-                <h3 className="text-sm font-bold text-neutral-900">
-                  3. WhatsApp Business Platform Cloud API (Official Image Delivery)
-                </h3>
-                <p className="text-[11px] text-neutral-500">
-                  Sends the actual invoice image attachment from configured business sender +91 8330889632 to customers
-                </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="100"
+                  min="500"
+                  required
+                  value={minWeightGrams}
+                  onChange={(e) => setMinWeightGrams(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm font-bold font-mono bg-white"
+                />
+                <span className="text-xs font-bold text-neutral-500 whitespace-nowrap">
+                  Grams ({Number(minWeightGrams) / 1000} KG)
+                </span>
               </div>
-            </div>
-            <span
-              className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                whatsappAccessToken && whatsappPhoneNumberId
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-amber-100 text-amber-900 border border-amber-300'
-              }`}
-            >
-              {whatsappAccessToken && whatsappPhoneNumberId ? 'API Configured' : 'Credentials Missing'}
-            </span>
-          </div>
-
-          <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200 text-xs text-neutral-700 leading-relaxed space-y-2">
-            <p className="font-semibold text-neutral-900">
-              📌 Official WhatsApp Sender: <span className="font-mono text-emerald-800 font-bold">+91 8330889632</span>
-            </p>
-            <p className="text-[11px] text-neutral-600">
-              To send generated invoice images directly to customer WhatsApp chats as image attachments, provide your Meta WhatsApp Business Cloud API credentials below. These credentials remain securely stored on the server.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div>
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                WhatsApp Phone Number ID
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 109283746501928"
-                value={whatsappPhoneNumberId}
-                onChange={(e) => setWhatsappPhoneNumberId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
-              />
               <p className="text-[11px] text-neutral-500 mt-1">
-                Meta Phone Number ID for +91 8330889632
-              </p>
-            </div>
-
-            <div>
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                WhatsApp Business Account ID
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. 192837465019283"
-                value={whatsappBusinessAccountId}
-                onChange={(e) => setWhatsappBusinessAccountId(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
-              />
-              <p className="text-[11px] text-neutral-500 mt-1">
-                Found in Meta Business Manager WhatsApp Accounts
-              </p>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="block font-bold text-neutral-700 uppercase mb-1">
-                WhatsApp Permanent System User Access Token
-              </label>
-              <input
-                type="password"
-                placeholder="EAAG... (Permanent Meta System User Token)"
-                value={whatsappAccessToken}
-                onChange={(e) => setWhatsappAccessToken(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-white"
-              />
-              <p className="text-[11px] text-neutral-500 mt-1">
-                Must have <code>whatsapp_business_messaging</code> and <code>whatsapp_business_management</code> permissions.
+                അടുത്ത തവണ 1 KG അല്ലെങ്കിൽ കൂടുതൽ വാങ്ങുമ്പോൾ മാത്രമേ അരക്കിലോ ഫ്രീ കിട്ടൂ.
               </p>
             </div>
           </div>
         </div>
-
-
 
         {/* Save Button */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pt-2">
           <button
             type="submit"
             disabled={isSaving}
@@ -609,8 +472,8 @@ export default function SettingsPage() {
             <span>{isSaving ? 'Saving...' : `Save ${activeBranch.toUpperCase()} Settings`}</span>
           </button>
           {saveSuccess && (
-            <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-4 h-4" /> Branch settings updated successfully!
+            <span className="text-xs text-emerald-600 font-bold flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Settings updated &amp; saved!
             </span>
           )}
         </div>

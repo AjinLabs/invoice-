@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { readDb } from '@/lib/db';
+import { getDb, readDb } from '@/lib/db';
 import { generateMonthlyReportPdf } from '@/lib/pdf';
 
 export async function GET(request: Request) {
@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month') || undefined;
 
-    const db = readDb();
+    const db = await getDb();
     const doc = generateMonthlyReportPdf(db.purchases, db.shop_settings, month);
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 

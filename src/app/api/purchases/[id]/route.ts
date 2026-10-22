@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb } from '@/lib/db';
+import { getDb, readDb } from '@/lib/db';
 
 export async function GET(
   request: Request,
@@ -11,7 +11,7 @@ export async function GET(
       return NextResponse.json({ success: false, error: 'Missing invoice id' }, { status: 400 });
     }
 
-    const db = readDb();
+    const db = await getDb();
     const purchase = db.purchases.find(
       (p) => p.id === id || p.invoice_number.toLowerCase() === id.toLowerCase()
     );
