@@ -379,8 +379,9 @@ export async function POST(request: Request) {
     });
 
     // Create branch-specific settings snapshot for WhatsApp
+    const currentDbSnapshot = await getDb();
     const branchSettings = {
-      ...readDb().shop_settings,
+      ...currentDbSnapshot.shop_settings,
       shop_name: branchInfoSnapshot.name,
       address: branchInfoSnapshot.address,
       phone: branchInfoSnapshot.phone,

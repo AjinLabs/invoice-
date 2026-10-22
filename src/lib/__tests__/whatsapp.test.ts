@@ -103,12 +103,12 @@ describe('WhatsApp Message Formatting — Strict Zero URL Guarantee', () => {
       ...mockPurchase,
       loyalty_applied: true,
       discount_amount: 449.5,
-      loyalty_weight_after_grams: 700,
+      loyalty_weight_after_grams: 0,
     };
     const text = formatWhatsAppInvoiceText(redeemedPurchase, mockSettings);
     assert.ok(text.includes('🎉 *500g FREE REWARD REDEEMED!*'));
     assert.ok(text.includes('Applied: 500g FREE Dress Material (-₹449.50)'));
-    assert.ok(text.includes('0.70 KG / 5.00 KG'));
+    assert.ok(text.includes('0.00 KG / 5.00 KG'));
     assert.ok(!text.includes('http'), 'Redeemed message must also contain ZERO URLs');
   });
 

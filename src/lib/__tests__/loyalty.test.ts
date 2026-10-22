@@ -317,8 +317,8 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
     assert.strictEqual(billing.canApplyReward, true, 'Qualifies for reward');
     // 500g FREE value = 0.5 * 899 = 449.50
     assert.strictEqual(billing.discountAmount, 449.5, 'Exact 500g free discount = ₹449.50');
-    // Paid weight: 1200g - 500g = 700g
-    assert.strictEqual(billing.nextLoyaltyWeightGrams, 700, 'Next cycle starts with 700g paid weight');
+    // Next cycle starts fresh at 0g:
+    assert.strictEqual(billing.nextLoyaltyWeightGrams, 0, 'Next cycle starts fresh at 0g');
     assert.strictEqual(billing.nextRewardUnlocked, false, 'Reward lock resets to false');
 
     // Subtotal: 1200 * 899 / 1000 = 1078.80. Final = 1078.80 - 449.50 = 629.30
@@ -343,8 +343,8 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
       status: 'COMPLETED',
       loyalty_applied: true,
       loyalty_progress_before: 5000,
-      loyalty_progress_after: 700,
-      loyalty_weight_after_grams: 700,
+      loyalty_progress_after: 0,
+      loyalty_weight_after_grams: 0,
       loyalty_reward_unlocked_after: false,
       loyalty_message: '',
       created_at: new Date().toISOString(),
@@ -365,14 +365,14 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
     const section = formatWhatsAppLoyaltySection(mockPur, testSettings);
     assert.ok(section.includes('500g FREE REWARD REDEEMED!'));
     assert.ok(section.includes('Applied: 500g FREE Dress Material (-₹449.50)'));
-    assert.ok(section.includes('0.70 KG / 5.00 KG'));
-    assert.ok(section.includes('Remaining: 4.30 KG to go'));
-    assert.ok(section.includes('Your new 5 KG loyalty cycle has started'));
+    assert.ok(section.includes('0.00 KG / 5.00 KG'));
+    assert.ok(section.includes('Remaining: 5.00 KG to go'));
+    assert.ok(section.includes('Your new 5 KG loyalty cycle starts fresh from 0.00 KG'));
   });
 
   // Test 6: Single redemption & duplicate redemption prevention
   test('Prevents duplicate reward redemption on consecutive qualifying purchases', () => {
-    // Aisha now has loyalty_reward_unlocked: false and loyalty_weight_grams: 700
+    // Aisha now has loyalty_reward_unlocked: false and loyalty_weight_grams: 0
     const customerAfterRedemption: Customer = {
       id: 'cust_2',
       phone: '9876543211',
@@ -381,7 +381,7 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
       branch: 'vnb',
       total_purchases: 4,
       total_weight_grams: 6200,
-      loyalty_weight_grams: 700,
+      loyalty_weight_grams: 0,
       total_amount_spent: 5124.3,
       loyalty_count: 4,
       loyalty_reward_unlocked: false,
@@ -401,8 +401,8 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
 
     assert.strictEqual(nextBill.canApplyReward, false, 'Cannot redeem again because reward is not unlocked');
     assert.strictEqual(nextBill.discountAmount, 0, 'No discount on this visit');
-    // Accumulating towards next 5 KG: 700 + 1500 = 2200g
-    assert.strictEqual(nextBill.nextLoyaltyWeightGrams, 2200, 'Weight progresses in new cycle');
+    // Accumulating towards next 5 KG: starts fresh from 0 + 1500 = 1500g
+    assert.strictEqual(nextBill.nextLoyaltyWeightGrams, 1500, 'Weight progresses in new cycle');
   });
 
   // Test 7: Multiple products with different weights and custom items

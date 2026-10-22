@@ -80,25 +80,24 @@ export function evaluateLoyaltyState(params: {
 
   // Case 1: If evaluating an existing purchase that already redeemed the reward
   if (params.isAlreadyRedeemedOnPurchase) {
-    const paidWeight = Math.max(0, currentPurchaseWeight - REWARD_FREE_GRAMS);
-    const nextGrams = Math.min(targetGrams - 1, paidWeight);
+    const nextGrams = 0;
     return {
       state: 'REWARD_REDEEMED',
       completedGrams: nextGrams,
-      completedKg: (nextGrams / 1000).toFixed(2),
+      completedKg: '0.00',
       targetGrams,
       targetKg: (targetGrams / 1000).toFixed(2),
-      remainingGrams: Math.max(0, targetGrams - nextGrams),
-      remainingKg: (Math.max(0, targetGrams - nextGrams) / 1000).toFixed(2),
+      remainingGrams: targetGrams,
+      remainingKg: (targetGrams / 1000).toFixed(2),
       isUnlocked: false,
       isRedeemed: true,
       discountGrams: REWARD_FREE_GRAMS,
       discountAmount: rewardValue,
-      nextCycleGrams: nextGrams,
-      nextCycleKg: (nextGrams / 1000).toFixed(2),
-      progressBar: renderUnicodeProgressBar(nextGrams, targetGrams),
+      nextCycleGrams: 0,
+      nextCycleKg: '0.00',
+      progressBar: renderUnicodeProgressBar(0, targetGrams),
       headline: '🎁 500g FREE Reward Redeemed!',
-      explanation: `Applied: 500g FREE Dress Material (-₹${rewardValue.toFixed(2)}).\nYour new 5 KG loyalty cycle has started!`,
+      explanation: `Applied: 500g FREE on 1 KG (-₹${rewardValue.toFixed(2)}).\nYour new 5 KG loyalty cycle starts fresh from 0.00 KG!`,
     };
   }
 
@@ -106,26 +105,27 @@ export function evaluateLoyaltyState(params: {
   if (wasRewardUnlocked) {
     if (currentPurchaseWeight >= QUALIFYING_PURCHASE_MIN_GRAMS) {
       // QUALIFYING PURCHASE: REDEEM REWARD!
-      const paidWeight = Math.max(0, currentPurchaseWeight - REWARD_FREE_GRAMS);
-      const nextGrams = Math.min(targetGrams - 1, paidWeight);
+      // The remaining weight from this promotional purchase does not count towards the next 5 KG.
+      // Customer starts fresh from 0 to 5 KG.
+      const nextGrams = 0;
 
       return {
         state: 'REWARD_REDEEMED',
-        completedGrams: nextGrams,
-        completedKg: (nextGrams / 1000).toFixed(2),
+        completedGrams: 0,
+        completedKg: '0.00',
         targetGrams,
         targetKg: (targetGrams / 1000).toFixed(2),
-        remainingGrams: Math.max(0, targetGrams - nextGrams),
-        remainingKg: (Math.max(0, targetGrams - nextGrams) / 1000).toFixed(2),
+        remainingGrams: targetGrams,
+        remainingKg: (targetGrams / 1000).toFixed(2),
         isUnlocked: false,
         isRedeemed: true,
         discountGrams: REWARD_FREE_GRAMS,
         discountAmount: rewardValue,
-        nextCycleGrams: nextGrams,
-        nextCycleKg: (nextGrams / 1000).toFixed(2),
-        progressBar: renderUnicodeProgressBar(nextGrams, targetGrams),
+        nextCycleGrams: 0,
+        nextCycleKg: '0.00',
+        progressBar: renderUnicodeProgressBar(0, targetGrams),
         headline: '🎁 500g FREE Reward Redeemed!',
-        explanation: `Applied: 500g FREE Dress Material (-₹${rewardValue.toFixed(2)}).\nYour new 5 KG loyalty cycle has started!`,
+        explanation: `Applied: 500g FREE on 1 KG (-₹${rewardValue.toFixed(2)}).\nYour new 5 KG loyalty cycle starts fresh from 0.00 KG!`,
       };
     } else {
       // NON-QUALIFYING PURCHASE (< 1 KG): REWARD IS RETAINED!
@@ -280,13 +280,15 @@ export function formatWhatsAppLoyaltySection(
     return (
       `🎁 *YOUR LOYALTY REWARDS*\n\n` +
       `🎉 *500g FREE REWARD REDEEMED!*\n` +
-      `Applied: 500g FREE Dress Material (-₹${discountFormatted})\n\n` +
+      `Applied: 500g FREE Dress Material (-₹${discountFormatted})\n` +
+      `(Redeemed from your 1 KG purchase)\n\n` +
       `⚖️ *YOUR NEXT LOYALTY CYCLE*\n` +
-      `${completedKg} KG / 5.00 KG\n\n` +
-      `${bar}\n\n` +
-      `✅ Completed: ${completedKg} KG\n` +
-      `🎯 Remaining: ${remainingKg} KG to go\n\n` +
-      `❤️ Thank you for being our loyal customer! Your new 5 KG loyalty cycle has started.`
+      `0.00 KG / 5.00 KG\n\n` +
+      `${renderUnicodeProgressBar(0, targetGrams)}\n\n` +
+      `✅ Completed: 0.00 KG\n` +
+      `🎯 Remaining: 5.00 KG to go\n\n` +
+      `📌 Note: The remaining weight from this promotional purchase does not count towards loyalty. Your new 5 KG cycle starts fresh from 0.00 KG.\n` +
+      `❤️ Thank you for being our loyal customer! Your new 5 KG loyalty cycle starts fresh from 0.00 KG.`
     );
   }
 
@@ -300,7 +302,7 @@ export function formatWhatsAppLoyaltySection(
       `🎯 Reward Status: Unlocked & Available!\n\n` +
       `⭐ *500g FREE DRESS MATERIAL WAITING!*\n` +
       `Your 500g FREE reward is unlocked and saved.\n` +
-      `📌 *Terms:* Redeemable on a qualifying purchase of 1 KG or more of eligible dress material. Your reward remains saved for your next 1 KG+ purchase.`
+      `📌 *Offer:* Buy 1 KG or more on your next visit to get 500g FREE from that 1 KG! Valid on your qualifying purchase of 1 KG or more of eligible dress material.`
     );
   }
 
@@ -314,7 +316,7 @@ export function formatWhatsAppLoyaltySection(
       `🎯 Remaining: 0.00 KG\n\n` +
       `🎉 *5 KG TARGET COMPLETED — 500g FREE UNLOCKED!*\n` +
       `You have completed your 5 KG milestone!\n` +
-      `📌 *Terms:* Valid on your subsequent qualifying purchase containing 1 KG or more of eligible dress material.`
+      `📌 *Offer:* Buy 1 KG or more on your next visit to get 500g FREE from that 1 KG! Valid on your subsequent qualifying purchase containing 1 KG or more of eligible dress material.`
     );
   }
 
@@ -326,7 +328,7 @@ export function formatWhatsAppLoyaltySection(
       `${renderUnicodeProgressBar(0, targetGrams)}\n\n` +
       `✅ Completed: 0.00 KG\n` +
       `🎯 Remaining: 5.00 KG to go\n\n` +
-      `✨ Buy eligible dress material by weight. Complete 5 KG to unlock 500g FREE dress material on your subsequent qualifying 1 KG purchase!`
+      `✨ Buy 5 KG total dress purchases, and on your NEXT purchase of 1 KG or more, get 500g FREE from that 1 KG!`
     );
   }
 
@@ -338,6 +340,6 @@ export function formatWhatsAppLoyaltySection(
     `${bar}\n\n` +
     `✅ Completed: ${completedKg} KG\n` +
     `🎯 Remaining: ${remainingKg} KG to go\n\n` +
-    `✨ Complete 5 KG of eligible dress purchases to unlock 500g FREE dress material on your subsequent qualifying 1 KG purchase!`
+    `✨ Buy 5 KG total dress purchases, and on your NEXT purchase of 1 KG or more, get 500g FREE from that 1 KG!`
   );
 }

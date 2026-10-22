@@ -5,8 +5,12 @@ declare global {
   var __TERRY_PG_POOL__: Pool | undefined;
 }
 
+export const SUPABASE_DATABASE_URL =
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:TERRY%26WOMEN%401234@db.jnqwoxgvxylqjvnpjfnm.supabase.co:5432/postgres';
+
 export function getPostgresPool(): Pool | null {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = SUPABASE_DATABASE_URL;
   if (!connectionString) {
     return null;
   }
@@ -65,7 +69,7 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
       loyalty_applied: Boolean(p.loyalty_applied),
       loyalty_progress_before: Number(p.loyalty_progress_before) || 0,
       loyalty_progress_after: Number(p.loyalty_progress_after) || 0,
-      loyalty_weight_after_grams: p.loyalty_weight_after_grams ? Number(p.loyalty_weight_after_grams) : undefined,
+      loyalty_weight_after_grams: p.loyalty_weight_after_grams !== null && p.loyalty_weight_after_grams !== undefined ? Number(p.loyalty_weight_after_grams) : undefined,
       loyalty_reward_unlocked_after: p.loyalty_reward_unlocked_after !== undefined ? Boolean(p.loyalty_reward_unlocked_after) : undefined,
       items: typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []),
     }));
@@ -185,7 +189,8 @@ export async function saveDbToPostgres(data: DatabaseSchema): Promise<boolean> {
           p.weight_grams, p.weight_kg, p.rate_per_kg, p.subtotal, p.discount_amount || 0,
           p.round_off || 0, p.final_amount, p.payment_method || 'CASH', p.status || 'COMPLETED',
           Boolean(p.loyalty_applied), p.loyalty_progress_before || 0, p.loyalty_progress_after || 0,
-          p.loyalty_weight_after_grams || null, Boolean(p.loyalty_reward_unlocked_after),
+          p.loyalty_weight_after_grams !== undefined && p.loyalty_weight_after_grams !== null ? Number(p.loyalty_weight_after_grams) : null,
+          Boolean(p.loyalty_reward_unlocked_after),
           p.loyalty_message || null, p.notes || null, JSON.stringify(p.items || []),
           p.invoice_image_url || null, p.created_at || new Date().toISOString(), p.updated_at || new Date().toISOString(),
         ]

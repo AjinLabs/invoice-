@@ -174,9 +174,11 @@ export function formatWhatsAppInvoiceText(
     const completedKg = (currentWeightGrams / 1000).toFixed(2);
 
     if (purchase.loyalty_applied) {
-      loyaltyBlock = `🎉 *500g FREE Dress Material Redeemed!*\n(New Cycle: ${completedKg} KG / 5.00 KG)\n\n${separator}\n`;
+      loyaltyBlock = `🎉 *500g FREE Reward Redeemed on 1 KG!*\n(New Loyalty Cycle: 0.00 KG / 5.00 KG — starts fresh from 0 KG)\n\n${separator}\n`;
+    } else if (purchase.loyalty_reward_unlocked_after) {
+      loyaltyBlock = `🎉 *5 KG Milestone Completed — 500g FREE Unlocked!*\nBuy 1 KG or more on your next visit to get 500g FREE from that 1 KG!\n\n${separator}\n`;
     } else {
-      loyaltyBlock = `🎁 *Special Offer:* Complete 5 KG dress purchases & get 500g FREE dress material!\n(Your Progress: ${completedKg} KG / 5.00 KG)\n\n${separator}\n`;
+      loyaltyBlock = `🎁 *Special Offer:* Complete 5 KG dress purchases & get 500g FREE on your next 1 KG purchase!\n(Your Progress: ${completedKg} KG / 5.00 KG)\n\n${separator}\n`;
     }
   } else {
     loyaltyBlock = `${formatWhatsAppLoyaltySection(purchase, settings)}\n\n${separator}\n`;
