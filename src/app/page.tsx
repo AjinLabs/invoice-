@@ -520,53 +520,6 @@ export default function BillingPage() {
     <div className="min-h-[calc(100vh-4rem)] bg-neutral-100 p-3 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-5">
         {/* ==============================================================
-            ACTIVE STORE SELECTOR (Vaniyambalam vs Pookkottumpadam)
-           ============================================================== */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 sm:px-5 rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.03)] no-print">
-          <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-              Billing Store:
-            </span>
-            <div className="inline-flex p-1 bg-neutral-100 rounded-xl gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveBranch('vnb');
-                  fetchSettings('vnb');
-                }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeBranch === 'vnb'
-                    ? 'bg-[#094327] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
-                }`}
-              >
-                📍 TERRY7 Vaniyambalam (VNB)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveBranch('pkdm');
-                  fetchSettings('pkdm');
-                }}
-                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeBranch === 'pkdm'
-                    ? 'bg-[#094327] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
-                }`}
-              >
-                📍 TERRY7 Pookkottumpadam (PKDM)
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500 font-medium">Rate:</span>
-            <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60">
-              ₹{branchInfo?.rate_per_kg || 899} / KG
-            </span>
-          </div>
-        </div>
-
-        {/* ==============================================================
             MAIN GRID: POS BILLING INPUTS (Left 7 cols) & LIVE INVOICE (Right 5 cols)
            ============================================================== */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

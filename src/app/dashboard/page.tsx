@@ -11,7 +11,6 @@ import {
   CreditCard,
   ArrowUpRight,
   Download,
-  Store,
 } from 'lucide-react';
 import { DashboardStats, BranchInfo } from '@/lib/types';
 
@@ -23,27 +22,10 @@ interface AuthMeUser {
   branch?: string;
 }
 
-interface StoreBranchStats {
-  todaySales: number;
-  todayGross: number;
-  todayDiscounts: number;
-  todayOrders: number;
-  totalNetSales: number;
-  totalGrossSales: number;
-  totalDiscounts: number;
-  totalOrders: number;
-}
-
-interface StoresBreakdown {
-  vnb: StoreBranchStats;
-  pkdm: StoreBranchStats;
-}
-
 export default function DashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<AuthMeUser | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [storesBreakdown, setStoresBreakdown] = useState<StoresBreakdown | null>(null);
   const [activeBranch, setActiveBranch] = useState<string>('vnb');
   const [, setBranchInfo] = useState<BranchInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,9 +38,6 @@ export default function DashboardPage() {
         setStats(data.stats);
         if (data.branchInfo) {
           setBranchInfo(data.branchInfo);
-        }
-        if (data.storesBreakdown) {
-          setStoresBreakdown(data.storesBreakdown);
         }
       }
     } catch (err) {
@@ -157,55 +136,6 @@ export default function DashboardPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-              Select Store:
-            </span>
-            <div className="inline-flex p-1 bg-neutral-200/60 rounded-xl gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveBranch('all');
-                  fetchStatsForBranch('all');
-                }}
-                className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeBranch === 'all'
-                    ? 'bg-[#094327] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
-                }`}
-              >
-                🌐 All Stores Combined
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveBranch('vnb');
-                  fetchStatsForBranch('vnb');
-                }}
-                className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeBranch === 'vnb'
-                    ? 'bg-[#094327] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
-                }`}
-              >
-                📍 Vaniyambalam (VNB)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveBranch('pkdm');
-                  fetchStatsForBranch('pkdm');
-                }}
-                className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  activeBranch === 'pkdm'
-                    ? 'bg-[#094327] text-white shadow-xs'
-                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
-                }`}
-              >
-                📍 Pookkottumpadam (PKDM)
-              </button>
-            </div>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 apple-display flex items-center gap-2 flex-wrap">
             <span className="flex items-center">
               <span className="text-[#094327]">TERRY</span>
@@ -215,7 +145,7 @@ export default function DashboardPage() {
               WOMEN
             </span>
             <span className="text-neutral-900 font-bold ml-1 text-xl sm:text-2xl">
-              &bull; {activeBranch === 'all' ? 'All Stores Master Analytics' : activeBranch === 'pkdm' ? 'Pookkottumpadam Store' : 'Vaniyambalam Store'}
+              &bull; Vaniyambalam Store
             </span>
           </h1>
           <p className="text-xs text-neutral-500 mt-1 tracking-tight">
@@ -243,137 +173,6 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
-
-      {/* Store Branch Comparison Cards for both Vaniyambalam and Pookkottumpadam */}
-      {storesBreakdown && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2 apple-headline tracking-tight">
-              <Store className="w-5 h-5 text-neutral-800" />
-              <span>Store Branch Sales &amp; Concessions Breakdown</span>
-            </h2>
-            <span className="text-xs text-neutral-500 font-semibold">
-              Live Comparative Analytics
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Vaniyambalam Store Card */}
-            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 p-5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
-                    VNB
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight flex items-center gap-1">
-                      <span><span className="text-[#094327]">TERRY</span><span className="text-[#e11d48]">7</span></span>
-                      <span>Vaniyambalam Store</span>
-                    </h3>
-                    <p className="text-[11px] text-neutral-400">Railway Station Road</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-neutral-50 rounded-xl">
-                  <span className="text-neutral-500 text-[11px] block">Today&apos;s Net Sales</span>
-                  <span className="text-lg font-black font-mono text-black">
-                    ₹{(storesBreakdown.vnb?.todaySales || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 block mt-0.5">
-                    {storesBreakdown.vnb?.todayOrders || 0} orders today
-                  </span>
-                </div>
-                <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-100">
-                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount</span>
-                  <span className="text-lg font-black font-mono text-rose-700">
-                    -₹{(storesBreakdown.vnb?.todayDiscounts || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-rose-500 block mt-0.5">
-                    Concessions given
-                  </span>
-                </div>
-                <div className="p-3 bg-neutral-50 rounded-xl">
-                  <span className="text-neutral-500 text-[11px] block">Total Realized Revenue</span>
-                  <span className="text-base font-bold font-mono text-neutral-900">
-                    ₹{(storesBreakdown.vnb?.totalNetSales || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 block mt-0.5">
-                    {storesBreakdown.vnb?.totalOrders || 0} total invoices
-                  </span>
-                </div>
-                <div className="p-3 bg-neutral-50 rounded-xl">
-                  <span className="text-neutral-500 text-[11px] block">Total Discounts</span>
-                  <span className="text-base font-bold font-mono text-amber-700">
-                    ₹{(storesBreakdown.vnb?.totalDiscounts || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 block mt-0.5">
-                    Total customer savings
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Pookkottumpadam Store Card */}
-            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 p-5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
-                    PKDM
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-neutral-900 tracking-tight flex items-center gap-1">
-                      <span><span className="text-[#094327]">TERRY</span><span className="text-[#e11d48]">7</span></span>
-                      <span>Pookkottumpadam Store</span>
-                    </h3>
-                    <p className="text-[11px] text-neutral-400">Main Commercial Road</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 bg-neutral-50 rounded-xl">
-                  <span className="text-neutral-500 text-[11px] block">Today&apos;s Net Sales</span>
-                  <span className="text-lg font-black font-mono text-black">
-                    ₹{(storesBreakdown.pkdm?.todaySales || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 block mt-0.5">
-                    {storesBreakdown.pkdm?.todayOrders || 0} orders today
-                  </span>
-                </div>
-                <div className="p-3 bg-rose-50/60 rounded-xl border border-rose-100">
-                  <span className="text-rose-900 text-[11px] block">Today&apos;s Discount</span>
-                  <span className="text-lg font-black font-mono text-rose-700">
-                    -₹{(storesBreakdown.pkdm?.todayDiscounts || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-rose-500 block mt-0.5">
-                    Concessions given
-                  </span>
-                </div>
-                <div className="p-3 bg-neutral-50 rounded-xl">
-                  <span className="text-neutral-500 text-[11px] block">Total Realized Revenue</span>
-                  <span className="text-base font-bold font-mono text-neutral-900">
-                    ₹{(storesBreakdown.pkdm?.totalNetSales || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 block mt-0.5">
-                    {storesBreakdown.pkdm?.totalOrders || 0} total invoices
-                  </span>
-                </div>
-                <div className="p-3 bg-neutral-50 rounded-xl">
-                  <span className="text-neutral-500 text-[11px] block">Total Discounts</span>
-                  <span className="text-base font-bold font-mono text-amber-700">
-                    ₹{(storesBreakdown.pkdm?.totalDiscounts || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-400 block mt-0.5">
-                    Total customer savings
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Core Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">

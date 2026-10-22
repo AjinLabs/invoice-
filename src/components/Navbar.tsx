@@ -127,21 +127,31 @@ export default function Navbar() {
       <header className="sticky top-0 z-40 no-print bg-neutral-950/85 backdrop-blur-2xl border-b border-white/10 saturate-180 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* Left: Brand Logo only as requested */}
+            {/* Left: Brand Logo + TERRY7 VANIYAMBALAM */}
             <div className="flex items-center">
               <Link
                 href="/"
-                className="flex items-center gap-2 group apple-pressable bg-white hover:bg-neutral-50 p-1 sm:p-1.5 rounded-full shadow-xs border border-white/20 transition-all"
-                title="TERRY7 WOMEN"
+                className="flex items-center gap-2.5 sm:gap-3 group apple-pressable"
+                title="TERRY7 Vaniyambalam"
               >
-                <Image
-                  src="/logo.png"
-                  alt="TERRY7 WOMEN"
-                  width={34}
-                  height={34}
-                  priority
-                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain group-hover:scale-105 transition-transform"
-                />
+                <div className="bg-white p-1 rounded-full shadow-xs border border-white/20">
+                  <Image
+                    src="/logo.png"
+                    alt="TERRY7"
+                    width={34}
+                    height={34}
+                    priority
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain group-hover:scale-105 transition-transform"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-base sm:text-lg tracking-tight text-white flex items-center">
+                    TERRY<span className="text-[#e11d48]">7</span>
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    Vaniyambalam
+                  </span>
+                </div>
               </Link>
             </div>
 
