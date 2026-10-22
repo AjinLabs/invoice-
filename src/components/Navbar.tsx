@@ -88,8 +88,7 @@ export default function Navbar() {
             pathname === '/settings' ||
             pathname === '/invoices' ||
             pathname === '/customers' ||
-            pathname === '/reports' ||
-            pathname === '/whatsapp',
+            pathname === '/reports',
         },
       ]
     : [
@@ -116,8 +115,7 @@ export default function Navbar() {
             pathname === '/settings' ||
             pathname === '/invoices' ||
             pathname === '/customers' ||
-            pathname === '/reports' ||
-            pathname === '/whatsapp',
+            pathname === '/reports',
         },
       ];
 

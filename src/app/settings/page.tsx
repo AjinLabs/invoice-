@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Settings,
-  Store,
   Tag,
   Save,
   CheckCircle2,
@@ -14,7 +13,6 @@ import {
   Receipt,
   Users,
   FileSpreadsheet,
-  MessageSquare,
   ArrowRight,
   Phone,
   Gift,
@@ -37,11 +35,10 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Store WhatsApp & Contact
+  // Store Contact
   const [shopName, setShopName] = useState('TERRY7 WOMEN - Vaniyambalam');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('+91 8330889632');
-  const [whatsappNumber, setWhatsappNumber] = useState('+91 8330889632');
 
   // Pricing & Loyalty
   const [ratePerKg, setRatePerKg] = useState('899');
@@ -67,8 +64,7 @@ export default function SettingsPage() {
               : 'TERRY7 WOMEN - Vaniyambalam')
         );
         setAddress(s.address || '');
-        setPhone(s.phone || '+91 8330889632');
-        setWhatsappNumber(s.whatsapp_number || s.phone || '+91 8330889632');
+        setPhone(s.whatsapp_number || s.phone || '+91 8330889632');
 
         setRatePerKg(s.rate_per_kg?.toString() || '899');
         setTargetLoyaltyGrams(s.target_loyalty_grams?.toString() || '5000');
@@ -138,7 +134,7 @@ export default function SettingsPage() {
           shop_name: shopName,
           address,
           phone,
-          whatsapp_number: whatsappNumber,
+          whatsapp_number: phone,
           rate_per_kg: parseFloat(ratePerKg),
           target_loyalty_grams: parseInt(targetLoyaltyGrams, 10),
           loyalty_discount: parseFloat(loyaltyDiscount),
@@ -183,7 +179,7 @@ export default function SettingsPage() {
             <span>Store &amp; Application Settings</span>
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
-            Configure clothing rates, 5 KG loyalty rules, store WhatsApp number, and branch passwords.
+            Configure clothing rates, 5 KG customer loyalty rules, store contact number, and branch passwords.
           </p>
         </div>
 
@@ -217,24 +213,24 @@ export default function SettingsPage() {
       </div>
 
       {/* ==============================================================
-          SETTINGS HUB: Secondary App Modules
+          SETTINGS HUB: Secondary App Modules (3 Clean Cards Only)
          ============================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* 1. Invoices */}
         <Link
           href="/invoices"
-          className="bg-white p-4 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
+          className="bg-white p-5 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
         >
           <div className="space-y-1">
-            <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
+            <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
               <Receipt className="w-5 h-5" />
             </div>
             <h3 className="text-sm font-bold text-neutral-900 pt-2">Invoices Register</h3>
             <p className="text-[11px] text-neutral-500">
-              View and print past customer bills &amp; receipts
+              Search, view, and print past customer bills &amp; receipts
             </p>
           </div>
-          <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
+          <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-4">
             <span>View Invoices</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -243,18 +239,18 @@ export default function SettingsPage() {
         {/* 2. Customers */}
         <Link
           href="/customers"
-          className="bg-white p-4 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
+          className="bg-white p-5 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
         >
           <div className="space-y-1">
-            <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
+            <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
               <Users className="w-5 h-5" />
             </div>
             <h3 className="text-sm font-bold text-neutral-900 pt-2">Customer Directory</h3>
             <p className="text-[11px] text-neutral-500">
-              Track 5 KG loyalty weight progress and purchases
+              Track 5 KG loyalty weight progress and customer purchase history
             </p>
           </div>
-          <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
+          <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-4">
             <span>View Customers</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
@@ -263,39 +259,19 @@ export default function SettingsPage() {
         {/* 3. Reports & CSV Export */}
         <Link
           href="/reports"
-          className="bg-white p-4 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
+          className="bg-white p-5 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
         >
           <div className="space-y-1">
-            <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
+            <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
             <h3 className="text-sm font-bold text-neutral-900 pt-2">Reports &amp; Downloads</h3>
             <p className="text-[11px] text-neutral-500">
-              Download CSV spreadsheets of daily sales and bills
+              Download CSV spreadsheets of daily store sales, weights, and items
             </p>
           </div>
-          <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
+          <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-4">
             <span>Download CSV</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </div>
-        </Link>
-
-        {/* 4. WhatsApp Messages */}
-        <Link
-          href="/whatsapp"
-          className="bg-white p-4 rounded-xl border border-neutral-200 shadow-xs hover:border-black transition-all group flex flex-col justify-between"
-        >
-          <div className="space-y-1">
-            <div className="w-9 h-9 rounded-lg bg-neutral-100 flex items-center justify-center text-black group-hover:bg-black group-hover:text-white transition-colors">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <h3 className="text-sm font-bold text-neutral-900 pt-2">WhatsApp Receipts</h3>
-            <p className="text-[11px] text-neutral-500">
-              View customer cash memo messages and delivery logs
-            </p>
-          </div>
-          <div className="flex items-center gap-1 text-xs font-bold text-neutral-700 group-hover:text-black pt-3">
-            <span>View WhatsApp</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
@@ -322,7 +298,7 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
               <label className="block text-neutral-300 font-bold uppercase mb-1">
-                Change Password (പുതിയ പാസ്‌വേഡ്):
+                Change Password:
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-500">
@@ -344,18 +320,18 @@ export default function SettingsPage() {
             <div>
               <label className="block text-neutral-300 font-bold uppercase mb-1 flex items-center gap-1.5">
                 <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Store WhatsApp Number (ഷോപ്പ് വാട്സ്ആപ്പ് നമ്പർ):</span>
+                <span>Store Mobile / Contact Number:</span>
               </label>
               <input
                 type="text"
                 required
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 placeholder="+91 8330889632"
                 className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-white font-mono text-xs focus:border-white outline-hidden"
               />
               <p className="text-[11px] text-neutral-400 mt-1">
-                All customer invoices &amp; bills reflect this store WhatsApp number.
+                Official store contact number printed on customer invoices and receipts.
               </p>
             </div>
           </div>
@@ -397,7 +373,7 @@ export default function SettingsPage() {
             <div>
               <label className="block font-bold text-neutral-700 uppercase mb-1 flex items-center gap-1">
                 <Gift className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Loyalty Target (ലക്ഷ്യം - എപ്പോൾ റിവാർഡ് ലഭിക്കും)</span>
+                <span>Loyalty Target (Cumulative Weight to Unlock):</span>
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -414,13 +390,13 @@ export default function SettingsPage() {
                 </span>
               </div>
               <p className="text-[11px] text-neutral-500 mt-1">
-                ഒരു കസ്റ്റമർ 5 KG (5000g) ഡ്രസ്സ് എടുത്തു കഴിയുമ്പോൾ റിവാർഡ് അൺലോക്ക് ആകും.
+                Customer unlocks reward once total cumulative purchases reach 5 KG (5000g).
               </p>
             </div>
 
             <div>
               <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Loyalty Reward Value (500g FREE Discount in ₹)
+                Loyalty Reward Value (500g FREE Discount in ₹):
               </label>
               <input
                 type="number"
@@ -438,7 +414,7 @@ export default function SettingsPage() {
 
             <div>
               <label className="block font-bold text-neutral-700 uppercase mb-1">
-                Minimum Purchase to Redeem Reward (കുറഞ്ഞത് വാങ്ങേണ്ടത്)
+                Minimum Purchase to Redeem Reward:
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -455,7 +431,7 @@ export default function SettingsPage() {
                 </span>
               </div>
               <p className="text-[11px] text-neutral-500 mt-1">
-                അടുത്ത തവണ 1 KG അല്ലെങ്കിൽ കൂടുതൽ വാങ്ങുമ്പോൾ മാത്രമേ അരക്കിലോ ഫ്രീ കിട്ടൂ.
+                Customer must purchase at least 1 KG on the redemption visit to receive 500g FREE.
               </p>
             </div>
           </div>
