@@ -177,152 +177,16 @@ function createInitialSeed(): DatabaseSchema {
     updated_at: now,
   };
 
-  // Customers A, B, C, D as specified in Requirement 26
-  const custA: Customer = {
-    id: 'cust_A',
-    phone: '9847011111',
-    name: 'Customer A (Ananya)',
-    address: 'Kozhikode, Kerala',
-    total_purchases: 5,
-    total_weight_grams: 4800,
-    total_amount_spent: 4315.20,
-    loyalty_count: 5,
-    loyalty_reward_unlocked: true, // Reward Unlocked!
-    last_purchase_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-    updated_at: now,
-  };
-
-  const custB: Customer = {
-    id: 'cust_B',
-    phone: '9847022222',
-    name: 'Customer B (Bhavana)',
-    address: 'Kannur, Kerala',
-    total_purchases: 3,
-    total_weight_grams: 2500,
-    total_amount_spent: 2247.50,
-    loyalty_count: 3, // 3 purchases, 2 more required
-    loyalty_reward_unlocked: false,
-    last_purchase_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-    updated_at: now,
-  };
-
-  const custC: Customer = {
-    id: 'cust_C',
-    phone: '9847033333',
-    name: 'Customer C (Chitra)',
-    address: 'Kochi, Kerala',
-    total_purchases: 6,
-    total_weight_grams: 5800,
-    total_amount_spent: 4916.20,
-    loyalty_count: 0, // Used reward, reset to 0
-    loyalty_reward_unlocked: false,
-    last_purchase_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    created_at: new Date(Date.now() - 40 * 86400000).toISOString(),
-    updated_at: now,
-  };
-
-  const custD: Customer = {
-    id: 'cust_D',
-    phone: '9847044444',
-    name: 'Customer D (Deepa)',
-    address: 'Thrissur, Kerala',
-    total_purchases: 6,
-    total_weight_grams: 4500,
-    total_amount_spent: 4045.50,
-    loyalty_count: 5, // Reward unlocked, but previous purchase was 700g so reward was NOT used and still retained!
-    loyalty_reward_unlocked: true,
-    last_purchase_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-    created_at: new Date(Date.now() - 25 * 86400000).toISOString(),
-    updated_at: now,
-  };
-
-  // Sample Purchase for Customer C with 1000g and 50% OFF on 1 KG discount applied
-  const purchaseC: Purchase = {
-    id: 'pur_1001',
-    invoice_number: 'INV-2026-000101',
-    customer_id: 'cust_C',
-    customer_name: 'Customer C (Chitra)',
-    customer_phone: '9847033333',
-    customer_address: 'Kochi, Kerala',
-    weight_grams: 1000,
-    weight_kg: 1.0,
-    rate_per_kg: 899,
-    subtotal: 899,
-    discount_amount: 449.50,
-    final_amount: 449.50,
-    payment_method: 'UPI',
-    status: 'COMPLETED',
-    loyalty_applied: true,
-    loyalty_progress_before: 5,
-    loyalty_progress_after: 0,
-    loyalty_message: '🎁 50% OFF on 1 KG Loyalty Reward applied (-₹449.50)! Thank you for shopping with us!',
-    created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-  };
-
-  // Sample Purchase for Customer D with 700g where discount was NOT applied because min 1000g required
-  const purchaseD: Purchase = {
-    id: 'pur_1002',
-    invoice_number: 'INV-2026-000102',
-    customer_id: 'cust_D',
-    customer_name: 'Customer D (Deepa)',
-    customer_phone: '9847044444',
-    customer_address: 'Thrissur, Kerala',
-    weight_grams: 700,
-    weight_kg: 0.7,
-    rate_per_kg: 899,
-    subtotal: 629.30,
-    discount_amount: 0,
-    final_amount: 629.30,
-    payment_method: 'CASH',
-    status: 'COMPLETED',
-    loyalty_applied: false,
-    loyalty_progress_before: 5,
-    loyalty_progress_after: 5, // still has unlocked reward
-    loyalty_message: 'Minimum 1 KG (1000g) purchase required to use your 50% OFF on 1 KG reward. Your reward remains active for your next 1 KG+ purchase!',
-    created_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-  };
-
-  const whatsapp_messages: WhatsAppMessage[] = [
-    {
-      id: 'msg_1001',
-      purchase_id: 'pur_1001',
-      customer_id: 'cust_C',
-      phone: '9847033333',
-      message_type: 'INVOICE',
-      content: '🧾 CASH MEMO - TERRY7 WOMEN\nCustomer: Customer C (Chitra)\nInvoice No: INV-2026-000101\nWeight: 1.00 KG\nFinal Amount: ₹449.50\n🎁 Loyalty Status: 50% OFF on 1 KG Reward Applied (-₹449.50)!',
-      status: 'DELIVERED',
-      is_demo: true,
-      created_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-      updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
-    },
-    {
-      id: 'msg_1002',
-      purchase_id: 'pur_1002',
-      customer_id: 'cust_D',
-      phone: '9847044444',
-      message_type: 'INVOICE',
-      content: '🧾 CASH MEMO - TERRY7 WOMEN\nCustomer: Customer D (Deepa)\nInvoice No: INV-2026-000102\nWeight: 0.70 KG\nFinal Amount: ₹629.30\n🎁 Loyalty Status: 50% OFF on 1 KG Reward Unlocked (Applicable on 1 KG+)',
-      status: 'SENT',
-      is_demo: true,
-      created_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-      updated_at: new Date(Date.now() - 4 * 3600000).toISOString(),
-    },
-  ];
-
   return {
     users,
-    customers: [custA, custB, custC, custD],
-    purchases: [purchaseC, purchaseD],
+    customers: [],
+    purchases: [],
     purchase_items: [],
     loyalty_transactions: [],
-    whatsapp_messages,
+    whatsapp_messages: [],
     shop_settings,
     meta: {
-      invoice_sequence: 103,
+      invoice_sequence: 1,
       version: '1.0.0',
     },
   };

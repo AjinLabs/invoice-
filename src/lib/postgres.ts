@@ -5,9 +5,18 @@ declare global {
   var __TERRY_PG_POOL__: Pool | undefined;
 }
 
-export const SUPABASE_DATABASE_URL =
-  process.env.DATABASE_URL ||
-  'postgresql://postgres.jnqwoxgvxylqjvnpjfnm:TERRY%26WOMEN%401234@aws-0-ap-south-1.pooler.supabase.com:6543/postgres';
+function getValidPostgresUrl(): string {
+  const envUrl = process.env.DATABASE_URL;
+  if (!envUrl) {
+    return 'postgresql://postgres.jnqwoxgvxylqjvnpjfnm:TERRY%26WOMEN%401234@aws-0-ap-south-1.pooler.supabase.com:6543/postgres';
+  }
+  if (envUrl.includes('db.jnqwoxgvxylqjvnpjfnm.supabase.co')) {
+    return 'postgresql://postgres.jnqwoxgvxylqjvnpjfnm:TERRY%26WOMEN%401234@aws-0-ap-south-1.pooler.supabase.com:6543/postgres';
+  }
+  return envUrl;
+}
+
+export const SUPABASE_DATABASE_URL = getValidPostgresUrl();
 
 export function getPostgresPool(): Pool | null {
   const connectionString = SUPABASE_DATABASE_URL;
@@ -98,7 +107,7 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
 
     const shop_settings = settRes.rows[0]?.data;
     const meta = metaRes.rows[0]?.value || {
-      invoice_sequence: 100 + purchases.length,
+      invoice_sequence: purchases.length + 1,
       version: '1.0.0',
     };
 
