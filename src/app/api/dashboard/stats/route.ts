@@ -18,7 +18,7 @@ export async function GET(request: Request) {
       }
     } catch {}
 
-    const effectiveBranch = sessionBranch || branchParam;
+    const effectiveBranch = branchParam || sessionBranch;
 
     const db = await getDb();
     let purchases = db.purchases.filter((p) => p.status === 'COMPLETED');

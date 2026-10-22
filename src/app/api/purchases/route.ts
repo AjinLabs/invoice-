@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     const branchParam = searchParams.get('branch');
 
     const sessionUser = await getSessionUser();
-    const effectiveBranch = sessionUser?.branch || branchParam;
+    const effectiveBranch = branchParam || sessionUser?.branch;
 
     const db = await getDb();
     let purchases = [...db.purchases];

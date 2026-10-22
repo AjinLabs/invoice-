@@ -157,17 +157,54 @@ export default function DashboardPage() {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
-              Active Store View:
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+              Select Store:
             </span>
-            <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-[#094327] text-white shadow-2xs">
-              {activeBranch === 'all'
-                ? 'All Stores Combined'
-                : activeBranch === 'pkdm'
-                ? 'Pookkottumpadam (PKDM)'
-                : 'Vaniyambalam (VNB)'}
-            </span>
+            <div className="inline-flex p-1 bg-neutral-200/60 rounded-xl gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveBranch('all');
+                  fetchStatsForBranch('all');
+                }}
+                className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeBranch === 'all'
+                    ? 'bg-[#094327] text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
+                }`}
+              >
+                🌐 All Stores Combined
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveBranch('vnb');
+                  fetchStatsForBranch('vnb');
+                }}
+                className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeBranch === 'vnb'
+                    ? 'bg-[#094327] text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
+                }`}
+              >
+                📍 Vaniyambalam (VNB)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveBranch('pkdm');
+                  fetchStatsForBranch('pkdm');
+                }}
+                className={`px-3.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeBranch === 'pkdm'
+                    ? 'bg-[#094327] text-white shadow-xs'
+                    : 'text-neutral-600 hover:text-black hover:bg-white/60'
+                }`}
+              >
+                📍 Pookkottumpadam (PKDM)
+              </button>
+            </div>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 apple-display flex items-center gap-2 flex-wrap">
             <span className="flex items-center">
@@ -197,20 +234,18 @@ export default function DashboardPage() {
             <span>Monthly Audit Report (PDF)</span>
           </a>
 
-          {!isMainAdmin && (
-            <Link
-              href="/"
-              className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-950 text-white rounded-full text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors cursor-pointer"
-            >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Open POS Billing</span>
-            </Link>
-          )}
+          <Link
+            href="/"
+            className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-950 text-white rounded-full text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors cursor-pointer"
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>Open POS Billing</span>
+          </Link>
         </div>
       </div>
 
-      {/* Main Admin Branch Comparison Cards */}
-      {isMainAdmin && storesBreakdown && (
+      {/* Store Branch Comparison Cards for both Vaniyambalam and Pookkottumpadam */}
+      {storesBreakdown && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-neutral-900 flex items-center gap-2 apple-headline tracking-tight">

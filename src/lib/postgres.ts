@@ -7,7 +7,7 @@ declare global {
 
 export const SUPABASE_DATABASE_URL =
   process.env.DATABASE_URL ||
-  'postgresql://postgres:TERRY%26WOMEN%401234@db.jnqwoxgvxylqjvnpjfnm.supabase.co:5432/postgres';
+  'postgresql://postgres.jnqwoxgvxylqjvnpjfnm:TERRY%26WOMEN%401234@aws-0-ap-south-1.pooler.supabase.com:5432/postgres';
 
 export function getPostgresPool(): Pool | null {
   const connectionString = SUPABASE_DATABASE_URL;
