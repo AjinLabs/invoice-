@@ -28,10 +28,11 @@ export async function GET(request: Request) {
       purchases = purchases.filter((p) => (p.branch || 'vnb') === effectiveBranch);
     }
 
+    const toIso = (v: unknown): string => (v instanceof Date ? v.toISOString() : String(v || ''));
     const todayStr = new Date().toISOString().split('T')[0];
 
     // Today's stats
-    const todayPurchases = purchases.filter((p) => p.created_at.startsWith(todayStr));
+    const todayPurchases = purchases.filter((p) => toIso(p.created_at).startsWith(todayStr));
     const todaySales = Math.round(todayPurchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
     const todayGrossSales = Math.round(todayPurchases.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
     const todayDiscounts = Math.round(Math.max(0, todayGrossSales - todaySales) * 100) / 100;
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
 
     // Current Month stats
     const currentMonthStr = todayStr.substring(0, 7);
-    const monthPurchases = purchases.filter((p) => p.created_at.startsWith(currentMonthStr));
+    const monthPurchases = purchases.filter((p) => toIso(p.created_at).startsWith(currentMonthStr));
     const monthSales = Math.round(monthPurchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
 
     // Branch customers count
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
     }
 
     for (const p of purchases) {
-      const dStr = p.created_at.split('T')[0];
+      const dStr = toIso(p.created_at).split('T')[0];
       if (last7DaysMap.has(dStr)) {
         const item = last7DaysMap.get(dStr)!;
         item.amount = Math.round((item.amount + p.final_amount) * 100) / 100;
@@ -143,35 +144,32 @@ export async function GET(request: Request) {
       totalOrders: number;
     }
 
-    // If Main Admin (no sessionBranch lock), compute individual store stats for side-by-side comparison
-    let storesBreakdown: { vnb: StoreStats; pkdm: StoreStats } | null = null;
-    if (!sessionBranch) {
-      const calcStoreStats = (bId: 'vnb' | 'pkdm'): StoreStats => {
-        const storePurchases = db.purchases.filter((p) => p.status === 'COMPLETED' && (p.branch || 'vnb') === bId);
-        const storeToday = storePurchases.filter((p) => p.created_at.startsWith(todayStr));
-        const sTodaySales = Math.round(storeToday.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
-        const sTodayGross = Math.round(storeToday.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
-        const sTodayDiscounts = Math.round(Math.max(0, sTodayGross - sTodaySales) * 100) / 100;
-        const sTotalGross = Math.round(storePurchases.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
-        const sTotalNet = Math.round(storePurchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
-        const sTotalDiscounts = Math.round(Math.max(0, sTotalGross - sTotalNet) * 100) / 100;
-        return {
-          todaySales: sTodaySales,
-          todayGross: sTodayGross,
-          todayDiscounts: sTodayDiscounts,
-          todayOrders: storeToday.length,
-          totalNetSales: sTotalNet,
-          totalGrossSales: sTotalGross,
-          totalDiscounts: sTotalDiscounts,
-          totalOrders: storePurchases.length,
-        };
+    // Always compute individual store stats for side-by-side comparison
+    const calcStoreStats = (bId: 'vnb' | 'pkdm'): StoreStats => {
+      const storePurchases = db.purchases.filter((p) => p.status === 'COMPLETED' && (p.branch || 'vnb') === bId);
+      const storeToday = storePurchases.filter((p) => toIso(p.created_at).startsWith(todayStr));
+      const sTodaySales = Math.round(storeToday.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
+      const sTodayGross = Math.round(storeToday.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+      const sTodayDiscounts = Math.round(Math.max(0, sTodayGross - sTodaySales) * 100) / 100;
+      const sTotalGross = Math.round(storePurchases.reduce((sum, p) => sum + p.subtotal, 0) * 100) / 100;
+      const sTotalNet = Math.round(storePurchases.reduce((sum, p) => sum + p.final_amount, 0) * 100) / 100;
+      const sTotalDiscounts = Math.round(Math.max(0, sTotalGross - sTotalNet) * 100) / 100;
+      return {
+        todaySales: sTodaySales,
+        todayGross: sTodayGross,
+        todayDiscounts: sTodayDiscounts,
+        todayOrders: storeToday.length,
+        totalNetSales: sTotalNet,
+        totalGrossSales: sTotalGross,
+        totalDiscounts: sTotalDiscounts,
+        totalOrders: storePurchases.length,
       };
+    };
 
-      storesBreakdown = {
-        vnb: calcStoreStats('vnb'),
-        pkdm: calcStoreStats('pkdm'),
-      };
-    }
+    const storesBreakdown = {
+      vnb: calcStoreStats('vnb'),
+      pkdm: calcStoreStats('pkdm'),
+    };
 
     const branchInfo = getBranchInfo(db, effectiveBranch);
 

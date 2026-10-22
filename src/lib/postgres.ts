@@ -7,7 +7,7 @@ declare global {
 
 export const SUPABASE_DATABASE_URL =
   process.env.DATABASE_URL ||
-  'postgresql://postgres.jnqwoxgvxylqjvnpjfnm:TERRY%26WOMEN%401234@aws-0-ap-south-1.pooler.supabase.com:5432/postgres';
+  'postgresql://postgres.jnqwoxgvxylqjvnpjfnm:TERRY%26WOMEN%401234@aws-0-ap-south-1.pooler.supabase.com:6543/postgres';
 
 export function getPostgresPool(): Pool | null {
   const connectionString = SUPABASE_DATABASE_URL;
@@ -19,8 +19,8 @@ export function getPostgresPool(): Pool | null {
     globalThis.__TERRY_PG_POOL__ = new Pool({
       connectionString,
       ssl: { rejectUnauthorized: false },
-      max: 10,
-      idleTimeoutMillis: 30000,
+      max: 5,
+      idleTimeoutMillis: 10000,
       connectionTimeoutMillis: 5000,
     });
 
@@ -36,17 +36,27 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
   const pool = getPostgresPool();
   if (!pool) return null;
 
+  let client;
   try {
-    const [usersRes, custRes, purRes, waRes, settRes, metaRes] = await Promise.all([
-      pool.query<User>('SELECT * FROM users ORDER BY created_at ASC'),
-      pool.query<Customer>('SELECT * FROM customers ORDER BY created_at DESC'),
-      pool.query<Purchase>('SELECT * FROM purchases ORDER BY created_at DESC'),
-      pool.query<WhatsAppMessage>('SELECT * FROM whatsapp_messages ORDER BY created_at DESC LIMIT 200'),
-      pool.query<{ id: string; data: ShopSettings }>('SELECT * FROM shop_settings WHERE id = $1', ['settings_default']),
-      pool.query<{ key: string; value: { invoice_sequence: number; version: string } }>('SELECT * FROM app_meta WHERE key = $1', ['app_meta']),
-    ]);
+    client = await pool.connect();
+    const usersRes = await client.query<User>('SELECT * FROM users ORDER BY created_at ASC');
+    const custRes = await client.query<Customer>('SELECT * FROM customers ORDER BY created_at DESC');
+    const purRes = await client.query<Purchase>('SELECT * FROM purchases ORDER BY created_at DESC');
+    const waRes = await client.query<WhatsAppMessage>('SELECT * FROM whatsapp_messages ORDER BY created_at DESC LIMIT 200');
+    const settRes = await client.query<{ id: string; data: ShopSettings }>('SELECT * FROM shop_settings WHERE id = $1', ['settings_default']);
+    const metaRes = await client.query<{ key: string; value: { invoice_sequence: number; version: string } }>('SELECT * FROM app_meta WHERE key = $1', ['app_meta']);
 
-    const users = usersRes.rows;
+    const toIso = (val: unknown): string => {
+      if (!val) return new Date().toISOString();
+      if (val instanceof Date) return val.toISOString();
+      return String(val);
+    };
+
+    const users = usersRes.rows.map(u => ({
+      ...u,
+      created_at: toIso(u.created_at),
+    }));
+
     const customers: Customer[] = custRes.rows.map(c => ({
       ...c,
       total_purchases: Number(c.total_purchases) || 0,
@@ -55,6 +65,9 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
       loyalty_count: Number(c.loyalty_count) || 0,
       loyalty_weight_grams: c.loyalty_weight_grams ? Number(c.loyalty_weight_grams) : 0,
       loyalty_reward_unlocked: Boolean(c.loyalty_reward_unlocked),
+      last_purchase_at: c.last_purchase_at ? toIso(c.last_purchase_at) : null,
+      created_at: toIso(c.created_at),
+      updated_at: toIso(c.updated_at),
     }));
 
     const purchases: Purchase[] = purRes.rows.map(p => ({
@@ -72,11 +85,15 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
       loyalty_weight_after_grams: p.loyalty_weight_after_grams !== null && p.loyalty_weight_after_grams !== undefined ? Number(p.loyalty_weight_after_grams) : undefined,
       loyalty_reward_unlocked_after: p.loyalty_reward_unlocked_after !== undefined ? Boolean(p.loyalty_reward_unlocked_after) : undefined,
       items: typeof p.items === 'string' ? JSON.parse(p.items) : (p.items || []),
+      created_at: toIso(p.created_at),
+      updated_at: toIso(p.updated_at),
     }));
 
     const whatsapp_messages = waRes.rows.map(w => ({
       ...w,
       is_demo: Boolean(w.is_demo),
+      created_at: toIso(w.created_at),
+      updated_at: toIso(w.updated_at),
     }));
 
     const shop_settings = settRes.rows[0]?.data;
@@ -102,6 +119,10 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
   } catch (err) {
     console.warn('Error fetching DB from PostgreSQL, falling back:', err);
     return null;
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 }
 
