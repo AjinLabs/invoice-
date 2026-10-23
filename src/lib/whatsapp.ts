@@ -233,9 +233,6 @@ export function formatWhatsAppInvoiceText(
     `📍 ${branchTown}\n\n` +
     `Hello ${customerName}! 👋\n\n` +
     `${separator}\n` +
-    `🧾 *BILL SUMMARY*\n` +
-    `Bill No: ${billNo}\n` +
-    `Date: ${dateFormatted}\n\n` +
     `${itemsBlock}` +
     `${roundOffLine}\n\n` +
     `💰 *Total Paid: ₹${finalFormatted}*\n` +

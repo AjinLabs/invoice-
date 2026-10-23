@@ -76,11 +76,6 @@ describe('WhatsApp Message Formatting — Strict Zero URL Guarantee & Template A
     assert.ok(text.includes('Hello Priya Sharma! 👋'), 'Must show customer greeting');
     assert.ok(text.includes('━━━━━━━━━━━━━━━'), 'Must have separators');
 
-    // Bill Summary
-    assert.ok(text.includes('🧾 *BILL SUMMARY*'), 'Must have bill summary header');
-    assert.ok(text.includes('Bill No: INV-VNB-2026-000101'), 'Must include Bill No');
-    assert.ok(text.includes('Date:'), 'Must include Date');
-
     // Item details
     assert.ok(text.includes('Item: Ladies Readymade Garment'), 'Must have product');
     assert.ok(text.includes('Quantity: 1.25 KG'), 'Must have weight');
@@ -101,7 +96,11 @@ describe('WhatsApp Message Formatting — Strict Zero URL Guarantee & Template A
     assert.ok(text.includes('Thank you for shopping with us ❤️'), 'Must include brand thank you');
     assert.ok(text.includes('📞 +91 8330889632'), 'Must include contact phone');
 
-    // Strict Negative Checks — Zero URLs
+    // Strict Negative Checks — NO Bill No, NO Invoice, NO URLs
+    assert.ok(!text.includes('Bill No'), 'Must NOT contain "Bill No"');
+    assert.ok(!text.includes('BILL SUMMARY'), 'Must NOT contain "BILL SUMMARY"');
+    assert.ok(!text.includes('Invoice:'), 'Must NOT contain "Invoice:"');
+    assert.ok(!text.includes('INV-'), 'Must NOT contain "INV-"');
     assert.ok(!text.includes('Bill Link'), 'Must NOT contain any "Bill Link"');
     assert.ok(!text.includes('http://'), 'Must NOT contain "http://"');
     assert.ok(!text.includes('https://'), 'Must NOT contain "https://"');

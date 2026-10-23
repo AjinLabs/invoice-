@@ -95,7 +95,8 @@ describe('Billing Workflow, Customer Association & Isolation', () => {
 
     const waTextA = formatWhatsAppInvoiceText(purchaseA, mockShopSettings);
     assert.ok(waTextA.includes('Hello Ananya Nair! 👋'));
-    assert.ok(waTextA.includes('Bill No: INV-VNB-2026-000101'));
+    assert.ok(!waTextA.includes('Bill No'), 'Must NOT contain Bill No');
+    assert.ok(!waTextA.includes('Invoice'), 'Must NOT contain Invoice');
     assert.ok(waTextA.includes('💰 *Total Paid: ₹630.00*'));
     assert.ok(waTextA.includes('Discount: ₹449.50'));
     assert.ok(waTextA.includes('Round Off: +₹0.70'));
@@ -168,8 +169,8 @@ describe('Billing Workflow, Customer Association & Isolation', () => {
     // Verify Customer B message has NO traces of Customer A
     assert.ok(waTextB.includes('Hello Fatima Zahra! 👋'));
     assert.ok(!waTextB.includes('Ananya Nair'));
-    assert.ok(waTextB.includes('Bill No: INV-PKDM-2026-000102'));
-    assert.ok(!waTextB.includes('INV-VNB-2026-000101'));
+    assert.ok(!waTextB.includes('Bill No'), 'Must NOT contain Bill No');
+    assert.ok(!waTextB.includes('INV-'), 'Must NOT contain INV-');
 
     const waUrlB = buildWhatsAppClickToChatUrl(phoneResB.waDestination, waTextB);
     assert.ok(waUrlB.includes('wa.me/919745022222'));

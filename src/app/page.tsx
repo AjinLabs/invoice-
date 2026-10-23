@@ -1086,7 +1086,7 @@ export default function BillingPage() {
                 </div>
               )}
 
-              {/* PRIMARY ACTION: SEND BILL */}
+              {/* PRIMARY ACTION: SEND WHATSAPP MESSAGE */}
               <div className="space-y-2.5 pt-1">
                 <button
                   ref={sendBillBtnRef}
@@ -1096,7 +1096,7 @@ export default function BillingPage() {
                   className="apple-pressable w-full flex items-center justify-center gap-2.5 py-4 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer focus:ring-4 focus:ring-emerald-500/30 outline-hidden"
                 >
                   <Send className="w-5 h-5 text-emerald-300" />
-                  <span>{isSubmitting ? 'Sending Bill to WhatsApp...' : 'Send Bill'}</span>
+                  <span>{isSubmitting ? 'Sending to WhatsApp...' : 'Send WhatsApp Message'}</span>
                 </button>
 
                 {/* Secondary Actions: Reset Form */}

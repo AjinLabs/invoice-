@@ -503,8 +503,10 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
 
     // Structural checks for WhatsApp message
     assert.ok(memo.startsWith('👗 *TERRY 7 WOMEN*\n📍 Vaniyambalam\n\nHello Zeenath! 👋'));
-    assert.ok(memo.includes('Bill No: INV-VNB-2026-000888'));
-    assert.ok(memo.includes('Date:'));
+    assert.ok(!memo.includes('Bill No'), 'Must NOT contain Bill No');
+    assert.ok(!memo.includes('BILL SUMMARY'), 'Must NOT contain BILL SUMMARY');
+    assert.ok(!memo.includes('Invoice'), 'Must NOT contain Invoice');
+    assert.ok(!memo.includes('INV-'), 'Must NOT contain INV-');
     assert.ok(memo.includes('Item: Cotton Silk Dress Material'));
     assert.ok(memo.includes('Quantity: 1.63 KG'));
     assert.ok(memo.includes('Amount: ₹1,465.37'));
