@@ -455,16 +455,8 @@ export default function BillingPage() {
 
     setIsSubmitting(true);
     try {
-      // 1. Render Cash Memo to high-res PNG image
-      const memoNode = document.getElementById('cash-memo-preview-node');
-      let base64Image = '';
-      if (memoNode) {
-        try {
-          base64Image = await toPng(memoNode, { quality: 0.95, pixelRatio: 2, cacheBust: false });
-        } catch (imgErr) {
-          console.warn('Could not render cash memo image:', imgErr);
-        }
-      }
+      // Invoice image is not needed as customer receives clean text without image attachments
+      const base64Image = '';
 
       const payload = {
         phone: phoneValidation.normalizedPhone,
@@ -1148,7 +1140,7 @@ export default function BillingPage() {
           <div className="lg:col-span-5 flex flex-col items-center">
             <div className="w-full flex items-center justify-between mb-3 px-1 no-print">
               <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                Live Invoice Preview
+                Live Sales &amp; Bill Details
               </span>
               <button
                 onClick={() => window.print()}

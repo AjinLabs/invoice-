@@ -94,11 +94,12 @@ describe('Billing Workflow, Customer Association & Isolation', () => {
     };
 
     const waTextA = formatWhatsAppInvoiceText(purchaseA, mockShopSettings);
-    assert.ok(waTextA.includes('👤 Customer: Ananya Nair'));
-    assert.ok(waTextA.includes('🧾 Invoice: INV-VNB-2026-000101'));
-    assert.ok(waTextA.includes('*TOTAL PAID: ₹630.00*'));
-    assert.ok(waTextA.includes('Discount: ₹449.50'));
-    assert.ok(waTextA.includes('Round Off: +₹0.70'));
+    assert.ok(waTextA.includes('Hello ANANYA NAIR 👋'));
+    assert.ok(!waTextA.includes('Invoice:'), 'Must NOT contain invoice number');
+    assert.ok(!waTextA.includes('INV-'), 'Must NOT contain INV- code');
+    assert.ok(waTextA.includes('💰 TOTAL PAID: ₹630.00'));
+    assert.ok(waTextA.includes('• Discount: ₹449.50'));
+    assert.ok(waTextA.includes('• Round Off: +₹0.70'));
 
     const waUrlA = buildWhatsAppClickToChatUrl(phoneRes.waDestination, waTextA);
     assert.ok(waUrlA.includes('wa.me/919847011111'));
@@ -166,10 +167,10 @@ describe('Billing Workflow, Customer Association & Isolation', () => {
 
     const waTextB = formatWhatsAppInvoiceText(purchaseB, mockShopSettings);
     // Verify Customer B message has NO traces of Customer A
-    assert.ok(waTextB.includes('👤 Customer: Fatima Zahra'));
-    assert.ok(!waTextB.includes('Ananya Nair'));
-    assert.ok(waTextB.includes('🧾 Invoice: INV-PKDM-2026-000102'));
-    assert.ok(!waTextB.includes('INV-VNB-2026-000101'));
+    assert.ok(waTextB.includes('Hello FATIMA ZAHRA 👋'));
+    assert.ok(!waTextB.includes('ANANYA NAIR'));
+    assert.ok(!waTextB.includes('Invoice:'), 'Must NOT contain invoice number');
+    assert.ok(!waTextB.includes('INV-'), 'Must NOT contain INV- code');
 
     const waUrlB = buildWhatsAppClickToChatUrl(phoneResB.waDestination, waTextB);
     assert.ok(waUrlB.includes('wa.me/919745022222'));
@@ -357,8 +358,8 @@ describe('Priority 3 — Amount Section with Three Modes & Boundary Tests', () =
     assert.equal(purchase.round_off, -9);
 
     const waText = formatWhatsAppInvoiceText(purchase, mockShopSettings);
-    assert.ok(waText.includes('*TOTAL PAID: ₹890.00*'));
-    assert.ok(waText.includes('Round Off: -₹9.00'));
+    assert.ok(waText.includes('💰 TOTAL PAID: ₹890.00'));
+    assert.ok(waText.includes('• Round Off: -₹9.00'));
     assert.ok(!waText.includes('http'), 'Caption must contain zero URLs');
   });
 

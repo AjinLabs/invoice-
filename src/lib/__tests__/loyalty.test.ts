@@ -501,21 +501,22 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
 
     const memo = formatWhatsAppInvoiceText(purchase, testSettings);
 
-    // Structural checks from Section 4
-    assert.ok(memo.startsWith('👗 *TERRY WOMEN — VANIYAMBALAM*\n━━━━━━━━━━━━━━━━━━\n🧾 *CASH MEMO*'));
-    assert.ok(memo.includes('👤 Customer: Zeenath'));
-    assert.ok(memo.includes('🧾 Invoice: INV-VNB-2026-000888'));
-    assert.ok(memo.includes('Cotton Silk Dress Material — 1.63 KG\nAmount: ₹1,465.37'));
-    assert.ok(memo.includes('Subtotal: ₹1,465.37'));
-    assert.ok(memo.includes('Discount: ₹0.00'));
-    assert.ok(memo.includes('Round Off: -₹5.37'));
-    assert.ok(memo.includes('*TOTAL PAID: ₹1,460.00*'));
-    assert.ok(memo.includes('Payment: CASH'));
-    assert.ok(memo.includes('1.63 KG / 5.00 KG'));
-    assert.ok(memo.includes('0 KG  ▰▰▰▱▱▱▱▱▱▱  5 KG'));
-    assert.ok(memo.includes('Completed: 1.63 KG'));
-    assert.ok(memo.includes('Remaining: 3.37 KG to go'));
-    assert.ok(memo.includes('❤️ Thank you for shopping with *TERRY WOMEN!*\n📍 Vaniyambalam\n📞 +91 8330889632'));
+    // Structural checks for WhatsApp message
+    assert.ok(memo.startsWith('👗 TERRY 7 WOMEN — VANIYAMBALAM\n\nHello ZEENATH 👋\n\nThank you for shopping with us! ❤️'));
+    assert.ok(!memo.includes('Invoice:'), 'Must not contain invoice label');
+    assert.ok(!memo.includes('INV-'), 'Must not contain invoice number');
+    assert.ok(!memo.includes('CASH MEMO'), 'Must not contain cash memo header');
+    assert.ok(memo.includes('• Item: Cotton Silk Dress Material'));
+    assert.ok(memo.includes('• Quantity: 1.63 KG'));
+    assert.ok(memo.includes('• Amount: ₹1,465.37'));
+    assert.ok(memo.includes('• Discount: ₹0.00'));
+    assert.ok(memo.includes('• Round Off: -₹5.37'));
+    assert.ok(memo.includes('💰 TOTAL PAID: ₹1,460.00'));
+    assert.ok(memo.includes('💵 Payment: Cash'));
+    assert.ok(memo.includes('🎁 SPECIAL CUSTOMER OFFER'));
+    assert.ok(memo.includes('Complete 5 KG in dress purchases and get 500g FREE on your next 1 KG purchase!'));
+    assert.ok(memo.includes('📊 Your Progress: 1.63 KG / 5 KG'));
+    assert.ok(memo.includes('❤️ Thanks for choosing TERRY 7 WOMEN!\n\nWe look forward to shopping with you again. 😊\n\n📍 Vaniyambalam\n📞 +91 8330889632'));
 
     // Zero-URL Guarantee
     assert.ok(!memo.includes('Bill Link'), 'Must NOT contain any Bill Link');
@@ -526,6 +527,6 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
     // Test URL encoding
     const clickUrl = buildWhatsAppClickToChatUrl('919876543210', memo);
     assert.ok(clickUrl.startsWith('https://wa.me/919876543210?text='));
-    assert.ok(clickUrl.includes(encodeURIComponent('👗 *TERRY WOMEN — VANIYAMBALAM*')));
+    assert.ok(clickUrl.includes(encodeURIComponent('👗 TERRY 7 WOMEN — VANIYAMBALAM')));
   });
 });

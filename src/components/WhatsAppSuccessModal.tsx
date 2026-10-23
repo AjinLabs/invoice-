@@ -48,11 +48,9 @@ export default function WhatsAppSuccessModal({
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://terry7women.vercel.app';
 
-  // Format the cash memo message text with direct invoice photo link and clean layout without progress bar
-  const messageText = purchase && settings
-    ? formatWhatsAppInvoiceText(purchase, settings, { includeInvoiceLink: true, baseUrl, hideProgressBar: true })
-    : purchase
-    ? `Receipt: ${purchase.invoice_number} | Customer: ${purchase.customer_name} | Total: Rs ${purchase.final_amount.toFixed(2)}\n\nInvoice:\n${baseUrl}/invoice/${purchase.id}`
+  // Format WhatsApp sales message (No invoice number, no photo, no clickable links)
+  const messageText = purchase
+    ? formatWhatsAppInvoiceText(purchase, settings)
     : '';
 
   // Open WhatsApp directly for the customer
@@ -91,10 +89,10 @@ export default function WhatsAppSuccessModal({
             </div>
             <div>
               <h3 className="text-base sm:text-lg font-bold flex items-center gap-2 tracking-tight">
-                <span>Bill Generated &amp; Ready!</span>
+                <span>Sale Completed!</span>
               </h3>
-              <span className="text-[11px] bg-white/20 text-white px-2.5 py-0.5 rounded-full font-mono border border-white/30 inline-block mt-0.5">
-                {purchase.invoice_number}
+              <span className="text-[11px] bg-white/20 text-white px-2.5 py-0.5 rounded-full font-medium border border-white/30 inline-block mt-0.5">
+                TERRY 7 WOMEN
               </span>
             </div>
           </div>
@@ -110,7 +108,7 @@ export default function WhatsAppSuccessModal({
         {/* Content Body */}
         <div className="p-5 sm:p-6 space-y-4">
           
-          {/* Customer & Bill Summary Card */}
+          {/* Customer & Sale Summary Card */}
           <div className="bg-neutral-50 rounded-2xl border border-neutral-200 p-4 space-y-3">
             <div className="flex justify-between items-start border-b border-neutral-200 pb-3">
               <div>
@@ -141,13 +139,24 @@ export default function WhatsAppSuccessModal({
                 <span className={`font-bold ${purchase.loyalty_applied ? 'text-emerald-700' : 'text-neutral-800'}`}>
                   {purchase.loyalty_applied
                     ? '🎉 500g FREE Redeemed'
-                    : `${((purchase.loyalty_weight_after_grams || 0) / 1000).toFixed(2)} KG / 5.00 KG`}
+                    : `${((purchase.loyalty_weight_after_grams || 0) / 1000).toFixed(2)} KG / 5 KG`}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons - Only 2 Buttons as requested */}
+          {/* WhatsApp Message Preview Box */}
+          <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-3.5 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#094327]">
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>WhatsApp Message to Send</span>
+            </div>
+            <div className="text-[11px] text-neutral-700 bg-white/80 p-3 rounded-xl border border-emerald-100 max-h-36 overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
+              {messageText}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
           <div className="space-y-3 pt-1">
             {/* 1. Open WhatsApp Chat */}
             <button

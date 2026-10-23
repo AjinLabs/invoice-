@@ -146,7 +146,7 @@ export default function InvoicesPage() {
         <div>
           <h1 className="text-2xl font-black tracking-tight text-neutral-900 flex items-center gap-2">
             <Receipt className="w-7 h-7 text-neutral-900" />
-            <span>Invoice Management & Purchase Audit History</span>
+            <span>Sales &amp; Purchase Audit History</span>
           </h1>
           <p className="text-xs text-neutral-500 mt-1">
             View, print, download PDF, resend WhatsApp messages, or cancel transactions with automatic loyalty reversal.

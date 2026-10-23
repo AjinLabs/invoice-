@@ -95,126 +95,160 @@ export async function resolveInvoiceImageBuffer(
  */
 export function formatWhatsAppInvoiceText(
   purchase: Purchase,
-  settings: ShopSettings,
-  options?: { includeInvoiceLink?: boolean; baseUrl?: string; hideProgressBar?: boolean }
+  settings?: Partial<ShopSettings> | null,
+  _options?: { includeInvoiceLink?: boolean; baseUrl?: string; hideProgressBar?: boolean }
 ): string {
-  const dateObj = new Date(purchase.created_at);
-  const dateFormatted = dateObj.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-
   const branchKey = (purchase.branch || 'vnb').toLowerCase();
   const branchTown = branchKey === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam';
-  const branchTitle = `TERRY WOMEN — ${branchTown.toUpperCase()}`;
+  const branchTitle = `TERRY 7 WOMEN — ${branchTown.toUpperCase()}`;
   const separator = '━━━━━━━━━━━━━━━━━━';
+
+  const customerName = (purchase.customer_name || 'Customer').trim();
+
+  const discountFormatted = (purchase.discount_amount || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const finalFormatted = (purchase.final_amount || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const subtotalFormatted = (purchase.subtotal || purchase.final_amount || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   // Format Items
   let itemsBlock = '';
-  if (purchase.items && purchase.items.length > 0) {
-    itemsBlock = purchase.items
-      .map((it) => {
-        let weightOrQty = '';
-        if (it.weight_grams && it.weight_grams > 0) {
-          const kg = (it.weight_grams / 1000).toFixed(2);
-          weightOrQty = `${kg} KG`;
-        } else if (it.quantity) {
-          weightOrQty = `${it.quantity}`;
-        } else {
-          weightOrQty = '1 Pc';
-        }
-        const formattedAmt = it.amount.toLocaleString('en-IN', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        });
-        return `${it.description} — ${weightOrQty}\nAmount: ₹${formattedAmt}`;
-      })
-      .join('\n\n');
-  } else if (purchase.weight_grams > 0) {
-    const wtKg = (purchase.weight_grams / 1000).toFixed(2);
-    const formattedAmt = purchase.subtotal.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    const desc = purchase.notes || 'Dress Material / Ready-made Garment';
-    itemsBlock = `${desc} — ${wtKg} KG\nAmount: ₹${formattedAmt}`;
-  } else {
-    const formattedAmt = purchase.final_amount.toLocaleString('en-IN', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-    itemsBlock = `Dress Material / Ready-made Garment — 1 Pc\nAmount: ₹${formattedAmt}`;
-  }
-
-  // Format Bill Summary
-  const subtotalFormatted = purchase.subtotal.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const discountFormatted = purchase.discount_amount.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const finalFormatted = purchase.final_amount.toLocaleString('en-IN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  const roundOffStr =
-    typeof purchase.round_off === 'number' && purchase.round_off !== 0
-      ? `Round Off: ${purchase.round_off < 0 ? '-' : '+'}₹${Math.abs(purchase.round_off).toFixed(2)}\n`
-      : '';
-
-  // Loyalty note (concise 2-line notice if hideProgressBar is enabled, otherwise full block)
-  let loyaltyBlock = '';
-  if (options?.hideProgressBar) {
-    const currentWeightGrams = typeof purchase.loyalty_weight_after_grams === 'number'
-      ? purchase.loyalty_weight_after_grams
-      : (purchase.weight_grams || 0);
-    const completedKg = (currentWeightGrams / 1000).toFixed(2);
-
-    if (purchase.loyalty_applied) {
-      loyaltyBlock = `🎉 *500g FREE Reward Redeemed on 1 KG!*\n(New Loyalty Cycle: 0.00 KG / 5.00 KG — starts fresh from 0 KG)\n\n${separator}\n`;
-    } else if (purchase.loyalty_reward_unlocked_after) {
-      loyaltyBlock = `🎉 *5 KG Milestone Completed — 500g FREE Unlocked!*\nBuy 1 KG or more on your next visit to get 500g FREE from that 1 KG!\n\n${separator}\n`;
+  if (purchase.items && purchase.items.length === 1) {
+    const it = purchase.items[0];
+    let weightOrQty = '';
+    if (it.weight_grams && it.weight_grams > 0) {
+      const kg = (it.weight_grams / 1000).toFixed(2);
+      weightOrQty = `${kg} KG`;
+    } else if (it.quantity) {
+      weightOrQty = `${it.quantity}`;
     } else {
-      loyaltyBlock = `🎁 *Special Offer:* Complete 5 KG dress purchases & get 500g FREE on your next 1 KG purchase!\n(Your Progress: ${completedKg} KG / 5.00 KG)\n\n${separator}\n`;
+      weightOrQty = '1 Pc';
     }
+    const itAmt = it.amount.toLocaleString('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+    itemsBlock = (
+      `• Item: ${it.description || 'Ladies Readymade Garment / Dress Material'}\n` +
+      `• Quantity: ${weightOrQty}\n` +
+      `• Amount: ₹${itAmt}\n` +
+      `• Discount: ₹${discountFormatted}`
+    );
+  } else if (purchase.items && purchase.items.length > 1) {
+    const itemLines = purchase.items.map((it) => {
+      let qty = '';
+      if (it.weight_grams && it.weight_grams > 0) {
+        qty = `${(it.weight_grams / 1000).toFixed(2)} KG`;
+      } else if (it.quantity) {
+        qty = `${it.quantity}`;
+      } else {
+        qty = '1 Pc';
+      }
+      const amt = it.amount.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      return `• Item: ${it.description} (${qty}) — ₹${amt}`;
+    });
+    itemsBlock = (
+      itemLines.join('\n') +
+      `\n• Subtotal: ₹${subtotalFormatted}\n` +
+      `• Discount: ₹${discountFormatted}`
+    );
   } else {
-    loyaltyBlock = `${formatWhatsAppLoyaltySection(purchase, settings)}\n\n${separator}\n`;
+    let weightOrQty = '';
+    if (purchase.weight_grams && purchase.weight_grams > 0) {
+      const kg = (purchase.weight_grams / 1000).toFixed(2);
+      weightOrQty = `${kg} KG`;
+    } else {
+      weightOrQty = '1 Pc';
+    }
+    const desc = purchase.notes || 'Ladies Readymade Garment / Dress Material';
+    itemsBlock = (
+      `• Item: ${desc}\n` +
+      `• Quantity: ${weightOrQty}\n` +
+      `• Amount: ₹${subtotalFormatted}\n` +
+      `• Discount: ₹${discountFormatted}`
+    );
   }
-  const phone = settings.phone || settings.whatsapp_number || '+91 8330889632';
 
-  let text = (
-    `👗 *${branchTitle}*\n` +
-    `${separator}\n` +
-    `🧾 *CASH MEMO*\n\n` +
-    `👤 Customer: ${purchase.customer_name}\n` +
-    `🧾 Invoice: ${purchase.invoice_number}\n` +
-    `📅 Date: ${dateFormatted}\n\n` +
-    `${separator}\n` +
-    `🛍️ *ITEM DETAILS*\n\n` +
-    `${itemsBlock}\n\n` +
-    `${separator}\n` +
-    `💰 *BILL SUMMARY*\n\n` +
-    `Subtotal: ₹${subtotalFormatted}\n` +
-    `Discount: ₹${discountFormatted}\n` +
-    roundOffStr +
-    `*TOTAL PAID: ₹${finalFormatted}*\n` +
-    `Payment: ${purchase.payment_method}\n\n` +
-    `${separator}\n` +
-    loyaltyBlock +
-    `❤️ Thank you for shopping with *TERRY WOMEN!*\n` +
+  // Round off note if non-zero
+  let roundOffLine = '';
+  if (typeof purchase.round_off === 'number' && purchase.round_off !== 0) {
+    const sign = purchase.round_off < 0 ? '-' : '+';
+    roundOffLine = `\n• Round Off: ${sign}₹${Math.abs(purchase.round_off).toFixed(2)}`;
+  }
+
+  // Payment label
+  let paymentLabel = 'Cash';
+  const pmUpper = (purchase.payment_method || 'CASH').toUpperCase();
+  if (pmUpper === 'UPI') paymentLabel = 'UPI';
+  else if (pmUpper === 'CARD') paymentLabel = 'Card';
+  else if (pmUpper === 'CASH') paymentLabel = 'Cash';
+  else if (purchase.payment_method) {
+    paymentLabel = purchase.payment_method.charAt(0).toUpperCase() + purchase.payment_method.slice(1).toLowerCase();
+  }
+
+  // Loyalty offer block
+  const currentWeightGrams = typeof purchase.loyalty_weight_after_grams === 'number'
+    ? purchase.loyalty_weight_after_grams
+    : (purchase.weight_grams || 0);
+  const completedKg = (currentWeightGrams / 1000).toFixed(2);
+
+  let offerBlock = '';
+  if (purchase.loyalty_applied) {
+    offerBlock = (
+      `🎁 SPECIAL CUSTOMER OFFER\n\n` +
+      `🎉 500g FREE Reward Redeemed on 1 KG!\n` +
+      `Complete 5 KG in dress purchases and get 500g FREE on your next 1 KG purchase!\n\n` +
+      `📊 Your Progress: 0.00 KG / 5 KG`
+    );
+  } else if (purchase.loyalty_reward_unlocked_after) {
+    offerBlock = (
+      `🎁 SPECIAL CUSTOMER OFFER\n\n` +
+      `🎉 5 KG Milestone Completed — 500g FREE Unlocked!\n` +
+      `Buy 1 KG or more on your next visit to get 500g FREE from that 1 KG!\n\n` +
+      `📊 Your Progress: 5.00 KG / 5 KG`
+    );
+  } else {
+    offerBlock = (
+      `🎁 SPECIAL CUSTOMER OFFER\n\n` +
+      `Complete 5 KG in dress purchases and get 500g FREE on your next 1 KG purchase!\n\n` +
+      `📊 Your Progress: ${completedKg} KG / 5 KG`
+    );
+  }
+
+  const phone = settings?.phone || settings?.whatsapp_number || '+91 8330889632';
+
+  const footer = (
+    `❤️ Thanks for choosing TERRY 7 WOMEN!\n\n` +
+    `We look forward to shopping with you again. 😊\n\n` +
     `📍 ${branchTown}\n` +
     `📞 ${phone}`
   );
 
-  if (options?.includeInvoiceLink) {
-    const baseUrl = options.baseUrl || 'https://terry7women.vercel.app';
-    text += `\n\nInvoice:\n${baseUrl}/invoice/${purchase.id}`;
-  }
-
-  return text;
+  return (
+    `👗 ${branchTitle}\n\n` +
+    `Hello ${customerName.toUpperCase()} 👋\n\n` +
+    `Thank you for shopping with us! ❤️\n\n` +
+    `${separator}\n` +
+    `🛍️ PURCHASE DETAILS\n\n` +
+    `${itemsBlock}` +
+    `${roundOffLine}\n\n` +
+    `💰 TOTAL PAID: ₹${finalFormatted}\n` +
+    `💵 Payment: ${paymentLabel}\n\n` +
+    `${separator}\n` +
+    `${offerBlock}\n\n` +
+    `${separator}\n\n` +
+    `${footer}`
+  );
 }
 
 /**
@@ -248,15 +282,11 @@ export function buildWhatsAppMobileAppUrl(destinationPhone: string, text: string
 }
 
 /**
- * Sends actual invoice image attachment with the cash memo as caption
- * via Meta WhatsApp Business Platform Cloud API.
- *
+ * Sends official sales message via Meta WhatsApp Business Platform Cloud API.
  * Rules:
  * - Recipient is strictly derived from purchase.customer_phone.
  * - Sender is the configured Meta Phone Number ID (+91 8330889632).
- * - Uploads the actual invoice PNG to Meta Media API.
- * - Sends message as type: "image" with the uploaded media ID and cash memo caption.
- * - NO invoice link, NO website URL.
+ * - Sends clean text message directly without invoice links or attachments.
  * - Prevents duplicate sends unless forceResend is true.
  * - Does NOT simulate successful delivery if credentials are unconfigured;
  *   returns clear, actionable status and instructions.
@@ -301,7 +331,7 @@ export async function sendWhatsAppInvoice(
           success: false,
           status: 'FAILED',
           errorCode: 'ALREADY_SENT',
-          errorMessage: `Invoice ${purchase.invoice_number} has already been sent to customer ${phoneValidation.formattedDisplay || recipientPhone} (Message ID: ${alreadySent.message_id || 'unknown'}). Use resend if you wish to dispatch again.`,
+          errorMessage: `Message has already been sent to customer ${phoneValidation.formattedDisplay || recipientPhone} (Message ID: ${alreadySent.message_id || 'unknown'}). Use resend if you wish to dispatch again.`,
           formattedText,
           messageId: alreadySent.message_id,
           recipientPhone,
@@ -323,91 +353,23 @@ export async function sendWhatsAppInvoice(
       errorCode: 'CREDENTIALS_MISSING',
       errorMessage:
         'WhatsApp Business Cloud API is not configured: WHATSAPP_ACCESS_TOKEN and/or WHATSAPP_PHONE_NUMBER_ID are missing. ' +
-        'To send invoice image attachments automatically to customer WhatsApp numbers from business sender +91 8330889632, ' +
-        'please configure these credentials in your .env or Settings.',
+        'Please send message via WhatsApp Web / App directly.',
       formattedText,
       recipientPhone,
       senderPhone: businessSenderPhone,
     };
   }
 
-  // 4. Resolve Invoice Image Buffer
-  const imageBuffer = await resolveInvoiceImageBuffer(purchase.id, options);
-  if (!imageBuffer || imageBuffer.length === 0) {
-    return {
-      success: false,
-      status: 'FAILED',
-      errorCode: 'IMAGE_NOT_FOUND',
-      errorMessage: `Could not locate invoice image for ${purchase.invoice_number} to attach to WhatsApp.`,
-      formattedText,
-      recipientPhone,
-      senderPhone: businessSenderPhone,
-    };
-  }
-
-  // 5. Upload Invoice Image to Meta WhatsApp Media API
-  let mediaId: string;
-  try {
-    const formData = new FormData();
-    formData.append('messaging_product', 'whatsapp');
-    formData.append('type', 'image/png');
-    formData.append(
-      'file',
-      new Blob([new Uint8Array(imageBuffer)], { type: 'image/png' }),
-      `${purchase.invoice_number}.png`
-    );
-
-    const mediaUploadEndpoint = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/media`;
-    const uploadRes = await fetch(mediaUploadEndpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    const uploadData = await uploadRes.json();
-    if (!uploadRes.ok || !uploadData.id) {
-      console.error('Meta Media Upload Error:', uploadData);
-      return {
-        success: false,
-        status: 'FAILED',
-        errorCode: 'MEDIA_UPLOAD_FAILED',
-        errorMessage:
-          uploadData.error?.message ||
-          `Failed to upload invoice image to WhatsApp Business Media API (HTTP ${uploadRes.status}).`,
-        formattedText,
-        recipientPhone,
-        senderPhone: businessSenderPhone,
-      };
-    }
-
-    mediaId = uploadData.id;
-  } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : 'Network error during media upload';
-    console.error('Network error uploading invoice image to WhatsApp:', err);
-    return {
-      success: false,
-      status: 'FAILED',
-      errorCode: 'MEDIA_UPLOAD_NETWORK_ERROR',
-      errorMessage: `Network error uploading invoice image to WhatsApp: ${errorMsg}`,
-      formattedText,
-      recipientPhone,
-      senderPhone: businessSenderPhone,
-    };
-  }
-
-  // 6. Send WhatsApp Message with Image Attachment + Cash Memo Caption
+  // 4. Send WhatsApp Text Message via Meta Graph API
   try {
     const messageEndpoint = `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`;
     const payload = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to: recipientPhone,
-      type: 'image',
-      image: {
-        id: mediaId,
-        caption: formattedText,
+      type: 'text',
+      text: {
+        body: formattedText,
       },
     };
 
@@ -431,7 +393,6 @@ export async function sendWhatsAppInvoice(
           msgData.error?.message ||
           `WhatsApp message delivery failed (HTTP ${msgRes.status}).`,
         formattedText,
-        mediaId,
         recipientPhone,
         senderPhone: businessSenderPhone,
       };
@@ -442,24 +403,23 @@ export async function sendWhatsAppInvoice(
       success: true,
       status: 'SENT',
       messageId,
-      mediaId,
       formattedText,
       recipientPhone,
       senderPhone: businessSenderPhone,
     };
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : 'Network error sending message';
-    console.error('Network error sending WhatsApp invoice message:', err);
+    console.error('Network error sending WhatsApp message:', err);
     return {
       success: false,
       status: 'FAILED',
       errorCode: 'MESSAGE_SEND_NETWORK_ERROR',
-      errorMessage: `Network error sending WhatsApp invoice message: ${errorMsg}`,
+      errorMessage: `Network error sending WhatsApp message: ${errorMsg}`,
       formattedText,
-      mediaId,
       recipientPhone,
       senderPhone: businessSenderPhone,
     };
   }
 }
+
 
