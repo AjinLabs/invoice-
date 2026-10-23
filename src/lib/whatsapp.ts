@@ -110,7 +110,20 @@ export function formatWhatsAppInvoiceText(
     ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : 'Today';
 
-  const discountFormatted = (purchase.discount_amount || 0).toLocaleString('en-IN', {
+  // Combine round-off savings directly into Discount
+  const rawSubtotal = purchase.subtotal || 0;
+  const rawFinal = purchase.final_amount || 0;
+  const computedDiscount = rawSubtotal > rawFinal
+    ? Math.round((rawSubtotal - rawFinal) * 100) / 100
+    : Math.max(
+        0,
+        (purchase.discount_amount || 0) +
+          (typeof purchase.round_off === 'number' && purchase.round_off < 0
+            ? Math.abs(purchase.round_off)
+            : 0)
+      );
+
+  const discountFormatted = computedDiscount.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -135,7 +148,7 @@ export function formatWhatsAppInvoiceText(
     } else {
       weightOrQty = typeof it.quantity === 'string' ? it.quantity.replace(/\s*KG/i, '') : '1';
     }
-    const itAmt = it.amount.toLocaleString('en-IN', {
+    const itAmt = (it.amount || purchase.subtotal || purchase.final_amount || 0).toLocaleString('en-IN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -182,13 +195,6 @@ export function formatWhatsAppInvoiceText(
     );
   }
 
-  // Round off note if non-zero
-  let roundOffLine = '';
-  if (typeof purchase.round_off === 'number' && purchase.round_off !== 0) {
-    const sign = purchase.round_off < 0 ? '-' : '+';
-    roundOffLine = `\nRound Off: ${sign}₹${Math.abs(purchase.round_off).toFixed(2)}`;
-  }
-
   // Payment label
   let paymentLabel = 'Cash';
   const pmUpper = (purchase.payment_method || 'CASH').toUpperCase();
@@ -233,8 +239,7 @@ export function formatWhatsAppInvoiceText(
     `📍 ${branchTown}\n\n` +
     `Hello ${customerName}! 👋\n\n` +
     `${separator}\n` +
-    `${itemsBlock}` +
-    `${roundOffLine}\n\n` +
+    `${itemsBlock}\n\n` +
     `💰 *Total Paid: ₹${finalFormatted}*\n` +
     `💵 Payment: ${paymentLabel}\n` +
     `${separator}\n\n` +
@@ -373,6 +378,7 @@ export async function sendWhatsAppInvoice(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(2500),
     });
 
     const msgData = await msgRes.json();

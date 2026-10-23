@@ -282,3 +282,34 @@ export async function saveDbToPostgres(data: DatabaseSchema): Promise<boolean> {
     client.release();
   }
 }
+
+let isSavingToPostgres = false;
+let pendingPostgresSaveData: DatabaseSchema | null = null;
+
+/**
+ * Serialized background sync queue to PostgreSQL.
+ * Ensures at most one background transaction runs at a time,
+ * eliminating row-lock contention and pool exhaustion while remaining non-blocking.
+ */
+export async function queueSaveToPostgres(data: DatabaseSchema): Promise<boolean> {
+  if (isSavingToPostgres) {
+    pendingPostgresSaveData = data;
+    return true;
+  }
+
+  isSavingToPostgres = true;
+  try {
+    return await saveDbToPostgres(data);
+  } catch (err) {
+    console.warn('Error during queued PostgreSQL save:', err);
+    return false;
+  } finally {
+    isSavingToPostgres = false;
+    if (pendingPostgresSaveData) {
+      const nextData = pendingPostgresSaveData;
+      pendingPostgresSaveData = null;
+      queueSaveToPostgres(nextData).catch(() => {});
+    }
+  }
+}
+

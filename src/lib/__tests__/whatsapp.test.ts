@@ -80,8 +80,8 @@ describe('WhatsApp Message Formatting — Strict Zero URL Guarantee & Template A
     assert.ok(text.includes('Item: Ladies Readymade Garment'), 'Must have product');
     assert.ok(text.includes('Quantity: 1.25 KG'), 'Must have weight');
     assert.ok(text.includes('Amount: ₹1,123.75'), 'Must have amount');
-    assert.ok(text.includes('Discount: ₹100.00'), 'Must include discount');
-    assert.ok(text.includes('Round Off: -₹0.75'), 'Must include round off');
+    assert.ok(text.includes('Discount: ₹100.75'), 'Must include discount merged with round off');
+    assert.ok(!text.includes('Round Off'), 'Must NOT include separate round off line');
 
     // Total & Payment
     assert.ok(text.includes('💰 *Total Paid: ₹1,023.00*'), 'Must include bold Total Paid');

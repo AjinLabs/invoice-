@@ -510,8 +510,8 @@ describe('Weight-Based Customer Loyalty Program & Acceptance Criteria', () => {
     assert.ok(memo.includes('Item: Cotton Silk Dress Material'));
     assert.ok(memo.includes('Quantity: 1.63 KG'));
     assert.ok(memo.includes('Amount: ₹1,465.37'));
-    assert.ok(memo.includes('Discount: ₹0.00'));
-    assert.ok(memo.includes('Round Off: -₹5.37'));
+    assert.ok(memo.includes('Discount: ₹5.37'));
+    assert.ok(!memo.includes('Round Off'));
     assert.ok(memo.includes('💰 *Total Paid: ₹1,460.00*'));
     assert.ok(memo.includes('💵 Payment: Cash'));
     assert.ok(memo.includes('🎁 *TERRY REWARDS*'));

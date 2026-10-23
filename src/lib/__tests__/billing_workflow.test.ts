@@ -98,8 +98,8 @@ describe('Billing Workflow, Customer Association & Isolation', () => {
     assert.ok(!waTextA.includes('Bill No'), 'Must NOT contain Bill No');
     assert.ok(!waTextA.includes('Invoice'), 'Must NOT contain Invoice');
     assert.ok(waTextA.includes('💰 *Total Paid: ₹630.00*'));
-    assert.ok(waTextA.includes('Discount: ₹449.50'));
-    assert.ok(waTextA.includes('Round Off: +₹0.70'));
+    assert.ok(waTextA.includes('Discount: ₹448.80'));
+    assert.ok(!waTextA.includes('Round Off'));
 
     const waUrlA = buildWhatsAppClickToChatUrl(phoneRes.waDestination, waTextA);
     assert.ok(waUrlA.includes('wa.me/919847011111'));
@@ -359,7 +359,8 @@ describe('Priority 3 — Amount Section with Three Modes & Boundary Tests', () =
 
     const waText = formatWhatsAppInvoiceText(purchase, mockShopSettings);
     assert.ok(waText.includes('💰 *Total Paid: ₹890.00*'));
-    assert.ok(waText.includes('Round Off: -₹9.00'));
+    assert.ok(waText.includes('Discount: ₹9.00'));
+    assert.ok(!waText.includes('Round Off'));
     assert.ok(!waText.includes('http'), 'Caption must contain zero URLs');
   });
 

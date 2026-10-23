@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { getDb, readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR, getBranchInfo } from '@/lib/db';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
 import { calculateBilling } from '@/lib/billing';
-import { sendWhatsAppInvoice } from '@/lib/whatsapp';
+import { sendWhatsAppInvoice, formatWhatsAppInvoiceText } from '@/lib/whatsapp';
 import { Purchase, PurchaseItem, LoyaltyTransaction, WhatsAppMessage, PaymentMethod, RoundOffMode, BranchId } from '@/lib/types';
 
 declare global {
@@ -226,7 +226,7 @@ export async function POST(request: Request) {
     }
 
     // Atomic transaction execution
-    const { createdPurchase, updatedCustomer, branchInfoSnapshot } = await withTransaction(async (db) => {
+    const { createdPurchase, updatedCustomer, branchSettings, formattedText } = await withTransaction(async (db) => {
       const now = new Date().toISOString();
       const currentYear = new Date().getFullYear();
       const branchInfo = getBranchInfo(db, branch);
@@ -368,50 +368,57 @@ export async function POST(request: Request) {
         created_at: now,
       };
 
+      // Prepare branch-specific settings and WhatsApp text
+      const branchSettings = {
+        ...db.shop_settings,
+        shop_name: branchInfo.name,
+        address: branchInfo.address,
+        phone: branchInfo.phone,
+      };
+
+      const formattedText = formatWhatsAppInvoiceText(purchase, branchSettings);
+
+      const waMsg: WhatsAppMessage = {
+        id: generateId('msg'),
+        purchase_id: purchase.id,
+        customer_id: customer.id,
+        phone: purchase.customer_phone,
+        message_type: 'INVOICE',
+        content: formattedText,
+        status: 'PENDING',
+        is_demo: false,
+        created_at: now,
+        updated_at: now,
+      };
+
       db.purchases.push(purchase);
       db.loyalty_transactions.push(loyaltyTx);
+      db.whatsapp_messages.push(waMsg);
 
       return {
         createdPurchase: purchase,
         updatedCustomer: { ...customer },
-        branchInfoSnapshot: branchInfo,
+        branchSettings,
+        formattedText,
       };
     });
 
-    // Create branch-specific settings snapshot for WhatsApp
-    const currentDbSnapshot = await getDb();
-    const branchSettings = {
-      ...currentDbSnapshot.shop_settings,
-      shop_name: branchInfoSnapshot.name,
-      address: branchInfoSnapshot.address,
-      phone: branchInfoSnapshot.phone,
+    const waResult = {
+      success: true,
+      status: 'PENDING',
+      formattedText,
+      recipientPhone: createdPurchase.customer_phone,
+      senderPhone: branchSettings.phone || '+91 8330889632',
     };
 
-    // Trigger WhatsApp Sending via Meta Business Cloud API with actual invoice image
-    const waResult = await sendWhatsAppInvoice(
-      createdPurchase,
-      branchSettings,
-      { imageDataUrl: invoiceImage }
-    );
-
-    // Save WhatsApp message record to database
-    await withTransaction((db) => {
-      const waMsg: WhatsAppMessage = {
-        id: generateId('msg'),
-        purchase_id: createdPurchase.id,
-        customer_id: updatedCustomer.id,
-        phone: createdPurchase.customer_phone,
-        message_type: 'INVOICE',
-        content: waResult.formattedText,
-        status: waResult.status,
-        message_id: waResult.messageId,
-        error_message: waResult.errorMessage,
-        is_demo: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      db.whatsapp_messages.push(waMsg);
-    });
+    // If Meta Business Cloud API credentials are configured, dispatch in background without blocking
+    const token = process.env.WHATSAPP_ACCESS_TOKEN || branchSettings.whatsapp_access_token;
+    const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || branchSettings.whatsapp_phone_number_id;
+    if (token && phoneNumberId) {
+      sendWhatsAppInvoice(createdPurchase, branchSettings, { imageDataUrl: invoiceImage }).catch((err) => {
+        console.warn('Background WhatsApp send failed:', err);
+      });
+    }
 
     return NextResponse.json({
       success: true,
