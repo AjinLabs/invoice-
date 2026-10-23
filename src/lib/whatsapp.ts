@@ -100,10 +100,15 @@ export function formatWhatsAppInvoiceText(
 ): string {
   const branchKey = (purchase.branch || 'vnb').toLowerCase();
   const branchTown = branchKey === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam';
-  const branchTitle = `TERRY 7 WOMEN — ${branchTown.toUpperCase()}`;
-  const separator = '━━━━━━━━━━━━━━━━━━';
+  const separator = '━━━━━━━━━━━━━━━';
 
   const customerName = (purchase.customer_name || 'Customer').trim();
+  const billNo = purchase.invoice_number || '0001';
+
+  const dateObj = new Date(purchase.created_at);
+  const dateFormatted = !isNaN(dateObj.getTime())
+    ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : 'Today';
 
   const discountFormatted = (purchase.discount_amount || 0).toLocaleString('en-IN', {
     minimumFractionDigits: 2,
@@ -124,22 +129,21 @@ export function formatWhatsAppInvoiceText(
     const it = purchase.items[0];
     let weightOrQty = '';
     if (it.weight_grams && it.weight_grams > 0) {
-      const kg = (it.weight_grams / 1000).toFixed(2);
-      weightOrQty = `${kg} KG`;
-    } else if (it.quantity) {
-      weightOrQty = `${it.quantity}`;
+      weightOrQty = (it.weight_grams / 1000).toFixed(2);
+    } else if (purchase.weight_grams > 0) {
+      weightOrQty = (purchase.weight_grams / 1000).toFixed(2);
     } else {
-      weightOrQty = '1 Pc';
+      weightOrQty = typeof it.quantity === 'string' ? it.quantity.replace(/\s*KG/i, '') : '1';
     }
     const itAmt = it.amount.toLocaleString('en-IN', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
     itemsBlock = (
-      `• Item: ${it.description || 'Ladies Readymade Garment / Dress Material'}\n` +
-      `• Quantity: ${weightOrQty}\n` +
-      `• Amount: ₹${itAmt}\n` +
-      `• Discount: ₹${discountFormatted}`
+      `Item: ${it.description || 'Ladies Readymade Garment / Dress Material'}\n` +
+      `Quantity: ${weightOrQty} KG\n` +
+      `Amount: ₹${itAmt}\n` +
+      `Discount: ₹${discountFormatted}`
     );
   } else if (purchase.items && purchase.items.length > 1) {
     const itemLines = purchase.items.map((it) => {
@@ -155,27 +159,26 @@ export function formatWhatsAppInvoiceText(
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
-      return `• Item: ${it.description} (${qty}) — ₹${amt}`;
+      return `Item: ${it.description} (${qty}) - ₹${amt}`;
     });
+    const wtKg = purchase.weight_grams > 0 ? (purchase.weight_grams / 1000).toFixed(2) : '0.00';
     itemsBlock = (
       itemLines.join('\n') +
-      `\n• Subtotal: ₹${subtotalFormatted}\n` +
-      `• Discount: ₹${discountFormatted}`
+      `\nQuantity: ${wtKg} KG\n` +
+      `Amount: ₹${subtotalFormatted}\n` +
+      `Discount: ₹${discountFormatted}`
     );
   } else {
-    let weightOrQty = '';
+    let weightOrQty = '0.00';
     if (purchase.weight_grams && purchase.weight_grams > 0) {
-      const kg = (purchase.weight_grams / 1000).toFixed(2);
-      weightOrQty = `${kg} KG`;
-    } else {
-      weightOrQty = '1 Pc';
+      weightOrQty = (purchase.weight_grams / 1000).toFixed(2);
     }
     const desc = purchase.notes || 'Ladies Readymade Garment / Dress Material';
     itemsBlock = (
-      `• Item: ${desc}\n` +
-      `• Quantity: ${weightOrQty}\n` +
-      `• Amount: ₹${subtotalFormatted}\n` +
-      `• Discount: ₹${discountFormatted}`
+      `Item: ${desc}\n` +
+      `Quantity: ${weightOrQty} KG\n` +
+      `Amount: ₹${subtotalFormatted}\n` +
+      `Discount: ₹${discountFormatted}`
     );
   }
 
@@ -183,7 +186,7 @@ export function formatWhatsAppInvoiceText(
   let roundOffLine = '';
   if (typeof purchase.round_off === 'number' && purchase.round_off !== 0) {
     const sign = purchase.round_off < 0 ? '-' : '+';
-    roundOffLine = `\n• Round Off: ${sign}₹${Math.abs(purchase.round_off).toFixed(2)}`;
+    roundOffLine = `\nRound Off: ${sign}₹${Math.abs(purchase.round_off).toFixed(2)}`;
   }
 
   // Payment label
@@ -196,58 +199,51 @@ export function formatWhatsAppInvoiceText(
     paymentLabel = purchase.payment_method.charAt(0).toUpperCase() + purchase.payment_method.slice(1).toLowerCase();
   }
 
-  // Loyalty offer block
+  // Loyalty offer block (TERRY REWARDS or Unlock Congratulations)
   const currentWeightGrams = typeof purchase.loyalty_weight_after_grams === 'number'
     ? purchase.loyalty_weight_after_grams
     : (purchase.weight_grams || 0);
   const completedKg = (currentWeightGrams / 1000).toFixed(2);
 
-  let offerBlock = '';
-  if (purchase.loyalty_applied) {
-    offerBlock = (
-      `🎁 SPECIAL CUSTOMER OFFER\n\n` +
-      `🎉 500g FREE Reward Redeemed on 1 KG!\n` +
-      `Complete 5 KG in dress purchases and get 500g FREE on your next 1 KG purchase!\n\n` +
-      `📊 Your Progress: 0.00 KG / 5 KG`
+  let rewardsBlock = '';
+  if (purchase.loyalty_reward_unlocked_after) {
+    rewardsBlock = (
+      `🎉 *Congratulations ${customerName}!*\n` +
+      `Reward unlocked! Buy 1 KG on your next visit and pay for only 500 g.`
     );
-  } else if (purchase.loyalty_reward_unlocked_after) {
-    offerBlock = (
-      `🎁 SPECIAL CUSTOMER OFFER\n\n` +
-      `🎉 5 KG Milestone Completed — 500g FREE Unlocked!\n` +
-      `Buy 1 KG or more on your next visit to get 500g FREE from that 1 KG!\n\n` +
-      `📊 Your Progress: 5.00 KG / 5 KG`
+  } else if (purchase.loyalty_applied) {
+    rewardsBlock = (
+      `🎉 *Congratulations ${customerName}!*\n` +
+      `500 g FREE Reward Redeemed on 1 KG!\n` +
+      `Buy 5 KG in total and get *500 g FREE* on your next 1 KG purchase!\n` +
+      `📊 Progress: *0.00 KG / 5 KG*`
     );
   } else {
-    offerBlock = (
-      `🎁 SPECIAL CUSTOMER OFFER\n\n` +
-      `Complete 5 KG in dress purchases and get 500g FREE on your next 1 KG purchase!\n\n` +
-      `📊 Your Progress: ${completedKg} KG / 5 KG`
+    rewardsBlock = (
+      `🎁 *TERRY REWARDS*\n` +
+      `Buy 5 KG in total and get *500 g FREE* on your next 1 KG purchase!\n` +
+      `📊 Progress: *${completedKg} KG / 5 KG*`
     );
   }
 
   const phone = settings?.phone || settings?.whatsapp_number || '+91 8330889632';
 
-  const footer = (
-    `❤️ Thanks for choosing TERRY 7 WOMEN!\n\n` +
-    `We look forward to shopping with you again. 😊\n\n` +
-    `📍 ${branchTown}\n` +
-    `📞 ${phone}`
-  );
-
   return (
-    `👗 ${branchTitle}\n\n` +
-    `Hello ${customerName.toUpperCase()} 👋\n\n` +
-    `Thank you for shopping with us! ❤️\n\n` +
+    `👗 *TERRY 7 WOMEN*\n` +
+    `📍 ${branchTown}\n\n` +
+    `Hello ${customerName}! 👋\n\n` +
     `${separator}\n` +
-    `🛍️ PURCHASE DETAILS\n\n` +
+    `🧾 *BILL SUMMARY*\n` +
+    `Bill No: ${billNo}\n` +
+    `Date: ${dateFormatted}\n\n` +
     `${itemsBlock}` +
     `${roundOffLine}\n\n` +
-    `💰 TOTAL PAID: ₹${finalFormatted}\n` +
-    `💵 Payment: ${paymentLabel}\n\n` +
-    `${separator}\n` +
-    `${offerBlock}\n\n` +
+    `💰 *Total Paid: ₹${finalFormatted}*\n` +
+    `💵 Payment: ${paymentLabel}\n` +
     `${separator}\n\n` +
-    `${footer}`
+    `${rewardsBlock}\n\n` +
+    `Thank you for shopping with us ❤️\n` +
+    `📞 ${phone}`
   );
 }
 

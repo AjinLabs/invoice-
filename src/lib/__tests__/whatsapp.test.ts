@@ -66,39 +66,58 @@ const mockPurchase: Purchase = {
   ],
 };
 
-describe('WhatsApp Message Formatting — Strict Zero URL Guarantee & Zero Invoice Number', () => {
-  test('formatWhatsAppInvoiceText contains NO invoice URL, NO website URL, and NO invoice number', () => {
+describe('WhatsApp Message Formatting — Strict Zero URL Guarantee & Template Accuracy', () => {
+  test('formatWhatsAppInvoiceText strictly matches official customer memo template', () => {
     const text = formatWhatsAppInvoiceText(mockPurchase, mockSettings);
 
-    // Required elements matching user template
-    assert.ok(text.includes('👗 TERRY 7 WOMEN — VANIYAMBALAM'), 'Must have brand header');
-    assert.ok(text.includes('━━━━━━━━━━━━━━━━━━'), 'Must have separators');
-    assert.ok(text.includes('Hello PRIYA SHARMA 👋'), 'Must show customer greeting');
-    assert.ok(text.includes('Thank you for shopping with us! ❤️'), 'Must show thank you greeting');
-    assert.ok(text.includes('🛍️ PURCHASE DETAILS'), 'Must have purchase details header');
-    assert.ok(text.includes('• Item: Ladies Readymade Garment'), 'Must have product');
-    assert.ok(text.includes('• Quantity: 1.25 KG'), 'Must have weight');
-    assert.ok(text.includes('• Amount: ₹1,123.75'), 'Must have amount');
-    assert.ok(text.includes('• Discount: ₹100.00'), 'Must include discount');
-    assert.ok(text.includes('• Round Off: -₹0.75'), 'Must include round off');
-    assert.ok(text.includes('💰 TOTAL PAID: ₹1,023.00'), 'Must include TOTAL PAID');
+    // Header & Greeting
+    assert.ok(text.includes('👗 *TERRY 7 WOMEN*'), 'Must have brand header');
+    assert.ok(text.includes('📍 Vaniyambalam'), 'Must have town');
+    assert.ok(text.includes('Hello Priya Sharma! 👋'), 'Must show customer greeting');
+    assert.ok(text.includes('━━━━━━━━━━━━━━━'), 'Must have separators');
+
+    // Bill Summary
+    assert.ok(text.includes('🧾 *BILL SUMMARY*'), 'Must have bill summary header');
+    assert.ok(text.includes('Bill No: INV-VNB-2026-000101'), 'Must include Bill No');
+    assert.ok(text.includes('Date:'), 'Must include Date');
+
+    // Item details
+    assert.ok(text.includes('Item: Ladies Readymade Garment'), 'Must have product');
+    assert.ok(text.includes('Quantity: 1.25 KG'), 'Must have weight');
+    assert.ok(text.includes('Amount: ₹1,123.75'), 'Must have amount');
+    assert.ok(text.includes('Discount: ₹100.00'), 'Must include discount');
+    assert.ok(text.includes('Round Off: -₹0.75'), 'Must include round off');
+
+    // Total & Payment
+    assert.ok(text.includes('💰 *Total Paid: ₹1,023.00*'), 'Must include bold Total Paid');
     assert.ok(text.includes('💵 Payment: UPI'), 'Must include payment method');
-    assert.ok(text.includes('🎁 SPECIAL CUSTOMER OFFER'), 'Must include special customer offer');
-    assert.ok(text.includes('Complete 5 KG in dress purchases and get 500g FREE on your next 1 KG purchase!'));
-    assert.ok(text.includes('📊 Your Progress: 1.25 KG / 5 KG'), 'Must show progress');
-    assert.ok(text.includes('❤️ Thanks for choosing TERRY 7 WOMEN!'), 'Must include brand thank you');
-    assert.ok(text.includes('📍 Vaniyambalam'), 'Must include town');
+
+    // Loyalty Block
+    assert.ok(text.includes('🎁 *TERRY REWARDS*'), 'Must include rewards header');
+    assert.ok(text.includes('Buy 5 KG in total and get *500 g FREE* on your next 1 KG purchase!'));
+    assert.ok(text.includes('📊 Progress: *1.25 KG / 5 KG*'), 'Must show progress');
+
+    // Footer
+    assert.ok(text.includes('Thank you for shopping with us ❤️'), 'Must include brand thank you');
     assert.ok(text.includes('📞 +91 8330889632'), 'Must include contact phone');
 
-    // Strict Negative Checks — Zero Invoice Number & Zero URLs
-    assert.ok(!text.includes('Invoice:'), 'Must NOT contain "Invoice:"');
-    assert.ok(!text.includes('INV-'), 'Must NOT contain "INV-" code');
-    assert.ok(!text.includes('CASH MEMO'), 'Must NOT contain "CASH MEMO"');
+    // Strict Negative Checks — Zero URLs
     assert.ok(!text.includes('Bill Link'), 'Must NOT contain any "Bill Link"');
     assert.ok(!text.includes('http://'), 'Must NOT contain "http://"');
     assert.ok(!text.includes('https://'), 'Must NOT contain "https://"');
     assert.ok(!text.includes('invoice/'), 'Must NOT contain any invoice webpage path');
     assert.ok(!text.includes('terry7women.vercel.app'), 'Must NOT contain any domain name');
+  });
+
+  test('formatWhatsAppInvoiceText correctly reflects congratulations when reward is unlocked', () => {
+    const unlockedPurchase: Purchase = {
+      ...mockPurchase,
+      loyalty_reward_unlocked_after: true,
+    };
+    const text = formatWhatsAppInvoiceText(unlockedPurchase, mockSettings);
+    assert.ok(text.includes('🎉 *Congratulations Priya Sharma!*'));
+    assert.ok(text.includes('Reward unlocked! Buy 1 KG on your next visit and pay for only 500 g.'));
+    assert.ok(!text.includes('🎁 *TERRY REWARDS*'), 'Replaces standard TERRY REWARDS when unlocked');
   });
 
   test('formatWhatsAppInvoiceText correctly reflects loyalty rewards without links when redeemed', () => {
@@ -109,19 +128,18 @@ describe('WhatsApp Message Formatting — Strict Zero URL Guarantee & Zero Invoi
       loyalty_weight_after_grams: 0,
     };
     const text = formatWhatsAppInvoiceText(redeemedPurchase, mockSettings);
-    assert.ok(text.includes('🎉 500g FREE Reward Redeemed on 1 KG!'));
+    assert.ok(text.includes('🎉 *Congratulations Priya Sharma!*'));
+    assert.ok(text.includes('500 g FREE Reward Redeemed on 1 KG!'));
     assert.ok(text.includes('0.00 KG / 5 KG'));
     assert.ok(!text.includes('http'), 'Redeemed message must also contain ZERO URLs');
-    assert.ok(!text.includes('INV-'), 'Redeemed message must contain NO invoice number');
   });
 
   test('buildWhatsAppClickToChatUrl creates proper wa.me link with encoded text and zero URLs in text', () => {
     const cleanText = formatWhatsAppInvoiceText(mockPurchase, mockSettings);
     const url = buildWhatsAppClickToChatUrl('919876543210', cleanText);
     assert.ok(url.startsWith('https://wa.me/919876543210?text='));
-    assert.ok(url.includes(encodeURIComponent('👗 TERRY 7 WOMEN — VANIYAMBALAM')));
+    assert.ok(url.includes(encodeURIComponent('👗 *TERRY 7 WOMEN*')));
     assert.ok(!decodeURIComponent(url).includes('Bill Link'));
-    assert.ok(!decodeURIComponent(url).includes('Invoice:'));
   });
 
   test('buildWhatsAppWebUrl creates web.whatsapp.com link with customer phone', () => {
