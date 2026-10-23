@@ -19,8 +19,6 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toPng } from 'html-to-image';
-import CashMemoPreview from '@/components/CashMemoPreview';
 import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
@@ -510,26 +508,18 @@ export default function BillingPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-neutral-100 p-3 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-5">
-        {/* ==============================================================
-            MAIN GRID: POS BILLING INPUTS (Left 7 cols) & LIVE INVOICE (Right 5 cols)
-           ============================================================== */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* ==============================================================
-              LEFT PANEL: POS BILLING COUNTER FORM (COLUMNS 1 to 7)
-             ============================================================== */}
-          <div className="lg:col-span-7 space-y-5 no-print">
-            {/* 1. Customer Details Card */}
-            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
-              <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-neutral-800" />
-                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">Customer Information</h2>
-                </div>
-                <span className="text-xs bg-neutral-100/90 text-neutral-600 font-semibold px-3 py-0.5 rounded-full border border-neutral-200/60 font-mono">
-                  {nextInvoiceNumber}
-                </span>
-              </div>
+      <div className="max-w-3xl mx-auto space-y-5 no-print">
+        {/* 1. Customer Details Card */}
+        <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
+          <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-neutral-800" />
+              <h2 className="text-base font-bold text-neutral-900 tracking-tight">Customer Information</h2>
+            </div>
+            <span className="text-xs bg-emerald-50 text-emerald-800 font-bold px-3 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wide">
+              {activeBranch.toUpperCase()} STORE
+            </span>
+          </div>
 
               <div className="space-y-4">
                 {/* Phone Input with live search & autocomplete dropdown */}
@@ -1109,18 +1099,8 @@ export default function BillingPage() {
                   <span>{isSubmitting ? 'Sending Bill to WhatsApp...' : 'Send Bill'}</span>
                 </button>
 
-                {/* Secondary Actions: Print Bill & Reset Form */}
-                <div className="flex items-center justify-between pt-1">
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => handleCompletePurchase(true)}
-                    className="apple-pressable inline-flex items-center gap-1.5 py-2 px-3 text-xs text-neutral-600 hover:text-black font-bold rounded-xl hover:bg-neutral-100 transition-colors cursor-pointer"
-                  >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>Print Bill Receipt</span>
-                  </button>
-
+                {/* Secondary Actions: Reset Form */}
+                <div className="flex items-center justify-end pt-1">
                   <button
                     type="button"
                     onClick={handleReset}
@@ -1133,59 +1113,6 @@ export default function BillingPage() {
               </div>
             </div>
           </div>
-
-          {/* ==============================================================
-              RIGHT PANEL: LIVE CASH MEMO BILL PAD PREVIEW (COLUMNS 8 to 12)
-             ============================================================== */}
-          <div className="lg:col-span-5 flex flex-col items-center">
-            <div className="w-full flex items-center justify-between mb-3 px-1 no-print">
-              <span className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-                Live Sales &amp; Bill Details
-              </span>
-              <button
-                onClick={() => window.print()}
-                className="text-xs text-black font-bold flex items-center gap-1 hover:underline cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Print Preview</span>
-              </button>
-            </div>
-
-            <CashMemoPreview
-              customerName={name.trim() || 'Walk-in Customer'}
-              customerPhone={phone.trim() || '-'}
-              customerAddress={address.trim() || (activeBranch === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam')}
-              weightGrams={billingCalc.weightGrams}
-              ratePerKg={billingCalc.ratePerKg}
-              subtotal={billingCalc.subtotal}
-              discountAmount={billingCalc.discountAmount}
-              roundOff={billingCalc.roundOffAmount}
-              finalAmount={billingCalc.finalAmount}
-              paymentMethod={paymentMethod}
-              invoiceNumber={completedPurchase ? completedPurchase.invoice_number : nextInvoiceNumber}
-              settings={shopSettings || undefined}
-              items={billingCalc.customItems && billingCalc.customItems.length > 0 ? [
-                ...(numericWeight > 0 ? [{
-                  id: 'kilo_line',
-                  description: itemDesc,
-                  quantity: numericWeight >= 1000 ? `${(numericWeight / 1000).toFixed(2)} KG` : `${numericWeight}g`,
-                  unit_price: billingCalc.ratePerKg,
-                  amount: billingCalc.kiloSubtotal,
-                }] : []),
-                ...billingCalc.customItems.map((ci) => ({
-                  id: ci.id || 'ci',
-                  description: ci.name,
-                  quantity: ci.quantity,
-                  unit_price: ci.unitPrice,
-                  amount: ci.amount || ci.quantity * ci.unitPrice,
-                })),
-              ] : undefined}
-              branch={activeBranch}
-              branchName={branchInfo?.name}
-            />
-          </div>
-        </div>
-      </div>
 
       {/* Success Modal with WhatsApp Delivery, Bill Photo, and PDF Export */}
       <WhatsAppSuccessModal
