@@ -69,55 +69,34 @@ export default function Navbar() {
   const isMainAdmin =
     currentUser?.role === 'SUPER_ADMIN' || currentUser?.username === 'admin';
 
-  // Bottom dock items: Main Admin gets Dashboard & Settings; Store Managers get Billing, Dashboard, Settings
-  const bottomTabs = isMainAdmin
-    ? [
-        {
-          id: 'dashboard',
-          label: 'Master Dashboard',
-          href: '/dashboard',
-          icon: LayoutDashboard,
-          isActive: pathname === '/dashboard' || pathname === '/',
-        },
-        {
-          id: 'settings',
-          label: 'Settings & Reports',
-          href: '/settings',
-          icon: Settings,
-          isActive:
-            pathname === '/settings' ||
-            pathname === '/invoices' ||
-            pathname === '/customers' ||
-            pathname === '/reports',
-        },
-      ]
-    : [
-        {
-          id: 'billing',
-          label: 'Billing',
-          href: '/',
-          icon: ShoppingBag,
-          isActive: pathname === '/',
-        },
-        {
-          id: 'dashboard',
-          label: 'Dashboard',
-          href: '/dashboard',
-          icon: LayoutDashboard,
-          isActive: pathname === '/dashboard',
-        },
-        {
-          id: 'settings',
-          label: 'Settings',
-          href: '/settings',
-          icon: Settings,
-          isActive:
-            pathname === '/settings' ||
-            pathname === '/invoices' ||
-            pathname === '/customers' ||
-            pathname === '/reports',
-        },
-      ];
+  // Bottom dock items: All users have Billing, Dashboard, Settings (with admin badges)
+  const bottomTabs = [
+    {
+      id: 'billing',
+      label: 'Billing',
+      href: '/',
+      icon: ShoppingBag,
+      isActive: pathname === '/',
+    },
+    {
+      id: 'dashboard',
+      label: isMainAdmin ? 'Master Dashboard' : 'Dashboard',
+      href: '/dashboard',
+      icon: LayoutDashboard,
+      isActive: pathname === '/dashboard',
+    },
+    {
+      id: 'settings',
+      label: isMainAdmin ? 'Settings & Reports' : 'Settings',
+      href: '/settings',
+      icon: Settings,
+      isActive:
+        pathname === '/settings' ||
+        pathname === '/invoices' ||
+        pathname === '/customers' ||
+        pathname === '/reports',
+    },
+  ];
 
   return (
     <>
@@ -155,7 +134,7 @@ export default function Navbar() {
                     {currentUser?.branch === 'pkdm'
                       ? 'Pookkottumpadam'
                       : currentUser?.role === 'SUPER_ADMIN'
-                      ? 'Head Office'
+                      ? 'Head Office (VNB & PKDM)'
                       : 'Vaniyambalam'}
                   </span>
                 </div>

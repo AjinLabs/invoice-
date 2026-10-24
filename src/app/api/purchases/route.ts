@@ -226,7 +226,7 @@ export async function POST(request: Request) {
     }
 
     // Atomic transaction execution
-    const { createdPurchase, updatedCustomer, branchSettings, formattedText } = await withTransaction(async (db) => {
+    const { createdPurchase, updatedCustomer, branchSettings, formattedText, waMsg, meta } = await withTransaction(async (db) => {
       const now = new Date().toISOString();
       const currentYear = new Date().getFullYear();
       const branchInfo = getBranchInfo(db, branch);

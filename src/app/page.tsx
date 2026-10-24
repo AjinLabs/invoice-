@@ -71,8 +71,10 @@ export default function BillingPage() {
   const [manualAmount, setManualAmount] = useState<string>('');
 
   // Branch & System States
+  const [currentUser, setCurrentUser] = useState<AuthMeResponse['user'] | null>(null);
   const [activeBranch, setActiveBranch] = useState<BranchId>('vnb');
   const [branchInfo, setBranchInfo] = useState<BranchInfo | null>(null);
+  const isMainAdmin = currentUser?.role === 'SUPER_ADMIN' || currentUser?.username === 'admin';
 
   // Customer & System States
   const [customer, setCustomer] = useState<Customer | null>(null);
@@ -189,10 +191,7 @@ export default function BillingPage() {
         }
 
         if (authData.user) {
-          if (authData.user.role === 'SUPER_ADMIN' || authData.user.username === 'admin') {
-            router.push('/dashboard');
-            return;
-          }
+          if (isMounted) setCurrentUser(authData.user);
           if (authData.user.branch) {
             branchToUse = authData.user.branch;
             if (isMounted) setActiveBranch(branchToUse);
@@ -555,9 +554,47 @@ export default function BillingPage() {
 
 
 
+  const handleBranchSwitch = (branch: BranchId) => {
+    setActiveBranch(branch);
+    fetchSettings(branch);
+    handleReset();
+  };
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-neutral-100 p-3 sm:p-5 lg:p-6 pb-28">
       <div className="max-w-7xl mx-auto no-print">
+        {/* Branch Switcher for Super Admin */}
+        {isMainAdmin && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 bg-white rounded-2xl border border-neutral-200/90 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">Active Billing Store:</span>
+              <span className="text-sm font-black text-neutral-900">
+                {activeBranch === 'pkdm' ? 'TERRY7 WOMEN - Pookkottumpadam (PKDM)' : 'TERRY7 WOMEN - Vaniyambalam (VNB)'}
+              </span>
+            </div>
+            <div className="inline-flex rounded-xl border border-neutral-200 bg-neutral-100 p-1">
+              <button
+                type="button"
+                onClick={() => handleBranchSwitch('vnb')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeBranch === 'vnb' ? 'bg-[#094327] text-white shadow-xs' : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                Vaniyambalam (VNB)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleBranchSwitch('pkdm')}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  activeBranch === 'pkdm' ? 'bg-[#094327] text-white shadow-xs' : 'text-neutral-600 hover:text-black'
+                }`}
+              >
+                Pookkottumpadam (PKDM)
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tablet & Desktop 2-Column Responsive POS Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
           
