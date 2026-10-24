@@ -18,9 +18,15 @@ export const metadata: Metadata = {
   title: 'TERRY7 WOMEN - Weight-Based POS Billing System',
   description: 'Official weight-based clothing billing, customer loyalty tracker, and WhatsApp cash memo for TERRY7 WOMEN.',
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/logo.png', type: 'image/png', sizes: '512x512' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
