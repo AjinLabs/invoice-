@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Phone,
   User,
@@ -21,6 +21,17 @@ import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
+
+interface AuthMeResponse {
+  authenticated: boolean;
+  user?: {
+    id: string;
+    username: string;
+    role: string;
+    branch?: BranchId;
+  };
+  branchInfo?: BranchInfo;
+}
 
 export default function BillingPage() {
   const router = useRouter();
