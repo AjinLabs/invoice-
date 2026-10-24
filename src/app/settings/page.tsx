@@ -47,7 +47,7 @@ export default function SettingsPage() {
   const [targetLoyaltyGrams, setTargetLoyaltyGrams] = useState('5000');
   const [loyaltyDiscount, setLoyaltyDiscount] = useState('449.50');
   const [minWeightGrams, setMinWeightGrams] = useState('1000');
-  const [roundOffMode, setRoundOffMode] = useState<RoundOffMode>('FLOOR_10');
+  const [roundOffMode, setRoundOffMode] = useState<RoundOffMode>('NONE');
 
   // Password change for active branch
   const [newPassword, setNewPassword] = useState('');
@@ -74,6 +74,8 @@ export default function SettingsPage() {
         setMinWeightGrams(s.min_weight_grams?.toString() || '1000');
         if (s.round_off_mode) {
           setRoundOffMode(s.round_off_mode);
+        } else {
+          setRoundOffMode('NONE');
         }
       }
     } catch (err) {
@@ -434,6 +436,23 @@ export default function SettingsPage() {
               </div>
               <p className="text-[11px] text-neutral-500 mt-1">
                 Customer must purchase at least 1 KG on the redemption visit to receive 500g FREE.
+              </p>
+            </div>
+
+            <div>
+              <label className="block font-bold text-neutral-700 uppercase mb-1">
+                Default Billing Amount Mode:
+              </label>
+              <select
+                value={roundOffMode}
+                onChange={(e) => setRoundOffMode(e.target.value as RoundOffMode)}
+                className="w-full px-3 py-2 border rounded-lg text-sm font-bold bg-white focus:border-black outline-hidden"
+              >
+                <option value="NONE">1. Exact Amount (Standard ₹0.00)</option>
+                <option value="FLOOR_10">2. Round Down to Nearest ₹10 (e.g. ₹899 → ₹890)</option>
+              </select>
+              <p className="text-[11px] text-neutral-500 mt-1">
+                Default calculation mode for new bills. Cashiers can also select per bill.
               </p>
             </div>
           </div>
