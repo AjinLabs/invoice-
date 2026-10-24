@@ -8,9 +8,15 @@ import type {
   BranchInfo,
   DatabaseSchema,
 } from './types.ts';
-import { fetchDbFromPostgres, queueSaveToPostgres, SUPABASE_DATABASE_URL } from './postgres.ts';
+import { fetchDbFromPostgres, queueSaveToPostgres, savePurchaseDeltaToPostgres, SUPABASE_DATABASE_URL } from './postgres.ts';
 
 export type { DatabaseSchema };
+export { savePurchaseDeltaToPostgres };
+
+// Precalculated bcrypt hashes for standard accounts (0ms overhead)
+const ADMIN_HASH = '$2b$10$6X59yJzaE3DAPJr0IHUin.AuV9FkOknUQ919dBcvtI8xFxqkSpgb.';
+const VNB_HASH = '$2b$10$YaHInrDpOh/YhALJM.soeuMP3Ls8E2mbxxL.s/Y4g1zhoNSGg6ufK';
+const PKDM_HASH = '$2b$10$w8Q7/SDxzP2CLwAtFfUu1.aXqx38L.RvFJ2uejyooTrmoM/lYCe/G';
 
 declare global {
   var __TERRY_DB_CACHE__: DatabaseSchema | undefined;
@@ -112,9 +118,9 @@ export { normalizePhone } from './phone.ts';
 
 // Initial Seed Data as strictly mandated in prompt requirements 25 & 26
 function createInitialSeed(): DatabaseSchema {
-  const adminPasswordHash = bcrypt.hashSync('admin123', 10);
-  const vnbPasswordHash = bcrypt.hashSync('vnb123', 10);
-  const pkdmPasswordHash = bcrypt.hashSync('pkdm123', 10);
+  const adminPasswordHash = ADMIN_HASH;
+  const vnbPasswordHash = VNB_HASH;
+  const pkdmPasswordHash = PKDM_HASH;
   const now = new Date().toISOString();
 
   const users: User[] = [
@@ -216,7 +222,7 @@ export function readDb(): DatabaseSchema {
       parsed.users.push({
         id: 'usr_vnb',
         username: 'adminvnb',
-        password_hash: bcrypt.hashSync('vnb123', 10),
+        password_hash: VNB_HASH,
         role: 'ADMIN',
         name: 'Store Manager (Vaniyambalam)',
         branch: 'vnb',
@@ -230,7 +236,7 @@ export function readDb(): DatabaseSchema {
       parsed.users.push({
         id: 'usr_pkdm',
         username: 'adminpkdm',
-        password_hash: bcrypt.hashSync('pkdm123', 10),
+        password_hash: PKDM_HASH,
         role: 'ADMIN',
         name: 'Store Manager (Pookkottumpadam)',
         branch: 'pkdm',
@@ -290,7 +296,7 @@ export function readDb(): DatabaseSchema {
   }
 }
 
-export function writeDb(data: DatabaseSchema): void {
+export function writeDb(data: DatabaseSchema, syncPostgres = true): void {
   // Always update in-memory cache first so next read immediately sees changes
   globalThis.__TERRY_DB_CACHE__ = data;
 
@@ -304,7 +310,7 @@ export function writeDb(data: DatabaseSchema): void {
   }
 
   // Non-blocking asynchronous sync to Supabase PostgreSQL in background
-  if (SUPABASE_DATABASE_URL) {
+  if (SUPABASE_DATABASE_URL && syncPostgres) {
     queueSaveToPostgres(data).catch((err) => {
       console.warn('Background sync to PostgreSQL failed:', err);
     });
@@ -335,9 +341,12 @@ export async function getDb(forceRefresh = false): Promise<DatabaseSchema> {
 }
 
 // Ultra-fast transaction lock helper: persists to memory cache + local disk in <5ms, syncs PG in background
-export async function withTransaction<T>(callback: (db: DatabaseSchema) => Promise<T> | T): Promise<T> {
+export async function withTransaction<T>(
+  callback: (db: DatabaseSchema) => Promise<T> | T,
+  syncPostgres = true
+): Promise<T> {
   const db = await getDb();
   const result = await callback(db);
-  writeDb(db);
+  writeDb(db, syncPostgres);
   return result;
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
-import { getDb, readDb, withTransaction, generateId, INVOICES_DIR, getBranchInfo } from '@/lib/db';
+import { getDb, readDb, withTransaction, generateId, INVOICES_DIR, getBranchInfo, savePurchaseDeltaToPostgres } from '@/lib/db';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
 import { calculateBilling } from '@/lib/billing';
 import { sendWhatsAppInvoice, formatWhatsAppInvoiceText } from '@/lib/whatsapp';
@@ -400,8 +400,17 @@ export async function POST(request: Request) {
         updatedCustomer: { ...customer },
         branchSettings,
         formattedText,
+        waMsg,
+        meta: db.meta,
       };
-    });
+    }, false);
+
+    // Fast non-blocking save of the single purchase delta directly to PostgreSQL in background
+    if (savePurchaseDeltaToPostgres) {
+      savePurchaseDeltaToPostgres(createdPurchase, updatedCustomer, waMsg, meta).catch((err) => {
+        console.warn('Postgres purchase delta save warning:', err);
+      });
+    }
 
     const waResult = {
       success: true,

@@ -15,6 +15,7 @@ import {
   Plus,
   Trash2,
   Tag,
+  Loader2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
@@ -1147,8 +1148,17 @@ export default function BillingPage() {
                   onClick={() => handleCompletePurchase(false)}
                   className="apple-pressable w-full flex items-center justify-center gap-2.5 py-4 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer focus:ring-4 focus:ring-emerald-500/30 outline-hidden"
                 >
-                  <Send className="w-5 h-5 text-emerald-300" />
-                  <span>{isSubmitting ? 'Sending to WhatsApp...' : 'Send WhatsApp Message'}</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 text-emerald-300 animate-spin" />
+                      <span>Generating Bill & WhatsApp...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5 text-emerald-300" />
+                      <span>Send WhatsApp Message</span>
+                    </>
+                  )}
                 </button>
 
                 {/* Secondary Actions: Reset Form */}
