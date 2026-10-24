@@ -90,13 +90,15 @@ Executes all 47 test suites verifying:
 
 ---
 
-## 🔐 Default Access Portals
+## 🔐 Access Portals & Roles
 
-| Role | Username | Default Password | Access Scope |
-|---|---|---|---|
-| **Super Admin** | `admin` | `admin123` | Full Access (All Stores, Invoices, CSVs, Settings) |
-| **Vaniyambalam Manager** | `adminvnb` | `vnb123` | Vaniyambalam Store Billing, Invoices & Customers |
-| **Pookkottumpadam Manager** | `adminpkdm` | `pkdm123` | Pookkottumpadam Store Billing, Invoices & Customers |
+| Role | Username | Access Scope |
+|---|---|---|
+| **Super Admin** | `admin` | Full Access (All Stores, Invoices, CSVs, Settings) |
+| **Vaniyambalam Manager** | `adminvnb` | Vaniyambalam Store Billing, Invoices & Customers |
+| **Pookkottumpadam Manager** | `adminpkdm` | Pookkottumpadam Store Billing, Invoices & Customers |
+
+> 🔒 **Security Notice**: Credentials should be set via environment variables and updated immediately through the admin portal upon deployment. Never commit production passwords to source control.
 
 ---
 
