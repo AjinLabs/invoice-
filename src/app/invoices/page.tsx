@@ -16,7 +16,7 @@ import { Purchase, ShopSettings } from '@/lib/types';
 import { generateInvoicePdf } from '@/lib/pdf';
 import CashMemoPreview from '@/components/CashMemoPreview';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
-import { formatWhatsAppInvoiceText, buildWhatsAppClickToChatUrl } from '@/lib/whatsapp';
+import { formatWhatsAppInvoiceText, buildWhatsAppClickToChatUrl, buildWhatsAppWebUrl } from '@/lib/whatsapp';
 
 export default function InvoicesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -113,8 +113,22 @@ export default function InvoicesPage() {
       return;
     }
     const text = formatWhatsAppInvoiceText(purchase, shopSettings);
-    const url = buildWhatsAppClickToChatUrl(phoneRes.waDestination, text);
-    window.open(url, '_blank');
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const url = isMobile
+      ? buildWhatsAppClickToChatUrl(phoneRes.waDestination, text)
+      : buildWhatsAppWebUrl(phoneRes.waDestination, text);
+
+    // Guaranteed separate new tab
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   const handleConfirmCancel = async () => {

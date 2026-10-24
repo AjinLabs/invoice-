@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   CheckCircle2,
   X,
   RotateCcw,
   MessageSquare,
   ExternalLink,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Purchase, ShopSettings } from '@/lib/types';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
@@ -38,6 +40,7 @@ export default function WhatsAppSuccessModal({
   settings,
 }: WhatsAppSuccessModalProps) {
   const newBillBtnRef = useRef<HTMLButtonElement>(null);
+  const [copied, setCopied] = useState(false);
 
   // Validate and format recipient phone number
   const phoneValidation = purchase
@@ -51,21 +54,29 @@ export default function WhatsAppSuccessModal({
     ? formatWhatsAppInvoiceText(purchase, settings)
     : '';
 
-  // Open WhatsApp directly for the customer
-  const handleOpenWhatsAppChat = () => {
-    if (!destinationPhone) return;
+  const encoded = encodeURIComponent(messageText);
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-    const encoded = encodeURIComponent(messageText);
-    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    // On tablets and mobile, api.whatsapp.com immediately opens native WhatsApp app
-    const waUrl = isMobile
+  // Dedicated URL targets: WhatsApp Web for laptops/PCs, official API for mobile
+  const primaryWaUrl = destinationPhone
+    ? isMobile
       ? `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encoded}`
-      : `https://web.whatsapp.com/send?phone=${destinationPhone}&text=${encoded}`;
+      : `https://web.whatsapp.com/send?phone=${destinationPhone}&text=${encoded}`
+    : '#';
 
-    const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
-    if (!win || win.closed || typeof win.closed === 'undefined') {
-      window.location.href = `https://wa.me/${destinationPhone}?text=${encoded}`;
+  // Alternative universal wa.me link for desktop app
+  const secondaryWaUrl = destinationPhone
+    ? `https://wa.me/${destinationPhone}?text=${encoded}`
+    : '#';
+
+  const handleCopy = async () => {
+    if (!messageText) return;
+    try {
+      await navigator.clipboard.writeText(messageText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback if clipboard API is restricted
     }
   };
 
@@ -154,9 +165,29 @@ export default function WhatsAppSuccessModal({
 
           {/* WhatsApp Message Preview Box */}
           <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-3.5 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#094327]">
-              <MessageSquare className="w-3.5 h-3.5" />
-              <span>WhatsApp Message to Send</span>
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#094327]">
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>WhatsApp Message to Send</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-800 hover:text-emerald-950 bg-white/90 hover:bg-white px-2 py-0.5 rounded-lg border border-emerald-200 shadow-2xs transition-colors cursor-pointer"
+                title="Copy message to clipboard"
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy Text</span>
+                  </>
+                )}
+              </button>
             </div>
             <div className="text-[11px] text-neutral-700 bg-white/80 p-3 rounded-xl border border-emerald-100 max-h-36 overflow-y-auto whitespace-pre-wrap font-sans leading-relaxed">
               {messageText}
@@ -164,19 +195,39 @@ export default function WhatsAppSuccessModal({
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3 pt-1">
-            {/* 1. Open WhatsApp Chat */}
-            <button
-              type="button"
-              onClick={handleOpenWhatsAppChat}
-              className="apple-pressable w-full py-4 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md cursor-pointer flex items-center justify-center gap-2.5 focus:ring-4 focus:ring-emerald-500/30 outline-hidden"
-            >
-              <MessageSquare className="w-5 h-5 text-emerald-300" />
-              <span>Open WhatsApp Chat ({formattedPhone})</span>
-              <ExternalLink className="w-4 h-4 text-emerald-300" />
-            </button>
+          <div className="space-y-2.5 pt-1">
+            {/* 1. Primary Action: Open WhatsApp in a NEW TAB (Guaranteed target="_blank" - Never replaces the current hosted POS tab) */}
+            {destinationPhone ? (
+              <a
+                href={primaryWaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="apple-pressable w-full py-4 px-4 bg-[#094327] hover:bg-[#06311d] text-white rounded-2xl text-sm font-black uppercase tracking-wider transition-all shadow-md cursor-pointer flex items-center justify-center gap-2.5 focus:ring-4 focus:ring-emerald-500/30 outline-hidden no-underline"
+              >
+                <MessageSquare className="w-5 h-5 text-emerald-300" />
+                <span>{isMobile ? `Open WhatsApp (${formattedPhone})` : `Open WhatsApp Web (${formattedPhone})`}</span>
+                <ExternalLink className="w-4 h-4 text-emerald-300" />
+              </a>
+            ) : (
+              <div className="w-full py-3.5 px-4 bg-neutral-200 text-neutral-500 rounded-2xl text-xs font-bold text-center">
+                Invalid or Missing WhatsApp Number
+              </div>
+            )}
 
-            {/* 2. Next Customer */}
+            {/* Desktop Alternative: Universal wa.me link for WhatsApp Desktop App (Also in a New Tab) */}
+            {!isMobile && destinationPhone && (
+              <a
+                href={secondaryWaUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="apple-pressable w-full py-2.5 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-700 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border border-neutral-200/80 no-underline"
+              >
+                <span>Or Open in WhatsApp Desktop App (wa.me)</span>
+                <ExternalLink className="w-3.5 h-3.5 text-neutral-500" />
+              </a>
+            )}
+
+            {/* 2. Next Customer Button */}
             <button
               ref={newBillBtnRef}
               type="button"
