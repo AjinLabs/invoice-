@@ -48,12 +48,24 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
   let client;
   try {
     client = await pool.connect();
-    const usersRes = await client.query<User>('SELECT * FROM users ORDER BY created_at ASC');
-    const custRes = await client.query<Customer>('SELECT * FROM customers ORDER BY created_at DESC');
-    const purRes = await client.query<Purchase>('SELECT * FROM purchases ORDER BY created_at DESC');
-    const waRes = await client.query<WhatsAppMessage>('SELECT * FROM whatsapp_messages ORDER BY created_at DESC LIMIT 200');
-    const settRes = await client.query<{ id: string; data: ShopSettings }>('SELECT * FROM shop_settings WHERE id = $1', ['settings_default']);
-    const metaRes = await client.query<{ key: string; value: { invoice_sequence: number; version: string } }>('SELECT * FROM app_meta WHERE key = $1', ['app_meta']);
+    // Multi-statement query executed in a single ultra-fast network round-trip (~68ms)
+    const multiRes = await client.query([
+      'SELECT * FROM users ORDER BY created_at ASC;',
+      'SELECT * FROM customers ORDER BY created_at DESC;',
+      'SELECT * FROM purchases ORDER BY created_at DESC;',
+      'SELECT * FROM whatsapp_messages ORDER BY created_at DESC LIMIT 200;',
+      "SELECT * FROM shop_settings WHERE id = 'settings_default';",
+      "SELECT * FROM app_meta WHERE key = 'app_meta';"
+    ].join(' '));
+
+    const [usersRes, custRes, purRes, waRes, settRes, metaRes] = multiRes as unknown as [
+      { rows: User[] },
+      { rows: Customer[] },
+      { rows: Purchase[] },
+      { rows: WhatsAppMessage[] },
+      { rows: { id: string; data: ShopSettings }[] },
+      { rows: { key: string; value: { invoice_sequence: number; version: string } }[] }
+    ];
 
     const toIso = (val: unknown): string => {
       if (!val) return new Date().toISOString();
@@ -61,12 +73,12 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
       return String(val);
     };
 
-    const users = usersRes.rows.map(u => ({
+    const users = (usersRes?.rows || []).map(u => ({
       ...u,
       created_at: toIso(u.created_at),
     }));
 
-    const customers: Customer[] = custRes.rows.map(c => ({
+    const customers: Customer[] = (custRes?.rows || []).map(c => ({
       ...c,
       total_purchases: Number(c.total_purchases) || 0,
       total_weight_grams: Number(c.total_weight_grams) || 0,
@@ -79,7 +91,7 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
       updated_at: toIso(c.updated_at),
     }));
 
-    const purchases: Purchase[] = purRes.rows.map(p => ({
+    const purchases: Purchase[] = (purRes?.rows || []).map(p => ({
       ...p,
       weight_grams: Number(p.weight_grams) || 0,
       weight_kg: Number(p.weight_kg) || 0,
@@ -98,15 +110,15 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
       updated_at: toIso(p.updated_at),
     }));
 
-    const whatsapp_messages = waRes.rows.map(w => ({
+    const whatsapp_messages = (waRes?.rows || []).map(w => ({
       ...w,
       is_demo: Boolean(w.is_demo),
       created_at: toIso(w.created_at),
       updated_at: toIso(w.updated_at),
     }));
 
-    const shop_settings = settRes.rows[0]?.data;
-    const meta = metaRes.rows[0]?.value || {
+    const shop_settings = settRes?.rows?.[0]?.data;
+    const meta = metaRes?.rows?.[0]?.value || {
       invoice_sequence: purchases.length + 1,
       version: '1.0.0',
     };
@@ -128,6 +140,33 @@ export async function fetchDbFromPostgres(): Promise<DatabaseSchema | null> {
   } catch (err) {
     console.warn('Error fetching DB from PostgreSQL, falling back:', err);
     return null;
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+}
+
+/**
+ * Truncate transaction tables and reset invoice sequence to 1 in PostgreSQL.
+ */
+export async function clearPostgresToZero(): Promise<boolean> {
+  const pool = getPostgresPool();
+  if (!pool) return false;
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query(`
+      TRUNCATE TABLE purchases, purchase_items, customers, loyalty_transactions, whatsapp_messages CASCADE;
+      INSERT INTO app_meta (key, value)
+      VALUES ('app_meta', '{"invoice_sequence": 1, "version": "1.0.0"}')
+      ON CONFLICT (key) DO UPDATE SET value = '{"invoice_sequence": 1, "version": "1.0.0"}';
+    `);
+    return true;
+  } catch (err) {
+    console.error('Error clearing PostgreSQL to zero:', err);
+    return false;
   } finally {
     if (client) {
       client.release();

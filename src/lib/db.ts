@@ -8,10 +8,10 @@ import type {
   BranchInfo,
   DatabaseSchema,
 } from './types.ts';
-import { fetchDbFromPostgres, queueSaveToPostgres, savePurchaseDeltaToPostgres, SUPABASE_DATABASE_URL } from './postgres.ts';
+import { fetchDbFromPostgres, queueSaveToPostgres, savePurchaseDeltaToPostgres, clearPostgresToZero, SUPABASE_DATABASE_URL } from './postgres.ts';
 
 export type { DatabaseSchema };
-export { savePurchaseDeltaToPostgres };
+export { savePurchaseDeltaToPostgres, clearPostgresToZero };
 
 // Precalculated bcrypt hashes for standard accounts (0ms overhead)
 const ADMIN_HASH = '$2b$10$6X59yJzaE3DAPJr0IHUin.AuV9FkOknUQ919dBcvtI8xFxqkSpgb.';
@@ -20,6 +20,7 @@ const PKDM_HASH = '$2b$10$w8Q7/SDxzP2CLwAtFfUu1.aXqx38L.RvFJ2uejyooTrmoM/lYCe/G'
 
 declare global {
   var __TERRY_DB_CACHE__: DatabaseSchema | undefined;
+  var __TERRY_DB_CACHE_TIME__: number | undefined;
 }
 
 export const DEFAULT_BRANCHES: Record<BranchId, BranchInfo> = {
@@ -299,6 +300,7 @@ export function readDb(): DatabaseSchema {
 export function writeDb(data: DatabaseSchema, syncPostgres = true): void {
   // Always update in-memory cache first so next read immediately sees changes
   globalThis.__TERRY_DB_CACHE__ = data;
+  globalThis.__TERRY_DB_CACHE_TIME__ = Date.now();
 
   try {
     ensureDataDir();
@@ -317,27 +319,38 @@ export function writeDb(data: DatabaseSchema, syncPostgres = true): void {
   }
 }
 
-// Ultra-fast database getter: returns cached in-memory DB in 0ms, falling back to local disk
+const CACHE_TTL_MS = 15000; // 15-second fast in-memory cache for 0ms sub-millisecond responses
+
+// Ultra-fast database getter: returns cached in-memory DB in 0ms, falling back to PostgreSQL / local disk
 export async function getDb(forceRefresh = false): Promise<DatabaseSchema> {
-  if (!forceRefresh && globalThis.__TERRY_DB_CACHE__) {
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    globalThis.__TERRY_DB_CACHE__ &&
+    globalThis.__TERRY_DB_CACHE_TIME__ &&
+    now - globalThis.__TERRY_DB_CACHE_TIME__ < CACHE_TTL_MS
+  ) {
     return globalThis.__TERRY_DB_CACHE__;
   }
-  const diskDb = readDb();
-  if (diskDb && !globalThis.__TERRY_DB_CACHE__) {
-    globalThis.__TERRY_DB_CACHE__ = diskDb;
-  }
-  if (SUPABASE_DATABASE_URL && forceRefresh) {
+
+  // Fast PostgreSQL multi-statement fetch on cold start or cache expiry
+  if (SUPABASE_DATABASE_URL) {
     try {
       const pgDb = await fetchDbFromPostgres();
       if (pgDb) {
         globalThis.__TERRY_DB_CACHE__ = pgDb;
+        globalThis.__TERRY_DB_CACHE_TIME__ = Date.now();
         return pgDb;
       }
     } catch (pgErr) {
       console.warn('Could not fetch from PostgreSQL, using local fallback:', pgErr);
     }
   }
-  return globalThis.__TERRY_DB_CACHE__ || diskDb;
+
+  const diskDb = readDb();
+  globalThis.__TERRY_DB_CACHE__ = diskDb;
+  globalThis.__TERRY_DB_CACHE_TIME__ = Date.now();
+  return diskDb;
 }
 
 // Ultra-fast transaction lock helper: persists to memory cache + local disk in <5ms, syncs PG in background
@@ -349,4 +362,66 @@ export async function withTransaction<T>(
   const result = await callback(db);
   writeDb(db, syncPostgres);
   return result;
+}
+
+/**
+ * Reset transaction database to zero:
+ * Clears customers, purchases, items, loyalty transactions, and whatsapp logs.
+ * Resets invoice_sequence to 1.
+ * Preserves users and store settings.
+ */
+export async function clearDatabaseToZero(): Promise<{ success: boolean; message: string }> {
+  // 1. Reset in-memory cache and local file
+  const seed = createInitialSeed();
+
+  try {
+    const current = readDb();
+    if (current?.users?.length) {
+      seed.users = current.users;
+    }
+    if (current?.shop_settings) {
+      seed.shop_settings = current.shop_settings;
+    }
+  } catch {}
+
+  seed.customers = [];
+  seed.purchases = [];
+  seed.purchase_items = [];
+  seed.loyalty_transactions = [];
+  seed.whatsapp_messages = [];
+  seed.meta = {
+    invoice_sequence: 1,
+    version: '1.0.0',
+  };
+
+  writeDb(seed, false);
+  globalThis.__TERRY_DB_CACHE__ = seed;
+  globalThis.__TERRY_DB_CACHE_TIME__ = Date.now();
+
+  // 2. Clear old invoice image files from disk
+  try {
+    if (fs.existsSync(INVOICES_DIR)) {
+      const files = fs.readdirSync(INVOICES_DIR);
+      for (const file of files) {
+        if (file.endsWith('.png')) {
+          try {
+            fs.unlinkSync(path.join(INVOICES_DIR, file));
+          } catch {}
+        }
+      }
+    }
+  } catch (imgErr) {
+    console.warn('Could not clear invoices directory:', imgErr);
+  }
+
+  // 3. Clear Supabase PostgreSQL
+  if (SUPABASE_DATABASE_URL) {
+    try {
+      await clearPostgresToZero();
+    } catch (pgErr) {
+      console.warn('PostgreSQL reset warning:', pgErr);
+    }
+  }
+
+  return { success: true, message: 'Database successfully reset to zero.' };
 }

@@ -147,11 +147,10 @@ export default function BillingPage() {
     setWhatsappResult(null);
     setShowSuccessModal(false);
     setErrorMessage('');
-    fetchSettings(activeBranch);
     setTimeout(() => {
       phoneInputRef.current?.focus();
-    }, 100);
-  }, [activeBranch, fetchSettings, shopSettings]);
+    }, 40);
+  }, [shopSettings]);
 
 
 

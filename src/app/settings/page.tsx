@@ -18,6 +18,8 @@ import {
   Gift,
   Database,
   Download,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { RoundOffMode, BranchId } from '@/lib/types';
 
@@ -51,6 +53,42 @@ export default function SettingsPage() {
 
   // Password change for active branch
   const [newPassword, setNewPassword] = useState('');
+
+  // Database Reset State (Super Admin Only)
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetConfirmInput, setResetConfirmInput] = useState('');
+  const [resetError, setResetError] = useState('');
+
+  const handleResetDatabase = async () => {
+    if (resetConfirmInput !== 'RESET') {
+      setResetError('Please type RESET in capital letters to confirm.');
+      return;
+    }
+    setIsResetting(true);
+    setResetError('');
+    try {
+      const res = await fetch('/api/settings/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'RESET' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResetSuccess(true);
+        setShowResetModal(false);
+        setResetConfirmInput('');
+        setTimeout(() => setResetSuccess(false), 5000);
+      } else {
+        setResetError(data.error || 'Failed to reset database.');
+      }
+    } catch (err: unknown) {
+      setResetError(err instanceof Error ? err.message : 'Error resetting database');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const fetchSettings = useCallback(async (branch: BranchId) => {
     setIsLoading(true);
@@ -538,6 +576,104 @@ export default function SettingsPage() {
           </a>
         </div>
       </div>
+
+      {/* 4. Super Admin Danger Zone: Clear Database to Zero */}
+      {isMainAdmin && (
+        <div className="bg-red-50/70 p-6 rounded-xl border border-red-200 shadow-xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-red-200/80 pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
+              <div>
+                <h3 className="text-sm font-bold text-red-950">
+                  Danger Zone &bull; Reset Database to Zero
+                </h3>
+                <p className="text-xs text-red-700">
+                  Wipe all transactions, customer lists, and invoice records back to initial zero state.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowResetModal(true);
+                setResetConfirmInput('');
+                setResetError('');
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Clear Database to Zero</span>
+            </button>
+          </div>
+
+          {resetSuccess && (
+            <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-lg text-xs text-emerald-800 font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>Database has been successfully cleared to zero! Store numbers and sequences are reset.</span>
+            </div>
+          )}
+
+          <p className="text-[11px] text-neutral-500">
+            Note: Store configuration (clothing price per KG, addresses) and login accounts (admin, adminvnb, adminpkdm) are safely preserved. Only purchase and customer records are wiped.
+          </p>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-red-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="p-2.5 bg-red-100 rounded-full">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-neutral-900">Confirm Database Reset</h3>
+                <p className="text-xs text-neutral-500">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-neutral-700 leading-relaxed">
+              This will permanently delete all <strong>invoices, customers, loyalty history, and WhatsApp logs</strong> across both VNB and PKDM stores, resetting all metrics back to zero.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider block">
+                Type <span className="font-mono text-red-600 font-black">RESET</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={resetConfirmInput}
+                onChange={(e) => setResetConfirmInput(e.target.value)}
+                placeholder="RESET"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-300 font-mono text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+              {resetError && (
+                <p className="text-xs text-red-600 font-medium">{resetError}</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-100">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-neutral-600 hover:bg-neutral-100 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isResetting || resetConfirmInput !== 'RESET'}
+                onClick={handleResetDatabase}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isResetting ? 'Clearing...' : 'Permanently Reset to Zero'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
