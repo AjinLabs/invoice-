@@ -57,9 +57,18 @@ export default function WhatsAppSuccessModal({
   const handleOpenWhatsAppChat = () => {
     if (!destinationPhone) return;
 
-    // Direct WhatsApp chat link for customer mobile number
-    const waUrl = `https://wa.me/${destinationPhone}?text=${encodeURIComponent(messageText)}`;
-    window.open(waUrl, '_blank');
+    const encoded = encodeURIComponent(messageText);
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // On tablets and mobile, api.whatsapp.com immediately opens native WhatsApp app
+    const waUrl = isMobile
+      ? `https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encoded}`
+      : `https://web.whatsapp.com/send?phone=${destinationPhone}&text=${encoded}`;
+
+    const win = window.open(waUrl, '_blank', 'noopener,noreferrer');
+    if (!win || win.closed || typeof win.closed === 'undefined') {
+      window.location.href = `https://wa.me/${destinationPhone}?text=${encoded}`;
+    }
   };
 
   // Global keydown listener when modal is open

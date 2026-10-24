@@ -231,8 +231,8 @@ export async function POST(request: Request) {
       const currentYear = new Date().getFullYear();
       const branchInfo = getBranchInfo(db, branch);
 
-      // Find or create customer
-      let customer = db.customers.find((c) => c.phone === phone);
+      // Find or create customer for this branch
+      let customer = db.customers.find((c) => c.phone === phone && (c.branch || 'vnb') === branch);
       if (!customer) {
         customer = {
           id: generateId('cust'),

@@ -17,6 +17,11 @@ const oswald = Oswald({
 export const metadata: Metadata = {
   title: 'TERRY7 WOMEN - Weight-Based POS Billing System',
   description: 'Official weight-based clothing billing, customer loyalty tracker, and WhatsApp cash memo for TERRY7 WOMEN.',
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({

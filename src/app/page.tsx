@@ -57,6 +57,7 @@ export default function BillingPage() {
   const customAmountInputRef = useRef<HTMLInputElement>(null);
   const suggestionsContainerRef = useRef<HTMLDivElement>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const phoneCacheRef = useRef<Map<string, Customer[]>>(new Map());
 
   // Dress weight selection - default is empty so user enters custom weight directly
   const [weight, setWeight] = useState<number | string>('');
@@ -238,7 +239,7 @@ export default function BillingPage() {
     }, 50);
   };
 
-  // Debounced customer lookup & autocomplete by phone number (starts from 3 digits)
+  // Debounced ultra-fast customer lookup & autocomplete by phone number (starts from 3-4 digits)
   const handlePhoneChange = (val: string) => {
     const digitsOnly = val.replace(/\D/g, '');
     setPhone(digitsOnly);
@@ -254,12 +255,32 @@ export default function BillingPage() {
       return;
     }
 
+    // Check instant in-memory cache first (0ms latency)
+    const cacheKey = `${activeBranch}_${digitsOnly}`;
+    if (phoneCacheRef.current.has(cacheKey)) {
+      const cached = phoneCacheRef.current.get(cacheKey) || [];
+      setCustomerSuggestions(cached);
+      setShowSuggestions(cached.length > 0);
+      setHighlightedSuggestion(0);
+      const exact = cached.find((c: Customer) => {
+        const cDigits = c.phone.replace(/\D/g, '');
+        return cDigits === digitsOnly || (digitsOnly.length >= 10 && cDigits.endsWith(digitsOnly));
+      });
+      if (exact) {
+        setName(exact.name);
+        setAddress(exact.address || '');
+        setCustomer(exact);
+      }
+      return;
+    }
+
     setIsSearchingCustomer(true);
     searchDebounceRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/customers?q=${encodeURIComponent(digitsOnly)}`);
+        const res = await fetch(`/api/customers?q=${encodeURIComponent(digitsOnly)}&branch=${activeBranch}`);
         const data = await res.json();
         if (data.success && Array.isArray(data.customers)) {
+          phoneCacheRef.current.set(cacheKey, data.customers);
           setCustomerSuggestions(data.customers);
           setShowSuggestions(data.customers.length > 0);
           setHighlightedSuggestion(0);
@@ -280,7 +301,7 @@ export default function BillingPage() {
       } finally {
         setIsSearchingCustomer(false);
       }
-    }, 200);
+    }, 60);
   };
 
   // Keyboard navigation for phone input
@@ -333,32 +354,51 @@ export default function BillingPage() {
     }
   };
 
-  // Live autocomplete search effect: triggers suggestions after first 6 digits
+  // Live autocomplete search effect: triggers suggestions as soon as 4 digits are typed
   useEffect(() => {
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length < 6) {
+    if (cleanPhone.length < 4) {
       return;
     }
 
     let isCancelled = false;
+    const cacheKey = `${activeBranch}_${cleanPhone}`;
+
+    if (phoneCacheRef.current.has(cacheKey)) {
+      const cached = phoneCacheRef.current.get(cacheKey) || [];
+      setCustomerSuggestions(cached);
+      setShowSuggestions(cached.length > 0);
+      setHighlightedSuggestion(0);
+      const exact = cached.find((c: Customer) => c.phone === cleanPhone);
+      if (exact) {
+        setCustomer(exact);
+        setName((prev) => (!prev || prev === 'Walk-in Customer' ? exact.name : prev));
+        if (exact.address) {
+          setAddress((prev) => (!prev ? (exact.address || '') : prev));
+        }
+      }
+      return;
+    }
+
     const timer = setTimeout(() => {
       setIsSearchingCustomer(true);
-      fetch(`/api/customers?q=${cleanPhone}`)
+      fetch(`/api/customers?q=${cleanPhone}&branch=${activeBranch}`)
         .then((res) => res.json())
         .then((data) => {
           if (!isCancelled && data.success && Array.isArray(data.customers)) {
+            phoneCacheRef.current.set(cacheKey, data.customers);
             const matches = data.customers.slice(0, 5);
             setCustomerSuggestions(matches);
             setShowSuggestions(matches.length > 0);
             setHighlightedSuggestion(0);
 
-            // If exact 10 digits match, auto-fill customer
+            // If exact match by full phone number, auto-fill customer
             const exact = data.customers.find((c: Customer) => c.phone === cleanPhone);
             if (exact) {
               setCustomer(exact);
               setName((prev) => (!prev || prev === 'Walk-in Customer' ? exact.name : prev));
               if (exact.address) {
-                setAddress((prev) => (!prev ? exact.address : prev));
+                setAddress((prev) => (!prev ? (exact.address || '') : prev));
               }
             }
           }
@@ -369,13 +409,13 @@ export default function BillingPage() {
         .finally(() => {
           if (!isCancelled) setIsSearchingCustomer(false);
         });
-    }, 150);
+    }, 60);
 
     return () => {
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [phone]);
+  }, [phone, activeBranch]);
 
   // Perform Real-Time Billing Calculation
   const numericWeight = typeof weight === 'number'
@@ -487,6 +527,7 @@ export default function BillingPage() {
       setCustomer(data.customer);
       setBillImageDataUrl(base64Image);
       setWhatsappResult(data.whatsapp);
+      phoneCacheRef.current.clear();
 
       // Open WhatsApp Confirmation Modal ("Bill Generated & Ready!")
       setShowSuccessModal(true);

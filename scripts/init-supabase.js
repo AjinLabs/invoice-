@@ -30,10 +30,10 @@ async function initSupabase() {
 
     CREATE TABLE IF NOT EXISTS customers (
       id VARCHAR(64) PRIMARY KEY,
-      phone VARCHAR(32) UNIQUE NOT NULL,
+      phone VARCHAR(32) NOT NULL,
       name VARCHAR(128) NOT NULL,
       address TEXT,
-      branch VARCHAR(32),
+      branch VARCHAR(32) DEFAULT 'vnb',
       total_purchases INT NOT NULL DEFAULT 0,
       total_weight_grams NUMERIC(10, 2) NOT NULL DEFAULT 0,
       total_amount_spent NUMERIC(12, 2) NOT NULL DEFAULT 0,
@@ -42,7 +42,8 @@ async function initSupabase() {
       loyalty_reward_unlocked BOOLEAN NOT NULL DEFAULT FALSE,
       last_purchase_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CONSTRAINT customers_phone_branch_key UNIQUE (phone, branch)
     );
 
     CREATE TABLE IF NOT EXISTS purchases (

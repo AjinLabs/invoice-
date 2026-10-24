@@ -16,6 +16,8 @@ import {
   ArrowRight,
   Phone,
   Gift,
+  Database,
+  Download,
 } from 'lucide-react';
 import { RoundOffMode, BranchId } from '@/lib/types';
 
@@ -454,6 +456,69 @@ export default function SettingsPage() {
           )}
         </div>
       </form>
+
+      {/* 3. Database Crash Protection & Backup Center */}
+      <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b pb-3">
+          <div className="flex items-center gap-2">
+            <Database className="w-5 h-5 text-neutral-800" />
+            <div>
+              <h3 className="text-sm font-bold text-neutral-900">
+                Database Crash Protection &amp; One-Click Backup
+              </h3>
+              <p className="text-xs text-neutral-500">
+                Your data is stored securely in Supabase Cloud PostgreSQL with automatic failover and daily snapshots.
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-3 py-1 rounded-full border border-emerald-300 flex items-center gap-1">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Cloud Database Active
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          <a
+            href="/api/backup"
+            download
+            className="flex items-center justify-between p-3.5 bg-neutral-900 hover:bg-black text-white rounded-xl transition-all shadow-xs group"
+          >
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold flex items-center gap-1.5">
+                <Download className="w-4 h-4 text-emerald-400" />
+                Full Database JSON Backup
+              </span>
+              <p className="text-[10px] text-neutral-400">Download complete system backup</p>
+            </div>
+          </a>
+
+          <a
+            href={`/api/reports/export?type=purchases&branch=${activeBranch}`}
+            className="flex items-center justify-between p-3.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl transition-all border border-neutral-200 group"
+          >
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold flex items-center gap-1.5">
+                <Download className="w-4 h-4 text-neutral-700" />
+                Export Sales CSV
+              </span>
+              <p className="text-[10px] text-neutral-500">{activeBranch.toUpperCase()} branch sales data</p>
+            </div>
+          </a>
+
+          <a
+            href={`/api/reports/export?type=customers&branch=${activeBranch}`}
+            className="flex items-center justify-between p-3.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl transition-all border border-neutral-200 group"
+          >
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold flex items-center gap-1.5">
+                <Download className="w-4 h-4 text-neutral-700" />
+                Export Customers CSV
+              </span>
+              <p className="text-[10px] text-neutral-500">{activeBranch.toUpperCase()} branch customer list</p>
+            </div>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }

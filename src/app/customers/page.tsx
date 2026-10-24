@@ -183,6 +183,13 @@ export default function CustomersPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-bold text-neutral-900">{cust.name}</h3>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                          cust.branch === 'pkdm'
+                            ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                            : 'bg-blue-100 text-blue-800 border border-blue-200'
+                        }`}>
+                          {cust.branch === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam'}
+                        </span>
                         {cust.loyalty_reward_unlocked && (
                           <span className="bg-amber-100 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-300">
                             ★ REWARD UNLOCKED

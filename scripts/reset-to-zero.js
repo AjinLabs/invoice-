@@ -3,10 +3,24 @@ const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
+// Read .env.local if DATABASE_URL is not set
+const envPath = path.join(__dirname, '..', '.env.local');
+if (fs.existsSync(envPath) && !process.env.DATABASE_URL) {
+  const envContent = fs.readFileSync(envPath, 'utf-8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('DATABASE_URL=')) {
+      process.env.DATABASE_URL = trimmed.substring('DATABASE_URL='.length).trim();
+      break;
+    }
+  }
+}
+
 async function resetAllData() {
   console.log('Connecting to Supabase...');
+  const connectionString = process.env.DATABASE_URL || 'postgresql://postgres.jnqwoxgvxylqjvnpjfnm:TERRY%26WOMEN%401234@aws-0-ap-south-1.pooler.supabase.com:6543/postgres';
   const client = new Client({
-    connectionString: process.env.DATABASE_URL,
+    connectionString,
     ssl: { rejectUnauthorized: false }
   });
   await client.connect();
@@ -17,6 +31,12 @@ async function resetAllData() {
   await client.query('DELETE FROM whatsapp_messages;');
   await client.query('DELETE FROM purchases;');
   await client.query('DELETE FROM customers;');
+
+  // Update customer table constraint so each branch has isolated customer records
+  console.log('Configuring branch-isolated customer uniqueness...');
+  await client.query('ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_phone_key;');
+  await client.query('ALTER TABLE customers DROP CONSTRAINT IF EXISTS customers_phone_branch_key;');
+  await client.query('ALTER TABLE customers ADD CONSTRAINT customers_phone_branch_key UNIQUE (phone, branch);');
 
   // Reset sequence
   await client.query(`

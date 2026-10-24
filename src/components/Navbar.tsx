@@ -132,24 +132,31 @@ export default function Navbar() {
               <Link
                 href="/"
                 className="flex items-center gap-2.5 sm:gap-3 group apple-pressable"
-                title="TERRY7 Vaniyambalam"
+                title="TERRY7 WOMEN"
               >
                 <div className="bg-white p-1 rounded-full shadow-xs border border-white/20">
                   <Image
                     src="/logo.png"
-                    alt="TERRY7"
+                    alt="TERRY7 WOMEN"
                     width={34}
                     height={34}
                     priority
                     className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-contain group-hover:scale-105 transition-transform"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="font-black text-base sm:text-lg tracking-tight text-white flex items-center">
                     TERRY<span className="text-[#e11d48]">7</span>
                   </span>
+                  <span className="text-[10px] sm:text-xs font-bold bg-[#094327] text-white px-2 py-0.5 rounded-full tracking-wider uppercase border border-white/20">
+                    WOMEN
+                  </span>
                   <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    Vaniyambalam
+                    {currentUser?.branch === 'pkdm'
+                      ? 'Pookkottumpadam'
+                      : currentUser?.role === 'SUPER_ADMIN'
+                      ? 'Head Office'
+                      : 'Vaniyambalam'}
                   </span>
                 </div>
               </Link>
