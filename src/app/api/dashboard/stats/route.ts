@@ -9,16 +9,19 @@ export async function GET(request: Request) {
     const branchParam = searchParams.get('branch');
 
     let sessionBranch: string | undefined;
+    let isSuperAdmin = false;
     try {
       const cookieStore = await cookies();
       const sessionCookie = cookieStore.get('terry_session');
       if (sessionCookie) {
         const session = JSON.parse(sessionCookie.value);
         sessionBranch = session.branch;
+        isSuperAdmin = session.role === 'SUPER_ADMIN' || session.username === 'admin';
       }
     } catch {}
 
-    const effectiveBranch = branchParam || sessionBranch;
+    // Strict branch isolation: branch admins are strictly locked to their branch
+    const effectiveBranch = !isSuperAdmin && sessionBranch ? sessionBranch : (branchParam || sessionBranch || 'all');
 
     const db = await getDb();
     let purchases = db.purchases.filter((p) => p.status === 'COMPLETED');
@@ -166,10 +169,14 @@ export async function GET(request: Request) {
       };
     };
 
-    const storesBreakdown = {
-      vnb: calcStoreStats('vnb'),
-      pkdm: calcStoreStats('pkdm'),
-    };
+    const storesBreakdown = isSuperAdmin
+      ? {
+          vnb: calcStoreStats('vnb'),
+          pkdm: calcStoreStats('pkdm'),
+        }
+      : effectiveBranch === 'pkdm'
+      ? { pkdm: calcStoreStats('pkdm') }
+      : { vnb: calcStoreStats('vnb') };
 
     const branchInfo = getBranchInfo(db, effectiveBranch);
 
@@ -179,6 +186,7 @@ export async function GET(request: Request) {
       branch: effectiveBranch || 'all',
       branchInfo,
       storesBreakdown,
+      isSuperAdmin,
     });
   } catch (err: unknown) {
     const error = err instanceof Error ? err.message : 'Error fetching dashboard stats';

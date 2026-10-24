@@ -113,10 +113,8 @@ export default function InvoicesPage() {
       return;
     }
     const text = formatWhatsAppInvoiceText(purchase, shopSettings);
-    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const url = isMobile
-      ? buildWhatsAppClickToChatUrl(phoneRes.waDestination, text)
-      : buildWhatsAppWebUrl(phoneRes.waDestination, text);
+    // Use official universal wa.me link which opens instantly on both desktop and mobile
+    const url = buildWhatsAppClickToChatUrl(phoneRes.waDestination, text);
 
     // Guaranteed separate new tab
     const win = window.open(url, '_blank', 'noopener,noreferrer');

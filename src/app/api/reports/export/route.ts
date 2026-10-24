@@ -9,16 +9,18 @@ export async function GET(request: Request) {
     const branchParam = searchParams.get('branch');
 
     let sessionBranch: string | undefined;
+    let isSuperAdmin = false;
     try {
       const cookieStore = await cookies();
       const sessionCookie = cookieStore.get('terry_session');
       if (sessionCookie) {
         const session = JSON.parse(sessionCookie.value);
         sessionBranch = session.branch;
+        isSuperAdmin = session.role === 'SUPER_ADMIN' || session.username === 'admin';
       }
     } catch {}
 
-    const effectiveBranch = sessionBranch || branchParam;
+    const effectiveBranch = !isSuperAdmin && sessionBranch ? sessionBranch : (branchParam || sessionBranch);
 
     const db = await getDb();
     let purchases = [...db.purchases];

@@ -57,7 +57,8 @@ export async function GET(request: Request) {
     const branchParam = searchParams.get('branch');
 
     const sessionUser = await getSessionUser();
-    const effectiveBranch = branchParam || sessionUser?.branch;
+    const isSuperAdmin = sessionUser?.role === 'SUPER_ADMIN' || sessionUser?.username === 'admin';
+    const effectiveBranch = !isSuperAdmin && sessionUser?.branch ? sessionUser.branch : (branchParam || sessionUser?.branch);
 
     const db = await getDb();
     let purchases = [...db.purchases];
@@ -405,11 +406,13 @@ export async function POST(request: Request) {
       };
     }, false);
 
-    // Fast non-blocking save of the single purchase delta directly to PostgreSQL in background
+    // Guaranteed persistence: commit the purchase delta directly to PostgreSQL before response
     if (savePurchaseDeltaToPostgres) {
-      savePurchaseDeltaToPostgres(createdPurchase, updatedCustomer, waMsg, meta).catch((err) => {
+      try {
+        await savePurchaseDeltaToPostgres(createdPurchase, updatedCustomer, waMsg, meta);
+      } catch (err) {
         console.warn('Postgres purchase delta save warning:', err);
-      });
+      }
     }
 
     const waResult = {

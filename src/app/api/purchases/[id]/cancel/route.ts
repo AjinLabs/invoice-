@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withTransaction, generateId } from '@/lib/db';
+import { withTransaction, generateId, savePurchaseDeltaToPostgres } from '@/lib/db';
 import { LoyaltyTransaction } from '@/lib/types';
 
 export async function POST(
@@ -73,6 +73,14 @@ export async function POST(
 
       return { purchase, customer };
     });
+
+    if (result.purchase && result.customer && savePurchaseDeltaToPostgres) {
+      try {
+        await savePurchaseDeltaToPostgres(result.purchase, result.customer);
+      } catch (pgErr) {
+        console.warn('Postgres cancel delta save warning:', pgErr);
+      }
+    }
 
     return NextResponse.json({ success: true, ...result });
   } catch (err: unknown) {

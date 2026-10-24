@@ -4,13 +4,29 @@ import { getDb } from '@/lib/db';
 import { generateMonthlyReportPdf } from '@/lib/pdf';
 
 export async function GET(request: Request) {
-  await cookies();
   try {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month') || undefined;
 
+    let sessionBranch: string | undefined;
+    let isSuperAdmin = false;
+    try {
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('terry_session');
+      if (sessionCookie) {
+        const session = JSON.parse(sessionCookie.value);
+        sessionBranch = session.branch;
+        isSuperAdmin = session.role === 'SUPER_ADMIN' || session.username === 'admin';
+      }
+    } catch {}
+
     const db = await getDb();
-    const doc = generateMonthlyReportPdf(db.purchases, db.shop_settings, month);
+    let purchases = db.purchases;
+    if (!isSuperAdmin && sessionBranch) {
+      purchases = purchases.filter((p) => (p.branch || 'vnb') === sessionBranch);
+    }
+
+    const doc = generateMonthlyReportPdf(purchases, db.shop_settings, month);
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 
     return new Response(pdfBuffer, {
@@ -20,6 +36,9 @@ export async function GET(request: Request) {
       },
     });
   } catch (err: unknown) {
+    if ((err as { digest?: string })?.digest?.startsWith('NEXT_')) {
+      throw err;
+    }
     console.error('Error generating monthly PDF report:', err);
     const errorMessage = err instanceof Error ? err.message : 'Internal Server Error';
     return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });

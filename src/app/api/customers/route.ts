@@ -12,12 +12,14 @@ export async function GET(request: Request) {
 
     let sessionBranch: string | undefined;
     let isDemo = false;
+    let isSuperAdmin = false;
     try {
       const cookieStore = await cookies();
       const sessionCookie = cookieStore.get('terry_session');
       if (sessionCookie) {
         const session = JSON.parse(sessionCookie.value);
         isDemo = session.role === 'DEMO_VIEWER' || Boolean(session.isDemo);
+        isSuperAdmin = session.role === 'SUPER_ADMIN' || session.username === 'admin';
         if (session.branch) sessionBranch = session.branch;
       }
       if (!sessionBranch) {
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
       }
     } catch {}
 
-    const effectiveBranch = branchParam || sessionBranch;
+    const effectiveBranch = !isSuperAdmin && sessionBranch ? sessionBranch : (branchParam || sessionBranch);
 
     const db = await getDb();
     let customers = db.customers;
