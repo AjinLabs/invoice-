@@ -3,28 +3,28 @@
     {
       "id": "usr_admin",
       "username": "admin",
-      "password_hash": "$2b$10$0MLgPexyBOB6SfaxEcQlyOQsNSgiVMFv31r1MP15YDG6fsGOqXbMe",
+      "password_hash": "$2b$10$6X59yJzaE3DAPJr0IHUin.AuV9FkOknUQ919dBcvtI8xFxqkSpgb.",
       "role": "SUPER_ADMIN",
       "name": "TERRY7 General Manager",
-      "created_at": "2026-10-24T07:18:11.569Z"
+      "created_at": "2026-10-24T07:37:45.483Z"
     },
     {
       "id": "usr_vnb",
       "username": "adminvnb",
-      "password_hash": "$2b$10$J1N87uDCwcuQK9FdalG24uTqRqnUG3TTwbZWvVbtIuqrZQ6T0QTom",
+      "password_hash": "$2b$10$YaHInrDpOh/YhALJM.soeuMP3Ls8E2mbxxL.s/Y4g1zhoNSGg6ufK",
       "role": "ADMIN",
       "name": "Store Manager (Vaniyambalam)",
       "branch": "vnb",
-      "created_at": "2026-10-24T07:18:11.569Z"
+      "created_at": "2026-10-24T07:37:45.483Z"
     },
     {
       "id": "usr_pkdm",
       "username": "adminpkdm",
-      "password_hash": "$2b$10$mbqwH39PLoQI5ul35Uk5yea5Y1/74S35389I.OU0Ve5kdMgu6eii.",
+      "password_hash": "$2b$10$w8Q7/SDxzP2CLwAtFfUu1.aXqx38L.RvFJ2uejyooTrmoM/lYCe/G",
       "role": "ADMIN",
       "name": "Store Manager (Pookkottumpadam)",
       "branch": "pkdm",
-      "created_at": "2026-10-24T07:18:11.569Z"
+      "created_at": "2026-10-24T07:37:45.483Z"
     }
   ],
   "customers": [],
@@ -48,7 +48,7 @@
     "whatsapp_mode": "DEMO",
     "whatsapp_api_version": "v20.0",
     "whatsapp_verify_token": "terry_verify_token_2026",
-    "round_off_mode": "FLOOR_10",
+    "round_off_mode": "NONE",
     "branches": {
       "vnb": {
         "id": "vnb",
@@ -77,7 +77,7 @@
       "reward_unlocked": "🎉 Congratulations {{customer_name}}!\nYour 50% OFF on 1 KG reward is now unlocked.\nUse it on your next purchase of 1 KG or more!",
       "reward_redeemed": "🎁 Your 50% OFF on 1 KG (₹449.50 discount) has been successfully applied.\nThank you for shopping with us!"
     },
-    "updated_at": "2026-10-24T07:18:11.569Z"
+    "updated_at": "2026-10-24T07:37:45.483Z"
   },
   "meta": {
     "invoice_sequence": 1,

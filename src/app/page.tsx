@@ -70,6 +70,13 @@ export default function BillingPage() {
   // Payment and round off
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [roundOffMode, setRoundOffMode] = useState<RoundOffMode>('NONE');
+  const [defaultMode, setDefaultMode] = useState<RoundOffMode>('NONE');
+  const [modeToast, setModeToast] = useState<{ message: string; visible: boolean } | null>(null);
+  const clickTrackerRef = useRef<{ mode: RoundOffMode; count: number; lastTime: number }>({
+    mode: 'NONE',
+    count: 0,
+    lastTime: 0,
+  });
   const [manualAmount, setManualAmount] = useState<string>('');
 
   // Branch & System States
@@ -113,9 +120,20 @@ export default function BillingPage() {
         if (data.next_invoice_number) {
           setNextInvoiceNumber(data.next_invoice_number);
         }
-        if (data.settings.round_off_mode) {
-          setRoundOffMode(data.settings.round_off_mode);
+        // Determine default mode: check localStorage first, then server settings, default to 'NONE'
+        let initialMode: RoundOffMode = 'NONE';
+        if (typeof window !== 'undefined') {
+          const localDefault = localStorage.getItem('terry_default_amount_mode') as RoundOffMode | null;
+          if (localDefault && ['NONE', 'FLOOR_10', 'MANUAL'].includes(localDefault)) {
+            initialMode = localDefault;
+          } else if (data.settings?.round_off_mode) {
+            initialMode = data.settings.round_off_mode;
+          }
+        } else if (data.settings?.round_off_mode) {
+          initialMode = data.settings.round_off_mode;
         }
+        setDefaultMode(initialMode);
+        setRoundOffMode(initialMode);
       }
     } catch (err) {
       console.error(err);
@@ -130,7 +148,15 @@ export default function BillingPage() {
     setWeight('');
     setCustomItems([]);
     setManualAmount('');
-    setRoundOffMode('NONE');
+    let modeToRestore: RoundOffMode = 'NONE';
+    if (typeof window !== 'undefined') {
+      const localDefault = localStorage.getItem('terry_default_amount_mode') as RoundOffMode | null;
+      if (localDefault) modeToRestore = localDefault;
+      else if (defaultMode) modeToRestore = defaultMode;
+    } else if (defaultMode) {
+      modeToRestore = defaultMode;
+    }
+    setRoundOffMode(modeToRestore);
     setCustomer(null);
     setCustomerSuggestions([]);
     setShowSuggestions(false);
@@ -143,7 +169,67 @@ export default function BillingPage() {
     setTimeout(() => {
       phoneInputRef.current?.focus();
     }, 100);
-  }, [activeBranch, fetchSettings]);
+  }, [activeBranch, defaultMode, fetchSettings]);
+
+  // Triple-click / triple-tap to set persistent default mode
+  const handleAmountModeClick = (mode: RoundOffMode) => {
+    const now = Date.now();
+    const tracker = clickTrackerRef.current;
+
+    // Switch mode immediately for the current bill
+    setRoundOffMode(mode);
+    if (mode !== 'MANUAL') {
+      setManualAmount('');
+    } else {
+      setTimeout(() => {
+        customAmountInputRef.current?.focus();
+        customAmountInputRef.current?.select();
+      }, 50);
+    }
+
+    // Check if clicked 3 times within 700ms between clicks
+    if (tracker.mode === mode && now - tracker.lastTime < 700) {
+      tracker.count += 1;
+      tracker.lastTime = now;
+
+      if (tracker.count >= 3) {
+        // Set as persistent default!
+        setDefaultMode(mode);
+        try {
+          localStorage.setItem('terry_default_amount_mode', mode);
+        } catch {}
+
+        // Also save to server settings in background
+        fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ round_off_mode: mode }),
+        }).catch(() => {});
+
+        const modeTitle =
+          mode === 'NONE'
+            ? '1. Exact Amount'
+            : mode === 'FLOOR_10'
+            ? '2. Round Down to ₹10'
+            : '3. Custom Amount';
+
+        setModeToast({
+          message: `⭐ ${modeTitle} is now your DEFAULT billing mode!`,
+          visible: true,
+        });
+
+        setTimeout(() => {
+          setModeToast(null);
+        }, 3200);
+
+        tracker.count = 0;
+      }
+    } else {
+      tracker.mode = mode;
+      tracker.count = 1;
+      tracker.lastTime = now;
+    }
+  };
 
   // Resend WhatsApp message
   const handleResendWhatsApp = async () => {
@@ -954,20 +1040,26 @@ export default function BillingPage() {
                 </div>
               </div>
 
-              {/* Three Amount Modes: 1. Exact Amount (DEFAULT), 2. Round Down to ₹10, 3. Custom Amount */}
+              {/* Three Amount Modes: 1. Exact Amount, 2. Round Down to ₹10, 3. Custom Amount */}
               <div className="space-y-3">
-                <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
-                  Amount Mode <span className="text-neutral-400 font-normal">(Default: Exact Amount)</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
+                    Amount Mode{' '}
+                    <span className="text-neutral-500 font-semibold normal-case">
+                      (Default: {defaultMode === 'NONE' ? 'Exact Amount' : defaultMode === 'FLOOR_10' ? 'Round Down to ₹10' : 'Custom Amount'})
+                    </span>
+                  </label>
+                  <span className="text-[10px] font-bold text-[#094327] bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span>💡</span> Triple-click to set default
+                  </span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {/* Mode 1: Exact Amount (DEFAULT) */}
+                  {/* Mode 1: Exact Amount */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setRoundOffMode('NONE');
-                      setManualAmount('');
-                    }}
-                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                    onClick={() => handleAmountModeClick('NONE')}
+                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
                       roundOffMode === 'NONE'
                         ? 'bg-[#094327] text-white border-[#094327] shadow-sm ring-2 ring-emerald-600/30'
                         : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-200'
@@ -975,9 +1067,9 @@ export default function BillingPage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold">1. Exact Amount</span>
-                      {roundOffMode === 'NONE' && (
-                        <span className="text-[9px] bg-white/20 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                          Default
+                      {defaultMode === 'NONE' && (
+                        <span className="text-[9px] bg-amber-400 text-neutral-950 px-1.5 py-0.5 rounded font-black uppercase tracking-wider shadow-2xs">
+                          Default ★
                         </span>
                       )}
                     </div>
@@ -992,17 +1084,21 @@ export default function BillingPage() {
                   {/* Mode 2: Round Down to ₹10 */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setRoundOffMode('FLOOR_10');
-                      setManualAmount('');
-                    }}
-                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                    onClick={() => handleAmountModeClick('FLOOR_10')}
+                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
                       roundOffMode === 'FLOOR_10'
                         ? 'bg-[#094327] text-white border-[#094327] shadow-sm ring-2 ring-emerald-600/30'
                         : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-200'
                     }`}
                   >
-                    <span className="text-xs font-bold block">2. Round Down to ₹10</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold block">2. Round Down to ₹10</span>
+                      {defaultMode === 'FLOOR_10' && (
+                        <span className="text-[9px] bg-amber-400 text-neutral-950 px-1.5 py-0.5 rounded font-black uppercase tracking-wider shadow-2xs">
+                          Default ★
+                        </span>
+                      )}
+                    </div>
                     <span className={`text-base font-black font-mono block mt-1.5 ${roundOffMode === 'FLOOR_10' ? 'text-white' : 'text-neutral-950'}`}>
                       ₹{(Math.floor((Math.round(billingCalc.baseAmount * 100) / 100 + 0.00001) / 10) * 10).toFixed(2)}
                     </span>
@@ -1014,20 +1110,21 @@ export default function BillingPage() {
                   {/* Mode 3: Custom Amount */}
                   <button
                     type="button"
-                    onClick={() => {
-                      setRoundOffMode('MANUAL');
-                      setTimeout(() => {
-                        customAmountInputRef.current?.focus();
-                        customAmountInputRef.current?.select();
-                      }, 50);
-                    }}
-                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
+                    onClick={() => handleAmountModeClick('MANUAL')}
+                    className={`apple-pressable p-3.5 rounded-2xl border text-left transition-all cursor-pointer relative ${
                       roundOffMode === 'MANUAL'
                         ? 'bg-[#094327] text-white border-[#094327] shadow-sm ring-2 ring-emerald-600/30'
                         : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-200'
                     }`}
                   >
-                    <span className="text-xs font-bold block">3. Custom Amount</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold block">3. Custom Amount</span>
+                      {defaultMode === 'MANUAL' && (
+                        <span className="text-[9px] bg-amber-400 text-neutral-950 px-1.5 py-0.5 rounded font-black uppercase tracking-wider shadow-2xs">
+                          Default ★
+                        </span>
+                      )}
+                    </div>
                     <span className={`text-base font-black font-mono block mt-1.5 ${roundOffMode === 'MANUAL' ? 'text-white' : 'text-neutral-950'}`}>
                       {manualAmount ? `₹${parseFloat(manualAmount || '0').toFixed(2)}` : 'Enter amount'}
                     </span>
@@ -1204,6 +1301,16 @@ export default function BillingPage() {
 
         </div>
       </div>
+
+      {/* Floating Toast Notification for Default Mode Change */}
+      {modeToast && modeToast.visible && (
+        <div className="fixed top-6 inset-x-0 z-50 flex justify-center px-4 pointer-events-none animate-in fade-in slide-in-from-top-4 duration-200">
+          <div className="bg-neutral-950/95 text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/20 flex items-center gap-2.5 text-xs font-bold pointer-events-auto backdrop-blur-md">
+            <span className="text-amber-400 text-base">★</span>
+            <span>{modeToast.message}</span>
+          </div>
+        </div>
+      )}
 
       {/* Success Modal with WhatsApp Delivery, Bill Photo, and PDF Export */}
       <WhatsAppSuccessModal

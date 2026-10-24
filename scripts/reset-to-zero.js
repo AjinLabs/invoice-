@@ -77,7 +77,7 @@ async function resetAllData() {
     whatsapp_mode: 'DEMO',
     whatsapp_api_version: 'v20.0',
     whatsapp_verify_token: 'terry_verify_token_2026',
-    round_off_mode: 'FLOOR_10',
+    round_off_mode: 'NONE',
     branches: {
       vnb: {
         id: 'vnb',
