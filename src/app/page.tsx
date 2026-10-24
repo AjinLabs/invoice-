@@ -548,19 +548,24 @@ export default function BillingPage() {
 
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-neutral-100 p-3 sm:p-6 lg:p-8">
-      <div className="max-w-3xl mx-auto space-y-5 no-print">
-        {/* 1. Customer Details Card */}
-        <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
-          <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-neutral-800" />
-              <h2 className="text-base font-bold text-neutral-900 tracking-tight">Customer Information</h2>
-            </div>
-            <span className="text-xs bg-emerald-50 text-emerald-800 font-bold px-3 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wide">
-              {activeBranch.toUpperCase()} STORE
-            </span>
-          </div>
+    <div className="min-h-[calc(100vh-4rem)] bg-neutral-100 p-3 sm:p-5 lg:p-6 pb-28">
+      <div className="max-w-7xl mx-auto no-print">
+        {/* Tablet & Desktop 2-Column Responsive POS Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+          
+          {/* Left Column (Tablets & Desktop: 7 cols) - Data Entry & Items */}
+          <div className="lg:col-span-7 space-y-5">
+            {/* 1. Customer Details Card */}
+            <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6">
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-neutral-800" />
+                  <h2 className="text-base font-bold text-neutral-900 tracking-tight">Customer Information</h2>
+                </div>
+                <span className="text-xs bg-emerald-50 text-emerald-800 font-bold px-3 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wide">
+                  {activeBranch.toUpperCase()} STORE
+                </span>
+              </div>
 
               <div className="space-y-4">
                 {/* Phone Input with live search & autocomplete dropdown */}
@@ -575,6 +580,8 @@ export default function BillingPage() {
                     <input
                       ref={phoneInputRef}
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       value={phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       onKeyDown={handlePhoneKeyDown}
@@ -743,6 +750,8 @@ export default function BillingPage() {
                     <input
                       ref={weightInputRef}
                       type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       min="0"
                       step="1"
                       value={weight}
@@ -754,6 +763,40 @@ export default function BillingPage() {
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-sm font-bold text-neutral-400 uppercase tracking-wider">
                       {numericWeight >= 1000 ? `${(numericWeight / 1000).toFixed(2)} KG` : 'Grams'}
                     </div>
+                  </div>
+
+                  {/* Tablet Quick-Tap Presets */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mr-0.5">
+                      Quick Add:
+                    </span>
+                    {[
+                      { label: '+100g', add: 100 },
+                      { label: '+250g', add: 250 },
+                      { label: '+500g', add: 500 },
+                      { label: '+1 KG', add: 1000 },
+                    ].map((btn) => (
+                      <button
+                        key={btn.add}
+                        type="button"
+                        onClick={() => {
+                          const cur = typeof weight === 'number' ? weight : parseFloat(String(weight)) || 0;
+                          setWeight(cur + btn.add);
+                        }}
+                        className="apple-pressable px-3 py-1.5 text-xs font-bold rounded-xl bg-neutral-100 hover:bg-neutral-200 active:bg-neutral-300 text-neutral-800 border border-neutral-200 transition-all cursor-pointer shadow-2xs"
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                    {numericWeight > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setWeight('')}
+                        className="apple-pressable px-3 py-1.5 text-xs font-bold rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all cursor-pointer ml-auto"
+                      >
+                        Clear
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -887,7 +930,10 @@ export default function BillingPage() {
                 </div>
               )}
             </div>
+          </div>
 
+          {/* Right Column (Tablets & Desktop: 5 cols) - Sticky Summary & Fast Checkout */}
+          <div className="lg:col-span-5 space-y-5 lg:sticky lg:top-20">
             {/* 4. Amount Calculation & Payment Section */}
             <div className="apple-surface bg-white rounded-2xl sm:rounded-3xl border border-black/5 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.04)] p-5 sm:p-6 space-y-5">
               
@@ -1001,6 +1047,7 @@ export default function BillingPage() {
                       <input
                         ref={customAmountInputRef}
                         type="number"
+                        inputMode="numeric"
                         min="0"
                         step="1"
                         value={manualAmount}
@@ -1154,6 +1201,9 @@ export default function BillingPage() {
               </div>
             </div>
           </div>
+
+        </div>
+      </div>
 
       {/* Success Modal with WhatsApp Delivery, Bill Photo, and PDF Export */}
       <WhatsAppSuccessModal
