@@ -410,7 +410,7 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-2 gap-3 py-4 text-xs">
                 <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Today's Sales</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Today&apos;s Sales</span>
                   <span className="text-xl font-black font-mono text-neutral-900 block mt-0.5">
                     ₹{(storesBreakdown?.vnb?.todaySales || 0).toFixed(2)}
                   </span>
@@ -504,7 +504,7 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-2 gap-3 py-4 text-xs">
                 <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Today's Sales</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Today&apos;s Sales</span>
                   <span className="text-xl font-black font-mono text-neutral-900 block mt-0.5">
                     ₹{(storesBreakdown?.pkdm?.todaySales || 0).toFixed(2)}
                   </span>

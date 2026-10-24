@@ -16,7 +16,7 @@ import { Purchase, ShopSettings } from '@/lib/types';
 import { generateInvoicePdf } from '@/lib/pdf';
 import CashMemoPreview from '@/components/CashMemoPreview';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
-import { formatWhatsAppInvoiceText, buildWhatsAppClickToChatUrl, buildWhatsAppWebUrl } from '@/lib/whatsapp';
+import { formatWhatsAppInvoiceText, buildWhatsAppClickToChatUrl } from '@/lib/whatsapp';
 
 export default function InvoicesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
