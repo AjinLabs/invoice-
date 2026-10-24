@@ -60,6 +60,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Main Admin only needs dashboard — restrict billing (/) and settings
+  const isMainAdmin = session?.role === 'SUPER_ADMIN' || session?.username === 'admin';
+  if (isMainAdmin) {
+    if (pathname === '/' || pathname.startsWith('/settings') || pathname.startsWith('/customers')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 

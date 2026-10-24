@@ -13,32 +13,13 @@ import {
   Download,
   Building2,
   Store,
-  MapPin,
-  Phone,
-  CheckCircle2,
-  ArrowRight,
 } from 'lucide-react';
 import { DashboardStats, BranchInfo } from '@/lib/types';
-
-interface StoreBreakdownStats {
-  todaySales: number;
-  todayGross: number;
-  todayDiscounts: number;
-  todayOrders: number;
-  totalNetSales: number;
-  totalGrossSales: number;
-  totalDiscounts: number;
-  totalOrders: number;
-}
 
 export default function DashboardPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ id?: string; username?: string; role?: string; branch?: string } | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [storesBreakdown, setStoresBreakdown] = useState<{
-    vnb: StoreBreakdownStats;
-    pkdm: StoreBreakdownStats;
-  } | null>(null);
   const [activeBranch, setActiveBranch] = useState<string>('all');
   const [, setBranchInfo] = useState<BranchInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,9 +32,6 @@ export default function DashboardPage() {
         setStats(data.stats);
         if (data.branchInfo) {
           setBranchInfo(data.branchInfo);
-        }
-        if (data.storesBreakdown) {
-          setStoresBreakdown(data.storesBreakdown);
         }
       }
     } catch (err) {
@@ -199,13 +177,15 @@ export default function DashboardPage() {
             </a>
           )}
 
-          <Link
-            href={activeBranch && activeBranch !== 'all' ? `/?branch=${activeBranch}` : '/'}
-            className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2.5 bg-neutral-950 text-white rounded-full text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors cursor-pointer"
-          >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>Open POS Billing</span>
-          </Link>
+          {!isMainAdmin && (
+            <Link
+              href={activeBranch && activeBranch !== 'all' ? `/?branch=${activeBranch}` : '/'}
+              className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2.5 bg-neutral-950 text-white rounded-full text-xs font-bold hover:bg-neutral-800 shadow-xs transition-colors cursor-pointer"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>Open POS Billing</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -351,219 +331,6 @@ export default function DashboardPage() {
             </div>
           );
         })()}
-      </div>
-
-      {/* Branch Stores Overview & Live Stats */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 pb-2">
-          <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-[#094327]" />
-            <h2 className="text-base font-bold text-neutral-900">
-              {isMainAdmin
-                ? 'Branch Stores Overview & Live Stats'
-                : activeBranch === 'pkdm'
-                ? 'Pookkottumpadam Outlet Overview'
-                : 'Vaniyambalam Outlet Overview'}
-            </h2>
-          </div>
-          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
-            {isMainAdmin
-              ? '2 Active Outlets (VNB & PKDM)'
-              : activeBranch === 'pkdm'
-              ? 'Pookkottumpadam Outlet (PKDM)'
-              : 'Vaniyambalam Outlet (VNB)'}
-          </span>
-        </div>
-
-        <div className={`grid grid-cols-1 ${isMainAdmin ? 'lg:grid-cols-2' : ''} gap-5`}>
-          {/* VANIYAMBALAM STORE CARD - Shown to Main Admin or VNB Manager */}
-          {(isMainAdmin || activeBranch === 'vnb') && (
-            <div className={`p-6 rounded-3xl border transition-all ${
-              activeBranch === 'vnb'
-                ? 'ring-2 ring-[#094327] bg-emerald-50/40 border-emerald-300 shadow-md'
-                : 'bg-white border-neutral-200/90 shadow-2xs hover:shadow-md'
-            }`}>
-              <div className="flex items-start justify-between border-b border-neutral-200/70 pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#094327] text-white uppercase tracking-wider">
-                      VNB STORE
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>Active Store</span>
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-black text-neutral-900 mt-1.5 tracking-tight">
-                    TERRY7 WOMEN - Vaniyambalam
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-xs text-neutral-500 mt-1">
-                    <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>Near Town Hall &amp; Railway Station, Vaniyambalam - 679339</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-neutral-600 mt-0.5 font-mono">
-                    <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>+91 8330889632</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 py-4 text-xs">
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Today&apos;s Sales</span>
-                  <span className="text-xl font-black font-mono text-neutral-900 block mt-0.5">
-                    ₹{(storesBreakdown?.vnb?.todaySales || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-500 block mt-0.5">
-                    {storesBreakdown?.vnb?.todayOrders || 0} orders realized today
-                  </span>
-                </div>
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
-                    {isMainAdmin ? 'Total Revenue' : "Today's Orders"}
-                  </span>
-                  <span className="text-xl font-black font-mono text-neutral-900 block mt-0.5">
-                    {isMainAdmin
-                      ? `₹${(storesBreakdown?.vnb?.totalNetSales || 0).toFixed(2)}`
-                      : `${storesBreakdown?.vnb?.todayOrders || 0} Bills`}
-                  </span>
-                  <span className="text-[10px] text-neutral-500 block mt-0.5">
-                    {isMainAdmin
-                      ? `${storesBreakdown?.vnb?.totalOrders || 0} total invoices generated`
-                      : 'Completed customer transactions today'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-100">
-                {isMainAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveBranch('vnb');
-                      fetchStatsForBranch('vnb');
-                    }}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      activeBranch === 'vnb'
-                        ? 'bg-[#094327] text-white shadow-xs'
-                        : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
-                    }`}
-                  >
-                    <span>{activeBranch === 'vnb' ? 'Viewing VNB Analytics' : 'Filter VNB Stats'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                ) : (
-                  <div className="text-xs font-semibold text-neutral-500 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>Live POS Terminal Connected</span>
-                  </div>
-                )}
-
-                <Link
-                  href="/?branch=vnb"
-                  className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-2xs"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Open VNB POS Billing</span>
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {/* POOKKOTTUMPADAM STORE CARD - Shown to Main Admin or PKDM Manager */}
-          {(isMainAdmin || activeBranch === 'pkdm') && (
-            <div className={`p-6 rounded-3xl border transition-all ${
-              activeBranch === 'pkdm'
-                ? 'ring-2 ring-[#094327] bg-emerald-50/40 border-emerald-300 shadow-md'
-                : 'bg-white border-neutral-200/90 shadow-2xs hover:shadow-md'
-            }`}>
-              <div className="flex items-start justify-between border-b border-neutral-200/70 pb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#094327] text-white uppercase tracking-wider">
-                      PKDM STORE
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      <span>Active Store</span>
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-black text-neutral-900 mt-1.5 tracking-tight">
-                    TERRY7 WOMEN - Pookkottumpadam
-                  </h3>
-                  <div className="flex items-center gap-1.5 text-xs text-neutral-500 mt-1">
-                    <MapPin className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>Main Commercial Road, Pookkottumpadam - 679332</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-neutral-600 mt-0.5 font-mono">
-                    <Phone className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
-                    <span>+91 8330889632</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 py-4 text-xs">
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">Today&apos;s Sales</span>
-                  <span className="text-xl font-black font-mono text-neutral-900 block mt-0.5">
-                    ₹{(storesBreakdown?.pkdm?.todaySales || 0).toFixed(2)}
-                  </span>
-                  <span className="text-[10px] text-neutral-500 block mt-0.5">
-                    {storesBreakdown?.pkdm?.todayOrders || 0} orders realized today
-                  </span>
-                </div>
-                <div className="p-3 bg-neutral-50 rounded-2xl border border-neutral-200/70">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-500 block">
-                    {isMainAdmin ? 'Total Revenue' : "Today's Orders"}
-                  </span>
-                  <span className="text-xl font-black font-mono text-neutral-900 block mt-0.5">
-                    {isMainAdmin
-                      ? `₹${(storesBreakdown?.pkdm?.totalNetSales || 0).toFixed(2)}`
-                      : `${storesBreakdown?.pkdm?.todayOrders || 0} Bills`}
-                  </span>
-                  <span className="text-[10px] text-neutral-500 block mt-0.5">
-                    {isMainAdmin
-                      ? `${storesBreakdown?.pkdm?.totalOrders || 0} total invoices generated`
-                      : 'Completed customer transactions today'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-100">
-                {isMainAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveBranch('pkdm');
-                      fetchStatsForBranch('pkdm');
-                    }}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      activeBranch === 'pkdm'
-                        ? 'bg-[#094327] text-white shadow-xs'
-                        : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800'
-                    }`}
-                  >
-                    <span>{activeBranch === 'pkdm' ? 'Viewing PKDM Analytics' : 'Filter PKDM Stats'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                ) : (
-                  <div className="text-xs font-semibold text-neutral-500 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <span>Live POS Terminal Connected</span>
-                  </div>
-                )}
-
-                <Link
-                  href="/?branch=pkdm"
-                  className="apple-pressable inline-flex items-center gap-1.5 px-4 py-2 bg-neutral-900 hover:bg-black text-white rounded-xl text-xs font-bold transition-all shadow-2xs"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>Open PKDM POS Billing</span>
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Recent Invoices Table */}

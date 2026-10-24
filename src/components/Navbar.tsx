@@ -109,7 +109,7 @@ export default function Navbar() {
             {/* Left: Brand Logo + TERRY7 VANIYAMBALAM */}
             <div className="flex items-center">
               <Link
-                href="/"
+                href={isMainAdmin ? '/dashboard' : '/'}
                 className="flex items-center gap-2.5 sm:gap-3 group apple-pressable"
                 title="TERRY7 WOMEN"
               >
@@ -177,7 +177,7 @@ export default function Navbar() {
       {/* ==============================================================
           2. BOTTOM APP NAVIGATION DOCK (Apple Floating Glass Dock)
          ============================================================== */}
-      {currentUser && (
+      {currentUser && !isMainAdmin && (
         <aside aria-label="Quick Navigation" className="fixed bottom-4 inset-x-0 z-40 pointer-events-none flex justify-center px-4 no-print">
           <nav
             aria-label="App Navigation"
