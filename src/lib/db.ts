@@ -3,17 +3,12 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import type {
   User,
-  Customer,
-  Purchase,
-  PurchaseItem,
-  LoyaltyTransaction,
-  WhatsAppMessage,
   ShopSettings,
   BranchId,
   BranchInfo,
   DatabaseSchema,
 } from './types.ts';
-import { fetchDbFromPostgres, saveDbToPostgres, queueSaveToPostgres, SUPABASE_DATABASE_URL } from './postgres.ts';
+import { fetchDbFromPostgres, queueSaveToPostgres, SUPABASE_DATABASE_URL } from './postgres.ts';
 
 export type { DatabaseSchema };
 

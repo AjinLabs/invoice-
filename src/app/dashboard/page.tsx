@@ -14,17 +14,8 @@ import {
 } from 'lucide-react';
 import { DashboardStats, BranchInfo } from '@/lib/types';
 
-interface AuthMeUser {
-  id: string;
-  username: string;
-  role: string;
-  name: string;
-  branch?: string;
-}
-
 export default function DashboardPage() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<AuthMeUser | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activeBranch, setActiveBranch] = useState<string>('vnb');
   const [, setBranchInfo] = useState<BranchInfo | null>(null);
@@ -60,7 +51,6 @@ export default function DashboardPage() {
 
         let branchToUse = 'vnb';
         if (authData.user) {
-          if (isMounted) setCurrentUser(authData.user);
           if (authData.user.branch) {
             branchToUse = authData.user.branch;
           } else if (authData.user.role === 'SUPER_ADMIN' || authData.user.username === 'admin') {
@@ -81,9 +71,6 @@ export default function DashboardPage() {
       isMounted = false;
     };
   }, [fetchStatsForBranch, router]);
-
-  const isMainAdmin =
-    currentUser?.role === 'SUPER_ADMIN' || currentUser?.username === 'admin';
 
   const cards = [
     {

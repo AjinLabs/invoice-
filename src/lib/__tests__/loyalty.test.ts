@@ -1,9 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LOYALTY_TARGET_GRAMS,
-  QUALIFYING_PURCHASE_MIN_GRAMS,
-  REWARD_FREE_GRAMS,
   renderUnicodeProgressBar,
   evaluateLoyaltyState,
   formatWhatsAppLoyaltySection,

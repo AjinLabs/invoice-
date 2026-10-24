@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import type { DatabaseSchema, Customer, Purchase, User, ShopSettings, WhatsAppMessage, LoyaltyTransaction } from './types.ts';
+import type { DatabaseSchema, Customer, Purchase, User, ShopSettings, WhatsAppMessage } from './types.ts';
 
 declare global {
   var __TERRY_PG_POOL__: Pool | undefined;

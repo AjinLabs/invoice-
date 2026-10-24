@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getDb, readDb, withTransaction, generateId } from '@/lib/db';
+import { getDb, withTransaction, generateId } from '@/lib/db';
 import { sendWhatsAppInvoice } from '@/lib/whatsapp';
 import { WhatsAppMessage } from '@/lib/types';
 

@@ -1,6 +1,5 @@
 import type { Purchase, ShopSettings } from './types.ts';
 import { normalizeWhatsAppPhone } from './phone.ts';
-import { formatWhatsAppLoyaltySection } from './loyalty.ts';
 
 export interface SendWhatsAppOptions {
   imageBuffer?: Buffer;
@@ -95,20 +94,13 @@ export async function resolveInvoiceImageBuffer(
  */
 export function formatWhatsAppInvoiceText(
   purchase: Purchase,
-  settings?: Partial<ShopSettings> | null,
-  _options?: { includeInvoiceLink?: boolean; baseUrl?: string; hideProgressBar?: boolean }
+  settings?: Partial<ShopSettings> | null
 ): string {
   const branchKey = (purchase.branch || 'vnb').toLowerCase();
   const branchTown = branchKey === 'pkdm' ? 'Pookkottumpadam' : 'Vaniyambalam';
   const separator = '━━━━━━━━━━━━━━━';
 
   const customerName = (purchase.customer_name || 'Customer').trim();
-  const billNo = purchase.invoice_number || '0001';
-
-  const dateObj = new Date(purchase.created_at);
-  const dateFormatted = !isNaN(dateObj.getTime())
-    ? dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    : 'Today';
 
   // Combine round-off savings directly into Discount
   const rawSubtotal = purchase.subtotal || 0;

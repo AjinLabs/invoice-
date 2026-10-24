@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getDb, readDb, withTransaction, getBranchInfo, DEFAULT_BRANCHES, generateId } from '@/lib/db';
+import { getDb, withTransaction, getBranchInfo, DEFAULT_BRANCHES, generateId } from '@/lib/db';
 import { BranchId } from '@/lib/types';
 import bcrypt from 'bcryptjs';
 
@@ -54,7 +54,6 @@ export async function PUT(request: Request) {
     const body = await request.json();
 
     let sessionRole: string | undefined;
-    let sessionUsername: string | undefined;
     let sessionBranch: BranchId | undefined;
     try {
       const cookieStore = await cookies();
@@ -62,7 +61,6 @@ export async function PUT(request: Request) {
       if (sessionCookie) {
         const session = JSON.parse(sessionCookie.value);
         sessionRole = session.role;
-        sessionUsername = session.username;
         sessionBranch = session.branch;
       }
     } catch {}

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getDb, readDb, normalizePhone } from '@/lib/db';
-import { BranchId } from '@/lib/types';
+import { getDb, normalizePhone } from '@/lib/db';
 
 export async function GET(
   request: Request,

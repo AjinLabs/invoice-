@@ -107,8 +107,6 @@ export function evaluateLoyaltyState(params: {
       // QUALIFYING PURCHASE: REDEEM REWARD!
       // The remaining weight from this promotional purchase does not count towards the next 5 KG.
       // Customer starts fresh from 0 to 5 KG.
-      const nextGrams = 0;
-
       return {
         state: 'REWARD_REDEEMED',
         completedGrams: 0,

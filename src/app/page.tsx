@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Phone,
   User,
   Scale,
   Sparkles,
-  Printer,
   Send,
   RotateCcw,
   AlertCircle,
@@ -16,25 +15,12 @@ import {
   Plus,
   Trash2,
   Tag,
-  CheckCircle2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import WhatsAppSuccessModal from '@/components/WhatsAppSuccessModal';
 import { Customer, ShopSettings, PaymentMethod, Purchase, RoundOffMode, BranchId, BranchInfo } from '@/lib/types';
 import { calculateBilling, CustomItemInput } from '@/lib/billing';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
-import { formatWhatsAppInvoiceText } from '@/lib/whatsapp';
-
-interface AuthMeResponse {
-  authenticated: boolean;
-  user?: {
-    id: string;
-    username: string;
-    role: string;
-    branch?: BranchId;
-  };
-  branchInfo?: BranchInfo;
-}
 
 export default function BillingPage() {
   const router = useRouter();
@@ -648,9 +634,14 @@ export default function BillingPage() {
                   <User className="w-5 h-5 text-neutral-800" />
                   <h2 className="text-base font-bold text-neutral-900 tracking-tight">Customer Information</h2>
                 </div>
-                <span className="text-xs bg-emerald-50 text-emerald-800 font-bold px-3 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wide">
-                  {activeBranch.toUpperCase()} STORE
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-neutral-500 bg-neutral-100 px-2.5 py-0.5 rounded-full font-semibold border border-neutral-200">
+                    {nextInvoiceNumber}
+                  </span>
+                  <span className="text-xs bg-emerald-50 text-emerald-800 font-bold px-3 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wide">
+                    {activeBranch.toUpperCase()} STORE
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-4">

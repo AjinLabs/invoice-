@@ -46,8 +46,6 @@ export default function WhatsAppSuccessModal({
   const destinationPhone = phoneValidation.waDestination;
   const formattedPhone = phoneValidation.formattedDisplay || (purchase?.customer_phone ?? '');
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://terry7women.vercel.app';
-
   // Format WhatsApp sales message (No invoice number, no photo, no clickable links)
   const messageText = purchase
     ? formatWhatsAppInvoiceText(purchase, settings)

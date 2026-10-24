@@ -51,14 +51,7 @@ export interface BillingCalculationResult {
  */
 export function calculateBilling(input: BillingCalculationInput): BillingCalculationResult {
   const ratePerKg = input.ratePerKg ?? input.shopSettings?.rate_per_kg ?? 899;
-  const minGrams = input.shopSettings?.min_weight_grams ?? 1000;
   const targetLoyaltyGrams = input.shopSettings?.target_loyalty_grams ?? 5000;
-
-  // 50% discount on 1000g (1 KG)
-  const halfPrice1kgDiscount = Math.round((ratePerKg * 0.5) * 100) / 100;
-  const rewardAmount = input.shopSettings?.loyalty_discount && input.shopSettings.loyalty_discount !== 299
-    ? input.shopSettings.loyalty_discount
-    : halfPrice1kgDiscount;
 
   // Normalize weight to grams and kilograms
   const safeWeight = Math.max(0, Number(input.weight) || 0);

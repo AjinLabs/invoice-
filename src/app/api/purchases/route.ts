@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
-import { getDb, readDb, withTransaction, generateId, normalizePhone, INVOICES_DIR, getBranchInfo } from '@/lib/db';
+import { getDb, readDb, withTransaction, generateId, INVOICES_DIR, getBranchInfo } from '@/lib/db';
 import { normalizeWhatsAppPhone } from '@/lib/phone';
 import { calculateBilling } from '@/lib/billing';
 import { sendWhatsAppInvoice, formatWhatsAppInvoiceText } from '@/lib/whatsapp';

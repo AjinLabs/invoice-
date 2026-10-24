@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getDb, readDb } from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { generateMonthlyReportPdf } from '@/lib/pdf';
 
 export async function GET(request: Request) {
